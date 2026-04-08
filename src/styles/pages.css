@@ -1,0 +1,370 @@
+/* ============================================
+   PAGE LAYOUT
+   ============================================ */
+
+.page {
+  padding: 0 var(--space-lg);
+  padding-bottom: var(--space-2xl);
+  min-height: 100dvh;
+}
+
+/* ============================================
+   ROLE SELECT PAGE
+   ============================================ */
+
+.role-select-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.role-select-logo {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+  animation: levelUpPulse 1s var(--ease-bounce);
+}
+
+.role-select-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: var(--space-xs);
+  background: linear-gradient(135deg, var(--gold), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.role-select-subtitle {
+  color: var(--text-muted);
+  margin-bottom: var(--space-2xl);
+  font-size: 0.95rem;
+}
+
+.role-select-buttons {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.role-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+  text-align: left;
+  color: var(--text-bright);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.role-btn:hover {
+  background: var(--bg-surface-alt);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.role-btn:active {
+  transform: scale(0.97);
+}
+
+.role-btn-emoji {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.role-btn-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-btn-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.role-btn-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.role-btn-parent {
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.role-btn-parent:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: var(--glow-primary);
+}
+
+.role-btn-child {
+  border-color: rgba(168, 85, 247, 0.15);
+}
+
+.role-btn-child:hover {
+  border-color: rgba(168, 85, 247, 0.3);
+  box-shadow: var(--glow-purple);
+}
+
+.role-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: var(--space-sm) 0;
+}
+
+.role-divider::before,
+.role-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bg-glass-border);
+}
+
+/* ============================================
+   SETUP WIZARD PAGE
+   ============================================ */
+
+.setup-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-xl);
+}
+
+.setup-step {
+  width: 100%;
+  max-width: 360px;
+  animation: slideUp var(--duration-normal) var(--ease-out);
+}
+
+.setup-step-indicator {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  margin-bottom: var(--space-xl);
+}
+
+.setup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg-surface-alt);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.setup-dot.active {
+  background: var(--primary);
+  width: 24px;
+  border-radius: var(--radius-full);
+}
+
+.setup-dot.done {
+  background: var(--green);
+}
+
+.setup-step-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: var(--space-xs);
+}
+
+.setup-step-desc {
+  text-align: center;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xl);
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   CHILD DASHBOARD
+   ============================================ */
+
+.hero-card {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(168, 85, 247, 0.08) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  text-align: center;
+  margin-bottom: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.5), transparent);
+}
+
+.hero-avatar {
+  font-size: 3.5rem;
+  margin-bottom: var(--space-sm);
+}
+
+.hero-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.hero-level {
+  color: var(--purple);
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: var(--space-lg);
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-xl);
+  margin-top: var(--space-lg);
+}
+
+/* ============================================
+   PARENT DASHBOARD
+   ============================================ */
+
+.parent-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  margin-bottom: var(--space-xl);
+  overflow-x: auto;
+}
+
+.parent-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.parent-tab:hover {
+  color: var(--text-bright);
+}
+
+.parent-tab.active {
+  background: var(--primary);
+  color: white;
+}
+
+.parent-tab .notification-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+/* ============================================
+   REWARD SHOP GRID
+   ============================================ */
+
+.reward-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+/* ============================================
+   LEVEL UP OVERLAY
+   ============================================ */
+
+.level-up-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  animation: fadeIn var(--duration-fast) var(--ease-out);
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.level-up-emoji {
+  font-size: 5rem;
+  animation: levelUpPulse 0.8s var(--ease-bounce);
+}
+
+.level-up-text {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: var(--space-md) 0;
+  background: linear-gradient(135deg, var(--gold), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: levelUpGlow 2s infinite;
+}
+
+.level-up-detail {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin-bottom: var(--space-xl);
+}
+
+.level-up-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--purple);
+  margin-bottom: var(--space-xl);
+}
+
+/* ============================================
+   PIN ENTRY PAGE (inline)
+   ============================================ */
+
+.pin-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-xl);
+}
+
+.pin-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: var(--space-xl);
+  text-align: center;
+}

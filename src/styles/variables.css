@@ -1,0 +1,74 @@
+:root {
+  /* Backgrounds */
+  --bg-deep:        #0a0a1a;
+  --bg-surface:     #141428;
+  --bg-surface-alt: #1e1e3a;
+  --bg-glass:       rgba(255, 255, 255, 0.04);
+  --bg-glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Accents */
+  --gold:           #facc15;
+  --gold-dim:       rgba(250, 204, 21, 0.15);
+  --amber:          #f59e0b;
+  --amber-dim:      rgba(245, 158, 11, 0.15);
+  --purple:         #a855f7;
+  --purple-dim:     rgba(168, 85, 247, 0.15);
+  --indigo:         #6366f1;
+  --indigo-dim:     rgba(99, 102, 241, 0.15);
+  --green:          #22c55e;
+  --green-dim:      rgba(34, 197, 94, 0.15);
+  --red:            #ef4444;
+  --red-dim:        rgba(239, 68, 68, 0.15);
+  --cyan:           #06b6d4;
+  --cyan-dim:       rgba(6, 182, 212, 0.15);
+
+  /* Text */
+  --text-bright:    #f1f5f9;
+  --text-muted:     #64748b;
+  --text-dim:       #475569;
+
+  /* Themes Dynamic */
+  --primary:        var(--indigo);
+  --primary-dim:    var(--indigo-dim);
+  --glow-primary:   var(--glow-indigo);
+
+  /* Effects */
+  --glow-gold:      0 0 20px rgba(250, 204, 21, 0.25);
+  --glow-purple:    0 0 20px rgba(168, 85, 247, 0.25);
+  --glow-indigo:    0 0 20px rgba(99, 102, 241, 0.25);
+  --glow-green:     0 0 20px rgba(34, 197, 94, 0.25);
+
+  /* Radius */
+  --radius-sm:      8px;
+  --radius-md:      14px;
+  --radius-lg:      20px;
+  --radius-xl:      28px;
+  --radius-full:    9999px;
+
+  /* Spacing */
+  --space-xs:       4px;
+  --space-sm:       8px;
+  --space-md:       16px;
+  --space-lg:       24px;
+  --space-xl:       32px;
+  --space-2xl:      48px;
+
+  /* Font */
+  --font-main:      'Outfit', system-ui, -apple-system, sans-serif;
+
+  /* Transitions */
+  --ease-out:       cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce:    cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:  150ms;
+  --duration-normal: 300ms;
+  --duration-slow:  600ms;
+}
+
+/* Theme Classes */
+.theme-gold { --primary: var(--gold); --primary-dim: var(--gold-dim); --glow-primary: var(--glow-gold); }
+.theme-amber { --primary: var(--amber); --primary-dim: var(--amber-dim); --glow-primary: 0 0 20px rgba(245, 158, 11, 0.25); }
+.theme-green { --primary: var(--green); --primary-dim: var(--green-dim); --glow-primary: var(--glow-green); }
+.theme-purple { --primary: var(--purple); --primary-dim: var(--purple-dim); --glow-primary: var(--glow-purple); }
+.theme-cyan { --primary: var(--cyan); --primary-dim: var(--cyan-dim); --glow-primary: 0 0 20px rgba(6, 182, 212, 0.25); }
+.theme-red { --primary: var(--red); --primary-dim: var(--red-dim); --glow-primary: 0 0 20px rgba(239, 68, 68, 0.25); }
+.theme-indigo { --primary: var(--indigo); --primary-dim: var(--indigo-dim); --glow-primary: var(--glow-indigo); }
