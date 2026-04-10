@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { verifyParentPin } from '../app/actions/auth';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
+import AvatarDisplay from './AvatarDisplay';
 
 export default function RoleSelectClient({ childrenData }) {
   const router = useRouter();
@@ -102,11 +103,9 @@ export default function RoleSelectClient({ childrenData }) {
                     cursor: 'pointer',
                     transition: 'transform 0.2s var(--ease-bounce)',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   onClick={() => router.push(`/kid/${child.id}`)}
                 >
-                  <span style={{ fontSize: '3rem' }}>{child.avatar}</span>
+                  <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3rem' }} />
                   <div style={{ textAlign: 'center', width: '100%' }}>
                     <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-bright)' }}>{child.name}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700 }}>Lv {level}</div>

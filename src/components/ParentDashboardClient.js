@@ -7,6 +7,7 @@ import { showToast, showFloat } from '../lib/ui';
 import { AVATAR_EMOJIS, MISSION_EMOJIS, REWARD_EMOJIS } from '../lib/ui';
 import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
 import AppShell from './AppShell';
+import AvatarDisplay from './AvatarDisplay';
 
 export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending }) {
   const router = useRouter();
@@ -213,13 +214,71 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   // C H I L D   M O D A L
   const renderChildModal = () => {
     const isEdit = !!modal.data;
+
+    const handleFileChange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height *= maxDim / width;
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width *= maxDim / height;
+              height = maxDim;
+            }
+          }
+
+          canvas.width = maxDim;
+          canvas.height = maxDim;
+          const ctx = canvas.getContext('2d');
+          
+          // Crop centrally
+          const srcSize = Math.min(img.width, img.height);
+          const srcX = (img.width - srcSize) / 2;
+          const srcY = (img.height - srcSize) / 2;
+          
+          ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, maxDim, maxDim);
+          
+          // Downscale quality slightly
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+          // Find the hidden input and update its value to the base64 string
+          const hiddenInput = document.getElementById('base64-avatar-input');
+          if (hiddenInput) {
+             hiddenInput.value = dataUrl;
+             // Visually show preview
+             hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
     return (
       <form onSubmit={async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
+        
+        // Prefer base64 upload if it was filled 
+        let finalAvatar = fd.get('base64_avatar');
+        if (!finalAvatar) finalAvatar = fd.get('avatar');
+        
         const newObj = {
           name: fd.get('name'),
-          avatar: fd.get('avatar'),
+          avatar: finalAvatar,
         };
         if (isEdit) {
           await supabase.from('children').update(newObj).eq('id', modal.data.id);
@@ -237,12 +296,30 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="Kid's First Name" />
         </div>
         <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Avatar</label>
-          <div className="avatar-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', marginTop: 8 }}>
+          <label>Photo or Emoji</label>
+          
+          {/* Hidden text input for base64 upload to hold React state-free value */}
+          <input type="text" id="base64-avatar-input" name="base64_avatar" style={{ display: 'none' }} onChange={(e) => {
+             const preview = document.getElementById('photo-preview');
+             if (preview) { preview.style.backgroundImage = `url(${e.target.value})`; preview.style.backgroundSize = 'cover'; preview.innerHTML = ''; }
+          }} />
+
+          <div className="emoji-picker" style={{ gap: '8px', marginTop: 8 }}>
+            
+            {/* Custom Photo Upload Radio Option */}
+            <label style={{ cursor: 'pointer', position: 'relative' }}>
+               <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+               <div id="photo-preview" style={{ display: 'flex', flexDirection: 'column', aspectRatio: '1', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', background: 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: '2px dashed var(--bg-glass-border)' }} className="emoji-picker-item">
+                  📷 <span style={{fontSize: '0.6rem'}}>Upload</span>
+               </div>
+            </label>
+
             {AVATAR_EMOJIS.map(e => (
               <label key={e} style={{ cursor: 'pointer' }}>
-                <input type="radio" name="avatar" value={e} defaultChecked={(modal.data?.avatar || AVATAR_EMOJIS[0]) === e} style={{ display: 'none' }} />
-                <div style={{ display: 'flex', aspectRatio: '1', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }}>
+                <input type="radio" name="avatar" value={e} defaultChecked={(modal.data?.avatar || AVATAR_EMOJIS[0]) === e} style={{ display: 'none' }} onChange={() => {
+                   document.getElementById('base64-avatar-input').value = '';
+                }} />
+                <div style={{ display: 'flex', aspectRatio: '1', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }} className="emoji-picker-item">
                   {e}
                 </div>
               </label>
@@ -276,7 +353,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
               onClick={() => setInspectChildId(child.id)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                <span style={{ fontSize: '2.5rem' }}>{child.avatar}</span>
+                <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '2.5rem' }} />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-bright)' }}>{child.name}</div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 700 }}>Lv {level}</div>
@@ -323,7 +400,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
          return (
           <div key={comp.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--text-dim)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-lg)' }}>
             <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-               <div style={{ fontSize: '3rem' }}>{child.avatar}</div>
+               <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3rem' }} />
                <div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{child.name} submitted:</div>
                   <div style={{ fontWeight: 800, fontSize: '1.4rem' }}>{mission.icon} {mission.name}</div>
@@ -411,8 +488,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                
                <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
                   <div style={{ fontSize: '4rem', margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
-                     <div style={{ background: 'var(--primary-dim)', borderRadius: '50%', padding: '16px', border: '2px solid var(--primary)' }}>
-                        {child.avatar}
+                     <div style={{ background: 'var(--primary-dim)', borderRadius: '50%', padding: '16px', border: '2px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <AvatarDisplay avatarString={child.avatar} />
                      </div>
                   </div>
                   <h2 style={{ fontSize: '2rem', fontWeight: 800, marginTop: 16 }}>{child.name}'s Profile</h2>

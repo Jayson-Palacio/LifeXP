@@ -7,6 +7,7 @@ import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '.
 import { showToast, showFloat } from '../lib/ui';
 import AppShell from './AppShell';
 import TierCrest from './TierCrest';
+import AvatarDisplay from './AvatarDisplay';
 
 export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards }) {
   const router = useRouter();
@@ -114,7 +115,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           </div>
         </div>
         
-        <div className="hero-avatar">{child.avatar}</div>
+        <div className="hero-avatar"><AvatarDisplay avatarString={child.avatar} /></div>
         <h2 className="hero-name">{child.name}</h2>
         
         <div className="hero-level" style={{ color: 'var(--primary)', marginTop: 8, fontSize: '1.1rem' }}>
