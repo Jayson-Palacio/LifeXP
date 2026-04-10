@@ -15,6 +15,9 @@ export default async function ChildDashboardPage({ params }) {
   // Fetch missions
   const { data: missions } = await supabase.from('missions').select('*').order('name');
   
+  // Fetch rewards
+  const { data: rewards } = await supabase.from('rewards').select('*').order('cost');
+  
   // Fetch today's completions for this child by getting all completions and filtering (or just querying)
   const todayStart = new Date();
   todayStart.setUTCHours(0,0,0,0);
@@ -30,6 +33,7 @@ export default async function ChildDashboardPage({ params }) {
       initialChild={child}
       missions={missions || []}
       initialCompletions={completions || []}
+      rewards={rewards || []}
     />
   );
 }

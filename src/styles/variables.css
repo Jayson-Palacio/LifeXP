@@ -1,48 +1,42 @@
 :root {
   /* Backgrounds */
-  --bg-deep:        #0a0a1a;
-  --bg-surface:     #141428;
-  --bg-surface-alt: #1e1e3a;
-  --bg-glass:       rgba(255, 255, 255, 0.04);
-  --bg-glass-border: rgba(255, 255, 255, 0.08);
+  --bg-deep:        #0d0d14;
+  --bg-surface:     #171723;
+  --bg-surface-alt: #222234;
+  --bg-glass:       rgba(255, 255, 255, 0.03);
+  --bg-glass-border: rgba(255, 255, 255, 0.06);
 
-  /* Accents */
-  --gold:           #facc15;
-  --gold-dim:       rgba(250, 204, 21, 0.15);
-  --amber:          #f59e0b;
-  --amber-dim:      rgba(245, 158, 11, 0.15);
-  --purple:         #a855f7;
-  --purple-dim:     rgba(168, 85, 247, 0.15);
-  --indigo:         #6366f1;
-  --indigo-dim:     rgba(99, 102, 241, 0.15);
-  --green:          #22c55e;
-  --green-dim:      rgba(34, 197, 94, 0.15);
+  /* Accents - The Journey of Light Colors */
+  --seedling:       #4ade80;
+  --morning-sky:    #7dd3fc;
+  --golden-hour:    #fbbf24;
+  --forest-deep:    #059669;
+  --lavender-mist:  #a78bfa;
+  --stone:          #94a3b8;
+  --candle-flame:   #f59e0b;
+  --celestial:      #818cf8;
+  --rose-gold:      #fb7185;
+  --sapphire:       #3b82f6;
+
+  /* State Colors */
   --red:            #ef4444;
-  --red-dim:        rgba(239, 68, 68, 0.15);
-  --cyan:           #06b6d4;
-  --cyan-dim:       rgba(6, 182, 212, 0.15);
-
+  --green:          #22c55e;
+  
   /* Text */
-  --text-bright:    #f1f5f9;
-  --text-muted:     #64748b;
+  --text-bright:    #f8fafc;
+  --text-muted:     #94a3b8;
   --text-dim:       #475569;
 
-  /* Themes Dynamic */
-  --primary:        var(--indigo);
-  --primary-dim:    var(--indigo-dim);
-  --glow-primary:   var(--glow-indigo);
-
-  /* Effects */
-  --glow-gold:      0 0 20px rgba(250, 204, 21, 0.25);
-  --glow-purple:    0 0 20px rgba(168, 85, 247, 0.25);
-  --glow-indigo:    0 0 20px rgba(99, 102, 241, 0.25);
-  --glow-green:     0 0 20px rgba(34, 197, 94, 0.25);
+  /* Themes Dynamic - Default to Seedling */
+  --primary:        var(--seedling);
+  --primary-dim:    rgba(74, 222, 128, 0.15);
+  --glow-primary:   0 0 20px rgba(74, 222, 128, 0.25);
 
   /* Radius */
-  --radius-sm:      8px;
-  --radius-md:      14px;
-  --radius-lg:      20px;
-  --radius-xl:      28px;
+  --radius-sm:      12px;
+  --radius-md:      18px;
+  --radius-lg:      24px;
+  --radius-xl:      32px;
   --radius-full:    9999px;
 
   /* Spacing */
@@ -65,10 +59,18 @@
 }
 
 /* Theme Classes */
-.theme-gold { --primary: var(--gold); --primary-dim: var(--gold-dim); --glow-primary: var(--glow-gold); }
-.theme-amber { --primary: var(--amber); --primary-dim: var(--amber-dim); --glow-primary: 0 0 20px rgba(245, 158, 11, 0.25); }
-.theme-green { --primary: var(--green); --primary-dim: var(--green-dim); --glow-primary: var(--glow-green); }
-.theme-purple { --primary: var(--purple); --primary-dim: var(--purple-dim); --glow-primary: var(--glow-purple); }
-.theme-cyan { --primary: var(--cyan); --primary-dim: var(--cyan-dim); --glow-primary: 0 0 20px rgba(6, 182, 212, 0.25); }
-.theme-red { --primary: var(--red); --primary-dim: var(--red-dim); --glow-primary: 0 0 20px rgba(239, 68, 68, 0.25); }
-.theme-indigo { --primary: var(--indigo); --primary-dim: var(--indigo-dim); --glow-primary: var(--glow-indigo); }
+.theme-seedling { --primary: var(--seedling); --primary-dim: rgba(74, 222, 128, 0.15); --glow-primary: 0 0 20px rgba(74, 222, 128, 0.25); }
+.theme-morning-sky { --primary: var(--morning-sky); --primary-dim: rgba(125, 211, 252, 0.15); --glow-primary: 0 0 20px rgba(125, 211, 252, 0.25); }
+.theme-golden-hour { --primary: var(--golden-hour); --primary-dim: rgba(251, 191, 36, 0.15); --glow-primary: 0 0 20px rgba(251, 191, 36, 0.25); }
+.theme-forest-deep { --primary: var(--forest-deep); --primary-dim: rgba(5, 150, 105, 0.15); --glow-primary: 0 0 20px rgba(5, 150, 105, 0.25); }
+.theme-lavender-mist { --primary: var(--lavender-mist); --primary-dim: rgba(167, 139, 250, 0.15); --glow-primary: 0 0 20px rgba(167, 139, 250, 0.25); }
+.theme-stone { --primary: var(--stone); --primary-dim: rgba(148, 163, 184, 0.15); --glow-primary: 0 0 20px rgba(148, 163, 184, 0.25); }
+.theme-candle-flame { --primary: var(--candle-flame); --primary-dim: rgba(245, 158, 11, 0.15); --glow-primary: 0 0 20px rgba(245, 158, 11, 0.25); }
+.theme-celestial { --primary: var(--celestial); --primary-dim: rgba(129, 140, 248, 0.15); --glow-primary: 0 0 20px rgba(129, 140, 248, 0.25); }
+.theme-rose-gold { --primary: var(--rose-gold); --primary-dim: rgba(251, 113, 133, 0.15); --glow-primary: 0 0 20px rgba(251, 113, 133, 0.25); }
+.theme-sapphire { --primary: var(--sapphire); --primary-dim: rgba(59, 130, 246, 0.15); --glow-primary: 0 0 20px rgba(59, 130, 246, 0.25); }
+.theme-everlight { 
+  --primary: #fff; 
+  --primary-dim: rgba(255, 255, 255, 0.2); 
+  --glow-primary: 0 0 30px rgba(255, 255, 255, 0.4); 
+}

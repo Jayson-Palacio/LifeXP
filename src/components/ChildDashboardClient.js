@@ -3,24 +3,29 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
-import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
-import { showToast, showConfetti, showFloat } from '../lib/ui';
+import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '../lib/levels';
+import { showToast, showFloat } from '../lib/ui';
+import AppShell from './AppShell';
+import TierCrest from './TierCrest';
 
-export default function ChildDashboardClient({ initialChild, missions, initialCompletions }) {
+export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards }) {
   const router = useRouter();
   
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
-  const [themeModalOpen, setThemeModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('hall');
+
+  const { level, tierName, tierSymbol, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
+  const xpProgress = getXPProgress(child.total_xp_earned || child.xp || 0);
+  const xpDisplay = getXPDisplay(child.total_xp_earned || child.xp || 0);
   
+  const activeTheme = child.theme ? child.theme : tierColor;
+
   // Set body class for theme
   useEffect(() => {
-    document.body.className = `theme-${child.theme || 'indigo'}`;
+    document.body.className = `theme-${activeTheme}`;
     return () => { document.body.className = ''; };
-  }, [child.theme]);
-
-  const levelInfo = getLevelForXP(child.xp);
-  const xpProgress = getXPProgress(child.xp);
+  }, [activeTheme]);
 
   // Derive mission states
   const missionStates = missions.map(m => {
@@ -52,106 +57,204 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     const { data } = await supabase.from('completions').insert([newCompletion]).select().single();
     if (data) {
       setCompletions(prev => [...prev, data]);
-      showToast('Mission submitted! ⏳ Waiting for approval');
+      // Note: Full celebration system (sounds + modal) will be implemented in ui.js later.
+      showToast('Mission done! ⏳ Waiting for parent checking');
+    }
+  };
+
+  const handleRedeem = async (r, e) => {
+    e.target.disabled = true;
+    e.target.textContent = '...';
+
+    if (child.coins < r.cost) {
+      e.target.disabled = false;
+      e.target.textContent = 'Need more 🪙';
+      return showToast('Not enough coins!', 'error');
+    }
+
+    try {
+      const newCoins = child.coins - r.cost;
+      
+      const redemption = {
+        reward_id: r.id,
+        child_id: child.id
+      };
+      
+      await supabase.from('redemptions').insert([redemption]);
+      await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
+
+      setChild({ ...child, coins: newCoins });
+      
+      const rect = e.target.getBoundingClientRect();
+      showFloat(`-${r.cost} 🪙`, '#f59e0b', rect.left + rect.width / 2, rect.top);
+      showToast(`🎉 Redeemed: ${r.name}!`);
+
+    } catch (err) {
+      console.error(err);
+      showToast('Error redeeming reward', 'error');
     }
   };
 
   const handleChangeTheme = async (t) => {
-    await supabase.from('children').update({ theme: t }).eq('id', child.id);
-    setChild({ ...child, theme: t });
+    await supabase.from('children').update({ theme: t.id }).eq('id', child.id);
+    setChild({ ...child, theme: t.id });
+    showToast(`🎨 Theme changed to ${t.name}!`);
   };
 
-  return (
-    <div className="page page-enter">
-      <div className="page-header">
-        <button className="back-btn" onClick={() => router.push('/')}>←</button>
-        <h1 className="page-title">{child.name}'s Quest</h1>
-      </div>
+  const unlockedColors = getUnlockedColors(level);
 
-      <div className="hero-card" style={{ boxShadow: '0 10px 30px var(--glow-primary)', borderColor: 'var(--primary-dim)' }}>
+  const renderHall = () => (
+    <div className="page page-enter" style={{ paddingTop: 'var(--space-2xl)' }}>
+      <button className="back-btn" onClick={() => router.push('/')} style={{ position: 'absolute', top: 'var(--space-lg)', right: 'var(--space-lg)', zIndex: 10 }}>🏠</button>
+      
+      <div className="hero-card" style={{ boxShadow: 'var(--glow-primary)', borderColor: 'var(--primary-dim)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-md)' }}>
+          <div style={{ width: 100, height: 100 }}>
+            <TierCrest tierName={tierName} glowColor="var(--primary)" />
+          </div>
+        </div>
+        
         <div className="hero-avatar">{child.avatar}</div>
         <h2 className="hero-name">{child.name}</h2>
-        <div className="hero-level" style={{ color: 'var(--primary)' }}>Level {levelInfo.level} — {levelInfo.title} {levelInfo.emoji}</div>
+        
+        <div className="hero-level" style={{ color: 'var(--primary)', marginTop: 8, fontSize: '1.1rem' }}>
+          {tierName} · Level {level}
+        </div>
 
-        <div className="xp-bar-container">
+        <div className="xp-bar-container" style={{ marginTop: 'var(--space-xl)' }}>
           <div className="xp-bar-label">
-            <span>{levelInfo.title}</span>
-            <span>{getXPDisplay(child.xp)}</span>
+            <span>Next: Level {level + 1}</span>
+            <span>{xpDisplay}</span>
           </div>
-          <div className="xp-bar-track">
-            <div className="xp-bar-fill" style={{ width: `${Math.round(xpProgress * 100)}%`, background: 'linear-gradient(90deg, var(--gold), var(--primary))', transition: 'width 0.5s ease-out' }}></div>
+          <div className="xp-bar-track" style={{ height: 16 }}>
+            <div className="xp-bar-fill" style={{ width: `${Math.round(xpProgress * 100)}%`, background: 'var(--primary)', transition: 'width 0.8s ease-out' }}></div>
           </div>
         </div>
 
-        <div className="hero-stats">
-          <div className="stat-item">
+        <div className="hero-stats" style={{ marginTop: 'var(--space-xl)' }}>
+          <div className="stat-item" style={{ fontSize: '1.2rem' }}>
             <span className="stat-icon">🪙</span>
-            <span className="stat-value-amber">{child.coins}</span>
+            <span className="stat-value-amber">{child.coins} coins</span>
           </div>
           {child.streak > 0 && (
-            <div className="stat-item">
+            <div className="stat-item" style={{ fontSize: '1.2rem' }}>
               <span className="stat-icon">🔥</span>
-              <span className="stat-value-cyan">{child.streak} day{child.streak > 1 ? 's' : ''}</span>
+              <span className="stat-value-cyan">{child.streak}-day streak</span>
             </div>
           )}
         </div>
       </div>
 
-      <div className="section">
-        <div className="section-header">
-          <h3 className="section-title">Today's Missions</h3>
+      <div className="section" style={{ marginTop: 'var(--space-2xl)' }}>
+        <h3 className="section-title" style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>✨ Themes Unlocked</h3>
+        <div className="avatar-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-sm)' }}>
+          {unlockedColors.map(c => (
+            <button key={c.id} className={`avatar-option ${activeTheme === c.id ? 'selected' : ''}`} onClick={() => handleChangeTheme(c)}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: c.hex === 'animated' ? 'linear-gradient(135deg, #facc15, #a855f7, #06b6d4)' : c.hex, boxShadow: `0 0 10px ${c.hex === 'animated' ? '#a855f7' : c.hex}` }}></div>
+            </button>
+          ))}
+          {/* Mock locked colors to show there's more to earn */}
+          {[1,2,3,4].map(idx => (
+           <div key={`locked-${idx}`} className="avatar-option" style={{ opacity: 0.3, cursor: 'not-allowed', background: 'var(--bg-surface-alt)' }}>
+              🔒
+           </div> 
+          )).slice(0, 8 - unlockedColors.length)}
         </div>
+      </div>
+    </div>
+  );
 
-        {missions.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-emoji">🎯</div>
-            <p className="empty-state-text">No missions yet! Ask your parent.</p>
+  const renderMissions = () => (
+    <div className="page page-enter" style={{ paddingTop: 'var(--space-2xl)' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-xl)', textAlign: 'center' }}>Today's Missions</h2>
+      
+      {missions.length === 0 ? (
+        <div className="empty-state">
+           <TierCrest tierName={tierName} />
+           <h3 style={{ marginTop: 24 }}>All caught up!</h3>
+           <p className="empty-state-text">You're amazing today. 🎉</p>
+        </div>
+      ) : missionStates.map(m => (
+        <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
+          <span className="mission-icon" style={{ fontSize: '2.5rem' }}>{m.icon}</span>
+          <div className="mission-info" style={{ marginLeft: 8 }}>
+            <div className="mission-name" style={{ fontSize: '1.2rem', marginBottom: 8 }}>{m.name}</div>
+            <div className="mission-rewards">
+              <span className="badge badge-gold" style={{ fontSize: '0.9rem' }}>⭐ {m.xp_reward} XP</span>
+              <span className="badge badge-amber" style={{ fontSize: '0.9rem' }}>🪙 {m.coin_reward}</span>
+            </div>
           </div>
-        ) : missionStates.map(m => (
-          <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={m.status === 'available' ? { borderLeftColor: 'var(--primary)' } : {}}>
-            <span className="mission-icon">{m.icon}</span>
-            <div className="mission-info">
-              <div className="mission-name">{m.name}</div>
-              <div className="mission-rewards">
-                <span className="badge badge-gold">⭐ {m.xp_reward} XP</span>
-                <span className="badge badge-amber">🪙 {m.coin_reward}</span>
+          <div className="mission-actions" style={{ marginLeft: 'auto' }}>
+            {(m.status === 'available' || m.status === 'rejected') ? (
+              <button 
+                className="btn btn-primary" 
+                style={{ padding: '16px 24px', fontSize: '1.2rem', minWidth: 120 }}
+                onClick={(e) => handleSubmitMission(m.id, e)}
+              >
+                {m.status === 'rejected' ? 'Retry ↻' : 'Done! ✓'}
+              </button>
+            ) : m.status === 'pending' ? (
+              <div style={{ textAlign: 'center', opacity: 0.8 }}>
+                <span style={{ fontSize: '2rem' }}>⏳</span>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Waiting</div>
               </div>
-            </div>
-            <div className="mission-actions">
-              {(m.status === 'available' || m.status === 'rejected') ? (
-                <button className="btn btn-primary btn-sm" onClick={(e) => handleSubmitMission(m.id, e)}>
-                  {m.status === 'rejected' ? 'Retry ↻' : 'Done! ✓'} {m.max > 1 ? `(${m.totalDone}/${m.max})` : ''}
-                </button>
-              ) : m.status === 'pending' ? (
-                <span className="badge badge-gold">⏳ Pending {m.max > 1 ? `(${m.totalDone}/${m.max})` : ''}</span>
-              ) : (
-                <span className="badge badge-green">✅ Done {m.max > 1 ? `(${m.max}/${m.max})` : ''}</span>
-              )}
-            </div>
+            ) : (
+              <div style={{ textAlign: 'center', animation: 'scaleIn 0.5s ease-out' }}>
+                <span style={{ fontSize: '2rem' }}>✅</span>
+                <div style={{ fontSize: '0.8rem', color: 'var(--green)' }}>Done!</div>
+              </div>
+            )}
           </div>
-        ))}
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderShop = () => (
+    <div className="page page-enter" style={{ paddingTop: 'var(--space-2xl)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 'var(--space-xl)', position: 'relative' }}>
+         <h2 style={{ fontSize: '2rem', fontWeight: 800, textAlign: 'center' }}>Reward Shop</h2>
+         <div className="stat-item" style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--amber-dim)' }}>
+           <span className="stat-icon">🪙</span>
+           <span className="stat-value-amber">{child.coins}</span>
+         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-md)', paddingBottom: 40 }}>
-        <button className="btn btn-gold btn-lg" style={{ flex: 2 }} onClick={() => router.push(`/kid/${child.id}/shop`)}>🛒 Reward Shop</button>
-        <button className="btn btn-ghost btn-lg" style={{ flex: 1 }} onClick={() => setThemeModalOpen(true)}>🎨 Color</button>
-      </div>
-
-      {themeModalOpen && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target.className === 'modal-overlay') setThemeModalOpen(false); }}>
-          <div className="modal-content" style={{ borderTop: '4px solid var(--primary)' }}>
-            <h3 className="modal-title" style={{ textAlign: 'center' }}>Choose Your Color 🎨</h3>
-            <div className="avatar-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-              {['indigo', 'gold', 'green', 'purple', 'cyan', 'red', 'amber'].map(t => (
-                <button key={t} className={`avatar-option theme-option ${child.theme === t ? 'selected' : ''}`} onClick={() => handleChangeTheme(t)}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: `var(--${t})`, boxShadow: `var(--glow-${t})` }}></div>
+      {rewards.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-emoji">🛒</div>
+          <p className="empty-state-text">No rewards right now.</p>
+        </div>
+      ) : (
+        <div className="reward-grid">
+          {rewards.map(r => {
+            const canAfford = child.coins >= r.cost;
+            return (
+              <div key={r.id} className="reward-card" style={{ padding: 'var(--space-xl)', border: `2px solid ${canAfford ? 'var(--primary)' : 'var(--bg-glass-border)'}`, opacity: canAfford ? 1 : 0.6 }}>
+                <div className="reward-icon" style={{ fontSize: '3rem' }}>{r.icon}</div>
+                <div className="reward-name" style={{ fontSize: '1.2rem', marginTop: 12 }}>{r.name}</div>
+                <div className="reward-cost" style={{ fontSize: '1.1rem', margin: '12px 0' }}>🪙 {r.cost}</div>
+                <button 
+                  className={`btn ${canAfford ? 'btn-primary' : 'btn-ghost'} btn-block`}
+                  style={{ padding: '12px' }}
+                  disabled={!canAfford}
+                  onClick={(e) => handleRedeem(r, e)}
+                >
+                  {canAfford ? 'Redeem!' : 'Need coins'}
                 </button>
-              ))}
-            </div>
-            <button className="btn btn-ghost btn-block" onClick={() => setThemeModalOpen(false)}>Done</button>
-          </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
+  );
+
+  return (
+    <AppShell role="kid" activeTab={activeTab} onTabChange={setActiveTab}>
+      {activeTab === 'hall' && renderHall()}
+      {activeTab === 'missions' && renderMissions()}
+      {activeTab === 'shop' && renderShop()}
+    </AppShell>
   );
 }

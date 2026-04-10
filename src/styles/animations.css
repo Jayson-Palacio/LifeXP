@@ -161,3 +161,72 @@
 .page-enter {
   animation: slideUp var(--duration-normal) var(--ease-out);
 }
+
+/* ============================================
+   TIER CREST ANIMATIONS
+   ============================================ */
+@keyframes crestSway {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+.crest-sway { animation: crestSway 4s ease-in-out infinite; transform-origin: bottom center; }
+.crest-sway-slow { animation: crestSway 6s ease-in-out infinite; transform-origin: top center; }
+
+@keyframes crestPulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.crest-pulse { animation: crestPulse 2s ease-in-out infinite; transform-origin: center; }
+.crest-pulse-slow { animation: crestPulse 4s ease-in-out infinite; transform-origin: center; }
+
+@keyframes crestSpinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.crest-spin-slow { animation: crestSpinSlow 12s linear infinite; transform-origin: center; }
+
+@keyframes crestSpinNeedle {
+  0%, 100% { transform: rotate(-10deg); }
+  20%, 80% { transform: rotate(15deg); }
+  40%, 60% { transform: rotate(-5deg); }
+  50% { transform: rotate(20deg); }
+}
+.crest-spin-needle { animation: crestSpinNeedle 6s ease-in-out infinite; transform-origin: 50% 50%; }
+
+@keyframes crestBlink {
+  0%, 96%, 100% { transform: scaleY(1); opacity: 0.2; }
+  98% { transform: scaleY(0.1); opacity: 0.8; }
+}
+.crest-blink { animation: crestBlink 4s ease-in-out infinite; transform-origin: center; }
+
+@keyframes crestDrift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+.crest-drift { animation: crestDrift 5s ease-in-out infinite; }
+
+@keyframes crestFlicker {
+  0%, 100% { opacity: 1; transform: scale(1) translateY(0); }
+  25% { opacity: 0.8; transform: scale(0.95) translateY(1px); }
+  50% { opacity: 0.9; transform: scale(1.05) translateY(-1px); }
+  75% { opacity: 0.85; transform: scale(0.98) translateY(1px); }
+}
+.crest-flicker { animation: crestFlicker 3s infinite alternate; transform-origin: bottom center; }
+
+@keyframes crestWave {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-10px); }
+}
+.crest-wave { animation: crestWave 3s ease-in-out infinite alternate; }
+
+@keyframes crestFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-5px); opacity: 1; }
+}
+.crest-float { animation: crestFloat 3s ease-in-out infinite; }
+
+@keyframes crestExpandRing {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.crest-expand-ring { animation: crestExpandRing 3s ease-out infinite; transform-origin: center; position: absolute; }
