@@ -364,50 +364,57 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         ) : missionStates.map(m => {
           const hasProgress = m.maxPerPeriod > 1;
           return (
-            <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: '14px 16px', marginBottom: 10 }}>
-              {/* Mission icon: photo or emoji */}
-              <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
-                {m.image
-                  ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : m.icon
-                }
-              </div>
+            <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: '12px 14px', marginBottom: 10, flexDirection: 'column', gap: 0 }}>
+              {/* Row 1: icon + name + action button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Mission icon */}
+                <div style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '1.8rem' }}>
+                  {m.image
+                    ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : m.icon
+                  }
+                </div>
 
-              <div className="mission-info" style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
-                <div className="mission-name" style={{ fontSize: '1.05rem', marginBottom: 4 }}>{m.name}</div>
-                <div className="mission-rewards">
-                  <span className="badge badge-gold" style={{ fontSize: '0.82rem' }}>⭐ {m.xp_reward} XP</span>
-                  <span className="badge badge-amber" style={{ fontSize: '0.82rem' }}>🪙 {m.coin_reward}</span>
-                  {hasProgress && (
-                    <span className="badge" style={{ fontSize: '0.75rem', background: 'var(--bg-deep)', color: 'var(--text-muted)' }}>
-                      {m.periodDone}/{m.maxPerPeriod}×
-                    </span>
+                {/* Name */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="mission-name" style={{ fontSize: '1.05rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
+                </div>
+
+                {/* Action button — right-aligned, never overlaps badges */}
+                <div style={{ flexShrink: 0 }}>
+                  {(m.status === 'available' || m.status === 'retry') ? (
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '10px 18px', fontSize: '1rem', minWidth: 90, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                      onClick={(e) => handleSubmitMission(m, e)}
+                      disabled={loadingMissions[m.id]}
+                    >
+                      {loadingMissions[m.id] ? (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                      ) : (m.status === 'retry' ? 'Retry ↻' : 'Done! ✓')}
+                    </button>
+                  ) : m.status === 'pending' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 'var(--radius-full)', background: 'var(--bg-glass)', border: '1px solid var(--amber-dim)', color: 'var(--amber)', fontWeight: 700, fontSize: '0.88rem' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                      <span>Waiting</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', borderRadius: 'var(--radius-full)', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.25)', color: 'var(--green)', fontWeight: 800, fontSize: '0.88rem', animation: 'scaleIn 0.3s ease-out', boxShadow: '0 0 12px rgba(34, 197, 94, 0.1)' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      <span>Done</span>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="mission-actions" style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                {(m.status === 'available' || m.status === 'retry') ? (
-                  <button
-                    className="btn btn-primary"
-                    style={{ padding: '12px 20px', fontSize: '1.1rem', minWidth: 100, display: 'flex', justifyContent: 'center' }}
-                    onClick={(e) => handleSubmitMission(m, e)}
-                    disabled={loadingMissions[m.id]}
-                  >
-                    {loadingMissions[m.id] ? (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
-                    ) : (m.status === 'retry' ? 'Retry ↻' : 'Done! ✓')}
-                  </button>
-                ) : m.status === 'pending' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 'var(--radius-full)', background: 'var(--bg-glass)', border: '1px solid var(--amber-dim)', color: 'var(--amber)', fontWeight: 700, fontSize: '0.95rem' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    <span>Waiting</span>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 'var(--radius-full)', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.25)', color: 'var(--green)', fontWeight: 800, fontSize: '0.95rem', animation: 'scaleIn 0.3s ease-out', boxShadow: '0 0 12px rgba(34, 197, 94, 0.1)' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Done</span>
-                  </div>
+              {/* Row 2: badges always on their own line — never hidden */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, paddingLeft: 60 }}>
+                <span className="badge badge-gold" style={{ fontSize: '0.78rem' }}>⭐ {m.xp_reward} XP</span>
+                <span className="badge badge-amber" style={{ fontSize: '0.78rem' }}>🪙 {m.coin_reward}</span>
+                {m.maxPerPeriod > 1 && (
+                  <span className="badge" style={{ fontSize: '0.78rem', background: 'var(--bg-deep)', color: 'var(--text-muted)', border: '1px solid var(--bg-glass-border)' }}>
+                    {m.periodDone}/{m.maxPerPeriod}×
+                  </span>
                 )}
               </div>
             </div>
