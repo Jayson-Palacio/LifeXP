@@ -74,18 +74,47 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     }
 
     try {
+      // Check redemption limits
+      const { data: existing } = await supabase
+        .from('redemptions')
+        .select('redeemed_at')
+        .eq('reward_id', r.id)
+        .eq('child_id', child.id);
+
+      const now = new Date();
+      const startOfDay   = new Date(now); startOfDay.setHours(0,0,0,0);
+      const startOfWeek  = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const countSince = (since) => (existing || []).filter(x => new Date(x.redeemed_at) >= since).length;
+
+      if (r.max_total_redemptions && (existing || []).length >= r.max_total_redemptions) {
+        e.target.disabled = false;
+        e.target.textContent = 'Limit reached';
+        return showToast(`🔒 "${r.name}" has a total limit of ${r.max_total_redemptions}`, 'error');
+      }
+      if (r.max_daily_redemptions && countSince(startOfDay) >= r.max_daily_redemptions) {
+        e.target.disabled = false;
+        e.target.textContent = 'Daily limit';
+        return showToast(`⏰ Daily limit reached for "${r.name}"`, 'error');
+      }
+      if (r.max_weekly_redemptions && countSince(startOfWeek) >= r.max_weekly_redemptions) {
+        e.target.disabled = false;
+        e.target.textContent = 'Weekly limit';
+        return showToast(`📆 Weekly limit reached for "${r.name}"`, 'error');
+      }
+      if (r.max_monthly_redemptions && countSince(startOfMonth) >= r.max_monthly_redemptions) {
+        e.target.disabled = false;
+        e.target.textContent = 'Monthly limit';
+        return showToast(`🗓️ Monthly limit reached for "${r.name}"`, 'error');
+      }
+
       const newCoins = child.coins - r.cost;
-      
-      const redemption = {
-        reward_id: r.id,
-        child_id: child.id
-      };
-      
-      await supabase.from('redemptions').insert([redemption]);
+      await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id }]);
       await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
 
       setChild({ ...child, coins: newCoins });
-      
+
       const rect = e.target.getBoundingClientRect();
       showFloat(`-${r.cost} 🪙`, '#f59e0b', rect.left + rect.width / 2, rect.top);
       showToast(`🎉 Redeemed: ${r.name}!`);
@@ -93,8 +122,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     } catch (err) {
       console.error(err);
       showToast('Error redeeming reward', 'error');
+    } finally {
+      e.target.disabled = false;
+      e.target.textContent = 'Redeem';
     }
   };
+
 
   const handleChangeTheme = async (t) => {
     await supabase.from('children').update({ theme: t.id }).eq('id', child.id);

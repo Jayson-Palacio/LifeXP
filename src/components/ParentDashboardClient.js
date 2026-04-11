@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { showToast, showFloat } from '../lib/ui';
-import { AVATAR_EMOJIS, MISSION_EMOJIS, REWARD_EMOJIS } from '../lib/ui';
+import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS, REWARD_EMOJI_GROUPS, AVATAR_EMOJIS, MISSION_EMOJIS, REWARD_EMOJIS } from '../lib/ui';
 import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
 import AppShell from './AppShell';
 import AvatarDisplay from './AvatarDisplay';
-import CropOverlay from './CropOverlay';
+import InlineCrop from './CropOverlay';
+import GroupedEmojiPicker from './GroupedEmojiPicker';
 import SettingsTab from './SettingsTab';
 
 export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialSettings }) {
@@ -158,12 +159,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         </div>
         <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
           <div className="input-group" style={{ flex: 1 }}>
-            <label>XP</label>
-            <input type="number" name="xp_reward" className="input" defaultValue={modal.data?.xp_reward || 10} />
+            <label>XP <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>(1–500)</span></label>
+            <input type="number" name="xp_reward" className="input" min={1} max={500} defaultValue={Math.min(modal.data?.xp_reward || 10, 500)} />
           </div>
           <div className="input-group" style={{ flex: 1 }}>
             <label>Coins</label>
-            <input type="number" name="coin_reward" className="input" defaultValue={modal.data?.coin_reward || 5} />
+            <input type="number" name="coin_reward" className="input" min={0} max={200} defaultValue={modal.data?.coin_reward || 5} />
           </div>
         </div>
 
@@ -194,14 +195,14 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           </div>
         </div>
 
-        {/* DATE RANGE PICKERS */}
+        {/* DATE RANGE PICKERS — stacked vertically for iPad compatibility */}
         {freq === 'date_range' && (
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            <div className="input-group" style={{ flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+            <div className="input-group">
               <label>Start Date</label>
               <input type="date" name="start_date" className="input" defaultValue={modal.data?.start_date || ''} required />
             </div>
-            <div className="input-group" style={{ flex: 1 }}>
+            <div className="input-group">
               <label>End Date</label>
               <input type="date" name="end_date" className="input" defaultValue={modal.data?.end_date || ''} required />
             </div>
@@ -210,16 +211,11 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
         <div className="input-group" style={{ marginBottom: 16 }}>
           <label>Icon</label>
-          <div className="emoji-picker" style={{ gap: 8, marginTop: 8 }}>
-            {MISSION_EMOJIS.map(e => (
-              <label key={e} style={{ cursor: 'pointer' }}>
-                <input type="radio" name="icon" value={e} defaultChecked={(modal.data?.icon || MISSION_EMOJIS[0]) === e} style={{ display: 'none' }} />
-                <div style={{ padding: 12, border: '2px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }} className="emoji-picker-item">
-                  {e}
-                </div>
-              </label>
-            ))}
-          </div>
+          <GroupedEmojiPicker
+            groups={MISSION_EMOJI_GROUPS}
+            name="icon"
+            defaultValue={modal.data?.icon || MISSION_EMOJIS[0]}
+          />
         </div>
         <div className="modal-actions">
           <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
@@ -237,10 +233,15 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       <form onSubmit={async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
+        const toIntOrNull = (key) => { const v = parseInt(fd.get(key)); return isNaN(v) || v <= 0 ? null : v; };
         const newObj = {
           name: fd.get('name'),
           cost: parseInt(fd.get('cost')) || 10,
           icon: fd.get('icon'),
+          max_daily_redemptions: toIntOrNull('max_daily'),
+          max_weekly_redemptions: toIntOrNull('max_weekly'),
+          max_monthly_redemptions: toIntOrNull('max_monthly'),
+          max_total_redemptions: toIntOrNull('max_total'),
         };
         if (isEdit) {
           await supabase.from('rewards').update(newObj).eq('id', modal.data.id);
@@ -248,7 +249,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           showToast('Reward updated!');
         } else {
           const { data } = await supabase.from('rewards').insert([newObj]).select().single();
-          setRewards(prev => [...prev, data]);
+          if (data) setRewards(prev => [...prev, data]);
           showToast('Reward created! 🎁');
         }
         closeModal();
@@ -259,20 +260,42 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         </div>
         <div className="input-group" style={{ marginBottom: 16 }}>
           <label>Coin Cost</label>
-          <input type="number" name="cost" className="input" defaultValue={modal.data?.cost || 10} />
+          <input type="number" name="cost" className="input" min={1} defaultValue={modal.data?.cost || 10} />
         </div>
-        <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Icon</label>
-          <div className="emoji-picker" style={{ gap: 8, marginTop: 8 }}>
-            {REWARD_EMOJIS.map(e => (
-              <label key={e} style={{ cursor: 'pointer' }}>
-                <input type="radio" name="icon" value={e} defaultChecked={(modal.data?.icon || REWARD_EMOJIS[0]) === e} style={{ display: 'none' }} />
-                <div style={{ padding: 12, border: '2px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }} className="emoji-picker-item">
-                  {e}
-                </div>
-              </label>
+
+        {/* REDEMPTION LIMITS */}
+        <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: 16 }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Redemption Limits <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(leave blank = unlimited)</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {[
+              ['max_daily',   '📅 Per Day'],
+              ['max_weekly',  '📆 Per Week'],
+              ['max_monthly', '🗓️ Per Month'],
+              ['max_total',   '🔒 Total Ever']
+            ].map(([key, label]) => (
+              <div key={key}>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{label}</label>
+                <input
+                  type="number"
+                  name={key}
+                  className="input"
+                  min={1}
+                  placeholder="∞"
+                  defaultValue={modal.data?.[`${key.replace('max_', 'max_').replace('max_daily','max_daily_redemptions').replace('max_weekly','max_weekly_redemptions').replace('max_monthly','max_monthly_redemptions').replace('max_total','max_total_redemptions')}`] || ''}
+                  style={{ fontSize: '0.9rem', padding: '8px 10px' }}
+                />
+              </div>
             ))}
           </div>
+        </div>
+
+        <div className="input-group" style={{ marginBottom: 16 }}>
+          <label>Icon</label>
+          <GroupedEmojiPicker
+            groups={REWARD_EMOJI_GROUPS}
+            name="icon"
+            defaultValue={modal.data?.icon || REWARD_EMOJIS[0]}
+          />
         </div>
         <div className="modal-actions">
           <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
@@ -289,12 +312,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     const handleFileChange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
-      reader.onload = (event) => {
-        // Instead of auto-cropping, show the interactive crop overlay
-        setCropSrc(event.target.result);
-      };
+      reader.onload = (ev) => setCropSrc(ev.target.result);
       reader.readAsDataURL(file);
     };
 
@@ -302,74 +321,84 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       <form onSubmit={async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        
-        // Prefer base64 upload if it was filled 
         let finalAvatar = pendingBase64 || fd.get('base64_avatar');
         if (!finalAvatar) finalAvatar = fd.get('avatar');
-        
-        const newObj = {
-          name: fd.get('name'),
-          avatar: finalAvatar,
-        };
+        const newObj = { name: fd.get('name'), avatar: finalAvatar };
         if (isEdit) {
           await supabase.from('children').update(newObj).eq('id', modal.data.id);
           setChildren(prev => prev.map(c => c.id === modal.data.id ? { ...c, ...newObj } : c));
           showToast('Kid profile updated!');
         } else {
-          const { data, error } = await supabase.from('children').insert([{ 
-            ...newObj, 
-            xp: 0,
-            total_xp_earned: 0, 
-            coins: 0, 
-            theme: 'seedling' 
+          const { data, error } = await supabase.from('children').insert([{
+            ...newObj, xp: 0, total_xp_earned: 0, coins: 0, theme: 'seedling'
           }]).select().single();
-          if (error) {
-            showToast('Error adding kid: ' + error.message, 'error');
-            return;
-          }
+          if (error) { showToast('Error adding kid: ' + error.message, 'error'); return; }
           if (data) setChildren(prev => [...prev, data]);
           showToast(`Welcome ${newObj.name}! 🎉`);
         }
         closeModal();
       }}>
+        <input type="text" name="base64_avatar" value={pendingBase64 || ''} readOnly style={{ display: 'none' }} />
+
         <div className="input-group" style={{ marginBottom: 16 }}>
           <label>Name</label>
           <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="Kid's First Name" />
         </div>
+
         <div className="input-group" style={{ marginBottom: 16 }}>
           <label>Photo or Emoji</label>
-          
-          {/* Hidden text input — still needed to display preview */}
-          <input type="text" id="base64-avatar-input" name="base64_avatar" value={pendingBase64 || ''} readOnly style={{ display: 'none' }} />
 
-          <div className="emoji-picker" style={{ gap: '8px', marginTop: 8 }}>
-            {/* Photo Upload Option */}
-            <label style={{ cursor: 'pointer', position: 'relative' }}>
-               <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-               <div id="photo-preview" style={{ display: 'flex', flexDirection: 'column', aspectRatio: '1', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', background: pendingBase64 ? 'transparent' : 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: pendingBase64 ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)', overflow: 'hidden' }} className="emoji-picker-item">
-                  {pendingBase64 
-                    ? <img src={pendingBase64} alt="Custom" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                    : <>📷 <span style={{fontSize: '0.6rem'}}>Upload</span></>
-                  }
-               </div>
-            </label>
-
-            {AVATAR_EMOJIS.map(e => (
-              <label key={e} style={{ cursor: 'pointer' }}>
-                <input type="radio" name="avatar" value={e} defaultChecked={(modal.data?.avatar || AVATAR_EMOJIS[0]) === e} style={{ display: 'none' }} onChange={() => {
-                   document.getElementById('base64-avatar-input').value = '';
-                }} />
-                <div style={{ display: 'flex', aspectRatio: '1', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }} className="emoji-picker-item">
-                  {e}
+          {/* If we have cropSrc, show InlineCrop; otherwise show the picker */}
+          {cropSrc ? (
+            <InlineCrop
+              imageSrc={cropSrc}
+              onConfirm={(dataUrl) => { setPendingBase64(dataUrl); setCropSrc(null); }}
+              onCancel={() => setCropSrc(null)}
+            />
+          ) : (
+            <>
+              {/* Upload button or confirmed photo preview */}
+              <label style={{ cursor: 'pointer', display: 'block', marginBottom: 8 }}>
+                <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: pendingBase64 ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)',
+                  background: pendingBase64 ? 'var(--primary-dim)' : 'var(--bg-glass)',
+                  cursor: 'pointer',
+                }}>
+                  {pendingBase64 ? (
+                    <>
+                      <img src={pendingBase64} alt="Avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                      <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>📷 Photo selected — tap to change</span>
+                    </>
+                  ) : (
+                    <span style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem' }}>📷 Upload a photo</span>
+                  )}
                 </div>
               </label>
-            ))}
+
+              {/* Grouped emoji grid */}
+              {!pendingBase64 && (
+                <GroupedEmojiPicker
+                  groups={AVATAR_EMOJI_GROUPS}
+                  name="avatar"
+                  defaultValue={modal.data?.avatar || AVATAR_EMOJIS[0]}
+                  onChange={() => setPendingBase64(null)}
+                />
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Only show save button when not in crop mode */}
+        {!cropSrc && (
+          <div className="modal-actions">
+            <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
+            <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Add Kid'}</button>
           </div>
-        </div>
-        <div className="modal-actions">
-          <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
-          <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Add Kid'}</button>
-        </div>
+        )}
       </form>
     );
   };
@@ -595,18 +624,6 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             {modal.type === 'child' && renderChildModal()}
           </div>
         </div>
-      )}
-
-      {/* Photo Crop Overlay — shown when user uploads a photo */}
-      {cropSrc && (
-        <CropOverlay
-          imageSrc={cropSrc}
-          onConfirm={(dataUrl) => {
-            setPendingBase64(dataUrl);
-            setCropSrc(null);
-          }}
-          onCancel={() => setCropSrc(null)}
-        />
       )}
     </>
   );
