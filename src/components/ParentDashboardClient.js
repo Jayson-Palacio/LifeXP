@@ -287,7 +287,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             </div>
           ) : missions.map(m => (
             <div key={m.id} className="mission-card" style={{ padding: 'var(--space-lg)' }}>
-              <span className="mission-icon" style={{ fontSize: '2.5rem' }}>{m.icon}</span>
+              <div className="mission-icon" style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '1.8rem' }}>
+                {m.image
+                  ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : m.icon
+                }
+              </div>
               <div className="mission-info" style={{ marginLeft: 8 }}>
                 <div className="mission-name" style={{ fontSize: '1.2rem' }}>{m.name}</div>
                 <div className="mission-rewards" style={{ marginTop: 8 }}>
