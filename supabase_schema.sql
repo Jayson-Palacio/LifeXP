@@ -46,7 +46,8 @@ create table if not exists missions (
   max_completions integer default 1,
   frequency text default 'daily',  -- 'daily' | 'weekly' | 'monthly' | 'date_range'
   start_date date,
-  end_date date
+  end_date date,
+  assigned_to uuid[] -- null means all children
 );
 
 -- ============================================

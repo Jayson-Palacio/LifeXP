@@ -13,7 +13,8 @@ export default async function ChildDashboardPage({ params }) {
   }
 
   // Fetch missions
-  const { data: missions } = await supabase.from('missions').select('*').order('name');
+  const { data: allMissions } = await supabase.from('missions').select('*').order('name');
+  const missions = (allMissions || []).filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(id));
   
   // Fetch rewards
   const { data: rewards } = await supabase.from('rewards').select('*').order('cost');

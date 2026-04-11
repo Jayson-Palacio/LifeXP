@@ -7,14 +7,27 @@ import { MISSION_EMOJI_GROUPS, MISSION_EMOJIS } from '../lib/ui';
 import GroupedEmojiPicker from './GroupedEmojiPicker';
 import InlineCrop from './CropOverlay';
 
-export default function MissionModal({ modal, closeModal, onSuccess }) {
+export default function MissionModal({ modal, childrenList = [], closeModal, onSuccess }) {
   const isEdit = !!modal.data;
   const defaultFrequency = modal.data?.frequency || 'daily';
+  
   const [missionFrequency, setMissionFrequency] = useState(defaultFrequency);
   const [missionCropSrc, setMissionCropSrc] = useState(null);
   const [pendingMissionImage, setPendingMissionImage] = useState(null);
+  
+  // Track coins for dynamic XP calculation
+  const [coinAmount, setCoinAmount] = useState(modal.data?.coin_reward ?? 5);
+  const calculatedXP = Math.min((coinAmount * 10) + 10, 500);
 
-  // If we're in crop mode for mission image, show crop UI
+  // Assignment tracking
+  const defaultAssigned = modal.data?.assigned_to || [];
+  const [assignAll, setAssignAll] = useState(defaultAssigned.length === 0);
+  const [assignedTo, setAssignedTo] = useState(defaultAssigned);
+
+  const toggleAssign = (childId) => {
+    setAssignedTo(prev => prev.includes(childId) ? prev.filter(id => id !== childId) : [...prev, childId]);
+  };
+
   if (missionCropSrc) {
     return (
       <div>
@@ -32,14 +45,11 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
     <form onSubmit={async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const coin_val = fd.get('coin_reward');
-      const coin_reward = coin_val !== null && coin_val !== '' ? parseInt(coin_val) : 5;
-      const xp_reward = Math.min((coin_reward * 10) + 10, 500);
-
+      
       const newObj = {
         name: fd.get('name'),
-        xp_reward,
-        coin_reward,
+        xp_reward: calculatedXP,
+        coin_reward: coinAmount,
         icon: fd.get('icon') || '⭐',
         image: pendingMissionImage || (isEdit ? modal.data?.image || null : null),
         max_completions: parseInt(fd.get('max_completions')) || 1,
@@ -47,6 +57,7 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
         frequency: missionFrequency,
         start_date: missionFrequency === 'date_range' ? fd.get('start_date') || null : null,
         end_date: missionFrequency === 'date_range' ? fd.get('end_date') || null : null,
+        assigned_to: assignAll || assignedTo.length === 0 ? null : assignedTo
       };
       
       if (isEdit) {
@@ -63,11 +74,65 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
         <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="e.g. Make your bed" />
       </div>
 
-      {/* Coins */}
+      {/* Coins & Dynamic XP */}
       <div className="input-group" style={{ marginBottom: 14 }}>
-        <label>Coins <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(XP is automatically calculated!)</span></label>
-        <input type="number" name="coin_reward" className="input" min={0} max={200} defaultValue={modal.data?.coin_reward ?? 5} />
+        <label style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          Coins 
+          <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+            (+{calculatedXP} XP)
+          </span>
+        </label>
+        <input 
+          type="number" 
+          name="coin_reward" 
+          className="input" 
+          min={0} max={200} 
+          value={coinAmount}
+          onChange={(e) => setCoinAmount(e.target.value === '' ? 0 : parseInt(e.target.value))}
+        />
       </div>
+
+      {/* ASSIGNMENT */}
+      {childrenList.length > 0 && (
+        <div className="input-group" style={{ marginBottom: 14 }}>
+          <label>Assign To</label>
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem' }}>
+              <input 
+                type="checkbox" 
+                checked={assignAll} 
+                onChange={(e) => {
+                  setAssignAll(e.target.checked);
+                  if (e.target.checked) setAssignedTo([]);
+                }}
+                style={{ accentColor: 'var(--primary)', width: 16, height: 16 }}
+              />
+              <span style={{ fontWeight: assignAll ? 'bold' : 'normal' }}>All Kids</span>
+            </label>
+            
+            {!assignAll && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginLeft: 24, marginTop: 4 }}>
+                {childrenList.map(child => (
+                  <label key={child.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: 'var(--bg-glass)', padding: '4px 10px', borderRadius: 'var(--radius-full)', border: assignedTo.includes(child.id) ? '2px solid var(--primary)' : '2px solid transparent' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={assignedTo.includes(child.id)}
+                      onChange={() => toggleAssign(child.id)}
+                      style={{ display: 'none' }}
+                    />
+                    {child.avatar?.startsWith('data:image') ? (
+                       <img src={child.avatar} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                       <span style={{ fontSize: '1.2rem' }}>{child.avatar || '👦'}</span>
+                    )}
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{child.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* FREQUENCY */}
       <div className="input-group" style={{ marginBottom: 14 }}>

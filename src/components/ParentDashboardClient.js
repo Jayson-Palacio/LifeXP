@@ -338,6 +338,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             {modal.type === 'mission' && 
               <MissionModal 
                 modal={modal} 
+                childrenList={children}
                 closeModal={closeModal} 
                 onSuccess={(data, isEdit) => {
                   if (isEdit) setMissions(prev => prev.map(m => m.id === data.id ? data : m));
