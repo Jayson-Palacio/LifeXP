@@ -307,30 +307,45 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         </div>
       </div>
 
-      {/* ── HERO CARD ── */}
-      <div style={{ padding: '20px 16px 0' }}>
-        <div className="hero-card" style={{ boxShadow: 'var(--glow-primary)', borderColor: 'var(--primary-dim)', marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <div style={{ width: 64, height: 64 }}>
+      {/* ── HERO BANNER ── */}
+      <div className="hero-banner" style={{ paddingBottom: 0 }}>
+        {/* Avatar ring with spinning conic border */}
+        <div className="hero-avatar-ring">
+          <div className="hero-avatar-img">
+            <AvatarDisplay avatarString={child.avatar} />
+          </div>
+          {/* Tier badge pill sitting at bottom of ring */}
+          <div className="hero-tier-badge">
+            <div className="hero-tier-badge-icon">
               <TierCrest tierName={tierName} glowColor="var(--primary)" />
             </div>
+            <span>{tierName}</span>
           </div>
-          <div className="hero-avatar"><AvatarDisplay avatarString={child.avatar} /></div>
-          <h2 className="hero-name">{child.name}</h2>
+        </div>
 
-          <div className="xp-bar-container" style={{ marginTop: 16 }}>
-            <div className="xp-bar-label">
-              <span>Next: Lv {level + 1}</span>
-              <span>{xpDisplay}</span>
-            </div>
-            <div className="xp-bar-track" style={{ height: 14 }}>
-              <div className="xp-bar-fill" style={{ width: `${Math.round(xpProgress * 100)}%`, background: 'var(--primary)', transition: 'width 0.8s ease-out' }} />
-            </div>
+        <h2 className="hero-name">{child.name}</h2>
+        <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700, opacity: 0.8 }}>Level {level}</div>
+
+        <div className="hero-stats" style={{ marginBottom: 20 }}>
+          <div className="stat-item"><span className="stat-icon">🪙</span><span className="stat-value-amber">{child.coins}</span></div>
+          {child.streak > 0 && <div className="stat-item"><span className="stat-icon">🔥</span><span className="stat-value-cyan">{child.streak}</span></div>}
+        </div>
+
+        {/* XP bar - full width, right below the banner */}
+        <div style={{ padding: '0 4px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+            <span style={{ fontWeight: 700 }}>Next: Lv {level + 1}</span>
+            <span>{xpDisplay}</span>
           </div>
-
-          <div className="hero-stats" style={{ marginTop: 16 }}>
-            <div className="stat-item"><span className="stat-icon">🪙</span><span className="stat-value-amber">{child.coins} coins</span></div>
-            {child.streak > 0 && <div className="stat-item"><span className="stat-icon">🔥</span><span className="stat-value-cyan">{child.streak}-day streak</span></div>}
+          <div style={{ width: '100%', height: 8, background: 'var(--bg-surface)', borderRadius: 'var(--radius-full)', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}>
+            <div style={{
+              height: '100%',
+              width: `${Math.round(xpProgress * 100)}%`,
+              background: 'linear-gradient(90deg, var(--primary), var(--primary-light, var(--primary)))',
+              borderRadius: 'var(--radius-full)',
+              transition: 'width 0.8s ease-out',
+              boxShadow: '0 0 8px var(--primary)',
+            }} />
           </div>
         </div>
       </div>
