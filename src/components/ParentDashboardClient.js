@@ -13,7 +13,7 @@ import MissionModal from './MissionModal';
 import RewardModal from './RewardModal';
 import ChildModal from './ChildModal';
 
-export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialSettings }) {
+export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings }) {
   const router = useRouter();
   
   // AppShell state
@@ -25,19 +25,25 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const [missions, setMissions] = useState(initialMissions || []);
   const [rewards, setRewards] = useState(initialRewards || []);
   const [pending, setPending] = useState(initialPending || []);
+  const [pendingRedemptions, setPendingRedemptions] = useState(initialPendingRedemptions || []);
   const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
   
   // Modals specific
   const [modal, setModal] = useState(null);
   const [inspectChildId, setInspectChildId] = useState(null);
 
-  // Real-time subscription for new pending completions
+  // Real-time subscription for new pending completions and redemptions
   useEffect(() => {
     const channel = supabase
       .channel('completions-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'completions' }, (payload) => {
         if (payload.new.status === 'pending') {
           setPending(prev => [payload.new, ...prev]);
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'redemptions' }, (payload) => {
+        if (payload.new.status === 'pending') {
+          setPendingRedemptions(prev => [payload.new, ...prev]);
         }
       })
       .subscribe();
@@ -96,6 +102,28 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     setPending(prev => prev.filter(p => p.id !== comp.id));
   };
 
+  const handleFulfillReward = async (red, e) => {
+    e.stopPropagation();
+    await supabase.from('redemptions').update({ status: 'fulfilled' }).eq('id', red.id);
+    setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
+    showToast('Reward marked as given!');
+  };
+
+  const handleRefundReward = async (red, e) => {
+    e.stopPropagation();
+    const reward = rewards.find(r => r.id === red.reward_id);
+    const child = children.find(c => c.id === red.child_id);
+    if (!reward || !child) return;
+
+    const newCoins = child.coins + reward.cost;
+    await supabase.from('redemptions').update({ status: 'refunded' }).eq('id', red.id);
+    await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
+    
+    setChildren(prev => prev.map(c => c.id === child.id ? { ...c, coins: newCoins } : c));
+    setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
+    showToast(`Refunded ${reward.cost} coins!`);
+  };
+
   const handleDeleteMission = async (id) => {
     if (!confirm('Delete this mission?')) return;
     await supabase.from('missions').delete().eq('id', id);
@@ -120,11 +148,16 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const closeModal = () => { setModal(null); };
 
-  const renderOverview = () => (
+  const renderOverview = () => {
+    const hasApprovals = pending.length > 0;
+    const hasRedemptions = pendingRedemptions.length > 0;
+
+    return (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      {pending.length > 0 && (
+      {(hasApprovals || hasRedemptions) && (
         <div style={{ marginBottom: 'var(--space-2xl)' }}>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 'var(--space-lg)' }}>Approvals Waiting</h2>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 'var(--space-lg)' }}>Action Required</h2>
+          
           {pending.map(comp => {
              const child = children.find(c => c.id === comp.child_id) || {};
              const mission = missions.find(m => m.id === comp.mission_id) || {};
@@ -138,7 +171,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                       <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                         <span className="badge badge-gold" style={{ fontSize: '0.9rem', padding: '4px 8px' }}>⭐ {mission.xp_reward} XP</span>
                         <span className="badge badge-amber" style={{ fontSize: '0.9rem', padding: '4px 8px' }}>🪙 {mission.coin_reward}</span>
-                      </div>
+                       </div>
                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
@@ -148,9 +181,31 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
               </div>
              );
           })}
+
+          {pendingRedemptions.map(red => {
+             const child = children.find(c => c.id === red.child_id) || {};
+             const reward = rewards.find(r => r.id === red.reward_id) || {};
+             return (
+                <div key={red.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--secondary-dim, rgba(168,85,247,0.3))', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-md)', boxShadow: 'var(--glow-primary)' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                     <div style={{ fontSize: '3rem', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyItems: 'center' }}>{reward.icon || '🎁'}</div>
+                     <div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{child.name} redeemed:</div>
+                        <div style={{ fontWeight: 800, fontSize: '1.4rem' }}>{reward.name}</div>
+                        <div style={{ marginTop: 4 }}>
+                          <span className="badge badge-amber" style={{ fontSize: '0.9rem', padding: '4px 8px' }}>🪙 {reward.cost} coins spent</span>
+                        </div>
+                     </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
+                     <button className="btn btn-ghost" style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: 'none' }} onClick={(e) => handleRefundReward(red, e)}>↻ Refund</button>
+                     <button className="btn btn-success" style={{ flex: 2, padding: '12px', fontSize: '1.1rem' }} onClick={(e) => handleFulfillReward(red, e)}>✓ Mark Given!</button>
+                  </div>
+                </div>
+             );
+          })}
         </div>
       )}
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
         <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Your Family</h2>
         <button className="btn btn-ghost" onClick={() => router.push('/')} style={{ fontSize: '0.9rem' }}>Exit Mode</button>
@@ -205,7 +260,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderManage = () => (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>

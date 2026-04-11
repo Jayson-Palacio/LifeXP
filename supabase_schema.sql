@@ -79,6 +79,7 @@ create table if not exists redemptions (
   id uuid primary key default uuid_generate_v4(),
   reward_id uuid references rewards(id) on delete cascade,
   child_id uuid references children(id) on delete cascade,
+  status text default 'pending', -- pending, fulfilled, refunded
   redeemed_at timestamp with time zone default timezone('utc'::text, now())
 );
 

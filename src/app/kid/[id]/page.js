@@ -33,12 +33,20 @@ export default async function ChildDashboardPage({ params }) {
     .eq('child_id', id)
     .gte('submitted_at', todayStart.toISOString());
 
+  // Fetch pending redemptions for this child
+  const { data: redemptions } = await supabase
+    .from('redemptions')
+    .select('*')
+    .eq('child_id', id)
+    .eq('status', 'pending');
+
   return (
     <ChildDashboardClient 
       initialChild={child}
       missions={missions || []}
       initialCompletions={completions || []}
       rewards={rewards || []}
+      initialRedemptions={redemptions || []}
       requireApproval={requireApproval}
     />
   );

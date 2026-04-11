@@ -8,10 +8,11 @@ import { showToast, showFloat } from '../lib/ui';
 import TierCrest from './TierCrest';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, requireApproval = true }) {
+export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true }) {
   const router = useRouter();
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
+  const [pendingRedemptions, setPendingRedemptions] = useState(initialRedemptions || []);
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [loadingMissions, setLoadingMissions] = useState({});
   const themePickerRef = useRef(null);
@@ -39,6 +40,28 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     document.addEventListener('pointerdown', handler);
     return () => document.removeEventListener('pointerdown', handler);
   }, [showThemePicker]);
+
+  // Listen for reward fulfillments/refunds
+  useEffect(() => {
+    const channel = supabase
+      .channel('redemptions-live')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'redemptions', filter: `child_id=eq.${child.id}` }, (payload) => {
+        if (payload.new.status !== 'pending') {
+          setPendingRedemptions(prev => prev.filter(r => r.id !== payload.new.id));
+          if (payload.new.status === 'refunded') {
+            const reward = rewards.find(r => r.id === payload.new.reward_id);
+            if (reward) {
+              showToast(`Refunded: +${reward.cost} coins!`);
+              setChild(prev => ({ ...prev, coins: prev.coins + reward.cost }));
+            }
+          } else if (payload.new.status === 'fulfilled') {
+            showToast('🎁 Your reward was delivered!');
+          }
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [child.id, rewards]);
 
   // ─── Mission state calculation ─────────────────────────────────
   const getMissionState = (m) => {
@@ -176,7 +199,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       }
 
       const newCoins = child.coins - r.cost;
-      await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id }]);
+      const { data: inserted } = await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id }]).select().single();
+      if (inserted) {
+        setPendingRedemptions(prev => [inserted, ...prev]);
+      }
       await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
       setChild({ ...child, coins: newCoins });
       const rect = e.target.getBoundingClientRect();
@@ -373,6 +399,28 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           );
         })}
       </div>
+
+      {/* ── PENDING DELIVERIES ── */}
+      {pendingRedemptions.length > 0 && (
+        <div style={{ padding: '0 16px', marginBottom: 32 }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 12, letterSpacing: '-0.01em', color: 'var(--amber)' }}>
+            🚚 Pending Deliveries
+          </h3>
+          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+            {pendingRedemptions.map(red => {
+               const reward = rewards.find(r => r.id === red.reward_id);
+               if (!reward) return null;
+               return (
+                 <div key={red.id} style={{ flexShrink: 0, width: 140, padding: 12, borderRadius: 'var(--radius-md)', background: 'var(--bg-surface)', border: '1px solid var(--amber-dim)', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                   <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>{reward.icon || '🎁'}</div>
+                   <div style={{ fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reward.name}</div>
+                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Waiting for parent</div>
+                 </div>
+               );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── REWARD SHOP ── */}
       <div style={{ padding: '0 16px' }}>
