@@ -10,7 +10,7 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
   const [scale, setScale] = useState(1);
   const [dragging, setDragging] = useState(false);
   const startRef = useRef(null);
-  const pinchRef = useRef(null); // track initial pinch distance + scale
+  const pinchRef = useRef(null);
   const CROP_SIZE = 200;
   const CONTAINER_SIZE = 280; // px (square)
 
@@ -25,26 +25,27 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
     };
   }, [scale]);
 
-  // ─── Desktop Pan (Mouse) ─────────────────────────────────────────
-  const handleMouseDown = (e) => {
+  // ─── Desktop Pan (Mouse/Pen) ─────────────────────────────────────
+  const handlePointerDown = (e) => {
+    if (e.pointerType === 'touch') return; // let TouchEvents handle this
     e.preventDefault();
     setDragging(true);
     startRef.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
   };
 
-  const handleMouseMove = useCallback((e) => {
+  const handlePointerMove = useCallback((e) => {
     if (!startRef.current) return;
     setOffset(clampOffset(e.clientX - startRef.current.x, e.clientY - startRef.current.y));
   }, [clampOffset]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     setDragging(false);
     startRef.current = null;
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
-  }, [handleMouseMove]);
+    window.removeEventListener('pointermove', handlePointerMove);
+    window.removeEventListener('pointerup', handlePointerUp);
+  }, [handlePointerMove]);
 
   // ─── Touch Events (Pan & Pinch) ─────────────────────────────────
   const handleTouchStart = (e) => {
@@ -52,8 +53,7 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
       setDragging(true);
       startRef.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
     } else if (e.touches.length === 2) {
-      // It's a pinch. Prevent pan.
-      startRef.current = null; 
+      startRef.current = null; // stop panning
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -63,13 +63,11 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
   };
 
   const handleTouchMove = (e) => {
-    // If panning
     if (e.touches.length === 1 && startRef.current) {
+      e.preventDefault(); // prevent native scroll while panning
       setOffset(clampOffset(e.touches[0].clientX - startRef.current.x, e.touches[0].clientY - startRef.current.y));
-    } 
-    // If pinching
-    else if (e.touches.length === 2 && pinchRef.current) {
-      e.preventDefault(); // prevent native scroll
+    } else if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault(); // prevent native pinch zoom
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -99,44 +97,40 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
 
   // ─── Export ───────────────────────────────────────────────────
   const handleConfirm = () => {
-    const canvas = document.createElement('canvas');
-    const OUT = 240;
-    canvas.width = OUT;
-    canvas.height = OUT;
-    const ctx = canvas.getContext('2d');
-
-    // Circular clip
-    ctx.beginPath();
-    ctx.arc(OUT / 2, OUT / 2, OUT / 2, 0, Math.PI * 2);
-    ctx.clip();
-
     const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const OUT = 240;
+      canvas.width = OUT;
+      canvas.height = OUT;
+      const ctx = canvas.getContext('2d');
+
+      // Circular clip
+      ctx.beginPath();
+      ctx.arc(OUT / 2, OUT / 2, OUT / 2, 0, Math.PI * 2);
+      ctx.clip();
+
+      const imgSize = CONTAINER_SIZE * scale;
+      // Because objectFit: 'cover' is used, visual scale matches the smaller dimension to the container
+      const scaleToNatural = Math.min(img.naturalWidth / imgSize, img.naturalHeight / imgSize);
+      
+      const visualW = img.naturalWidth / scaleToNatural;
+      const visualH = img.naturalHeight / scaleToNatural;
+
+      // Calculate where the 200px crop hole is relative to the visual image top-left
+      // offset.x means the image moved RIGHT relative to container center. So the crop hole moved LEFT relative to image center.
+      const srcVisualX = visualW / 2 - CROP_SIZE / 2 - offset.x; 
+      const srcVisualY = visualH / 2 - CROP_SIZE / 2 - offset.y;
+
+      const srcX = srcVisualX * scaleToNatural;
+      const srcY = srcVisualY * scaleToNatural;
+      const srcW = CROP_SIZE * scaleToNatural;
+      const srcH = CROP_SIZE * scaleToNatural;
+
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUT, OUT);
+      onConfirm(canvas.toDataURL('image/jpeg', 0.88));
+    };
     img.src = imageSrc;
-
-    // The image is rendered at CONTAINER_SIZE * scale, centered
-    // The crop circle is offset by (offset.x, offset.y) from container center
-    // We need to figure out what area of the image falls inside the crop circle
-    const renderedW = CONTAINER_SIZE * scale;
-    const renderedH = CONTAINER_SIZE * scale;
-
-    // Position of crop circle top-left in container space
-    const circleLeft = (CONTAINER_SIZE - CROP_SIZE) / 2 + offset.x;
-    const circleTop  = (CONTAINER_SIZE - CROP_SIZE) / 2 + offset.y;
-
-    // Image top-left in container space (image is centered in container)
-    const imgLeft = (CONTAINER_SIZE - renderedW) / 2;
-    const imgTop  = (CONTAINER_SIZE - renderedH) / 2;
-
-    // Natural image scale factor
-    const scaleToNatural = img.naturalWidth / renderedW;
-
-    const srcX = (circleLeft - imgLeft) * scaleToNatural;
-    const srcY = (circleTop - imgTop) * scaleToNatural;
-    const srcW = CROP_SIZE * scaleToNatural;
-    const srcH = CROP_SIZE * scaleToNatural;
-
-    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUT, OUT);
-    onConfirm(canvas.toDataURL('image/jpeg', 0.88));
   };
 
   const imgSize = CONTAINER_SIZE * scale;
@@ -165,7 +159,7 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
           userSelect: 'none',
           flexShrink: 0,
         }}
-        onMouseDown={handleMouseDown}
+        onPointerDown={handlePointerDown}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -180,7 +174,7 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
             position: 'absolute',
             width: imgSize,
             height: imgSize,
-            objectFit: 'contain',
+            objectFit: 'cover',
             top: '50%',
             left: '50%',
             transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
