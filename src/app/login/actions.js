@@ -22,24 +22,26 @@ export async function login(formData) {
 }
 
 export async function signup(formData) {
-  const supabase = createClient()
-  const data = {
-    email: formData.get('email'),
-    password: formData.get('password'),
-  }
+  try {
+    const supabase = createClient()
+    const data = {
+      email: formData.get('email'),
+      password: formData.get('password'),
+    }
 
-  const { error, data: authData } = await supabase.auth.signUp(data)
+    const { error, data: authData } = await supabase.auth.signUp(data)
 
-  if (error) {
-    return { error: error.message }
-  }
+    if (error) {
+      return { error: error.message }
+    }
 
-  // Pre-seed an initial app_settings row for their new user account if they don't have one
-  // This helps when they first hit the dashboard setup check.
-  if (authData?.user) {
-     await supabase.from('app_settings').insert([
-       { user_id: authData.user.id, setup_complete: false, family_name: "Our Family" }
-     ]);
+    // Check if email confirmation is required and no session was created
+    if (authData?.user && !authData?.session) {
+      return { message: "Success! Please check your email inbox to verify your account." }
+    }
+
+  } catch (err) {
+    return { error: err.message || "An unexpected error occurred during signup." }
   }
 
   revalidatePath('/dashboard')

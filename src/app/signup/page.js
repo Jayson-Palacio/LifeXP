@@ -7,6 +7,7 @@ import { createClient } from '../../utils/supabase/client'
 
 export default function SignupPage() {
   const [error, setError] = useState(null)
+  const [message, setMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
@@ -29,10 +30,15 @@ export default function SignupPage() {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    setMessage(null)
     const formData = new FormData(e.currentTarget)
     const result = await signup(formData)
+    
     if (result?.error) {
       setError(result.error)
+      setIsLoading(false)
+    } else if (result?.message) {
+      setMessage(result.message)
       setIsLoading(false)
     }
   }
@@ -79,6 +85,7 @@ export default function SignupPage() {
           </div>
 
           {error && <p style={{ color: 'var(--red)', fontSize: '0.9rem', textAlign: 'center' }}>{error}</p>}
+          {message && <p style={{ color: 'var(--green, #10b981)', fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center' }}>{message}</p>}
 
           <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={isLoading} style={{ background: 'linear-gradient(135deg, #ec4899, #a855f7)' }}>
             {isLoading ? 'Creating account...' : 'Sign up'}
