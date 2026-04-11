@@ -25,31 +25,35 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
     };
   }, [scale]);
 
-  const handlePointerDown = (e) => {
-    if (e.touches?.length === 2) return; // let pinch handler take over
+  // ─── Desktop Pan (Mouse) ─────────────────────────────────────────
+  const handleMouseDown = (e) => {
     e.preventDefault();
     setDragging(true);
     startRef.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   };
 
-  const handlePointerMove = useCallback((e) => {
+  const handleMouseMove = useCallback((e) => {
     if (!startRef.current) return;
-    const raw = { x: e.clientX - startRef.current.x, y: e.clientY - startRef.current.y };
-    setOffset(clampOffset(raw.x, raw.y));
+    setOffset(clampOffset(e.clientX - startRef.current.x, e.clientY - startRef.current.y));
   }, [clampOffset]);
 
-  const handlePointerUp = useCallback(() => {
+  const handleMouseUp = useCallback(() => {
     setDragging(false);
     startRef.current = null;
-    window.removeEventListener('pointermove', handlePointerMove);
-    window.removeEventListener('pointerup', handlePointerUp);
-  }, [handlePointerMove]);
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
 
-  // ─── Pinch to zoom (touch) ────────────────────────────────────
+  // ─── Touch Events (Pan & Pinch) ─────────────────────────────────
   const handleTouchStart = (e) => {
-    if (e.touches.length === 2) {
+    if (e.touches.length === 1) {
+      setDragging(true);
+      startRef.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
+    } else if (e.touches.length === 2) {
+      // It's a pinch. Prevent pan.
+      startRef.current = null; 
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -59,8 +63,13 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
   };
 
   const handleTouchMove = (e) => {
-    if (e.touches.length === 2 && pinchRef.current) {
-      e.preventDefault();
+    // If panning
+    if (e.touches.length === 1 && startRef.current) {
+      setOffset(clampOffset(e.touches[0].clientX - startRef.current.x, e.touches[0].clientY - startRef.current.y));
+    } 
+    // If pinching
+    else if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault(); // prevent native scroll
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -71,7 +80,11 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
     }
   };
 
-  const handleTouchEnd = () => { pinchRef.current = null; };
+  const handleTouchEnd = () => { 
+    setDragging(false);
+    startRef.current = null;
+    pinchRef.current = null; 
+  };
 
   // ─── Scroll wheel zoom (desktop) ──────────────────────────────
   const handleWheel = (e) => {
@@ -152,7 +165,7 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
           userSelect: 'none',
           flexShrink: 0,
         }}
-        onPointerDown={handlePointerDown}
+        onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

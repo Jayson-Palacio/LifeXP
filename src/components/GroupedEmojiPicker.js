@@ -33,7 +33,7 @@ export default function GroupedEmojiPicker({ groups, name, defaultValue, onChang
           </div>
 
           {/* Emoji Grid */}
-          <div style={{
+          <div className="emoji-picker" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(6, 1fr)',
             gap: 4,
