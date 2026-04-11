@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '../lib/levels';
 import { showToast, showFloat } from '../lib/ui';
+import { playRandomSuccessSound } from '../lib/sounds';
 import TierCrest from './TierCrest';
 import AvatarDisplay from './AvatarDisplay';
 
@@ -131,8 +132,15 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         const { getLevelForXP: getLvl } = await import('../lib/levels');
         const oldLevel = getLvl(currentXp);
         const newLevel = getLvl(newXp);
-        showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', clientX + 20, clientY - 20);
-        showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', clientX + 20, clientY + 10);
+        
+        // Play success chime
+        playRandomSuccessSound && playRandomSuccessSound();
+
+        // Stagger animations horizontally and vertically so they don't overlap
+        showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', clientX - 45, clientY - 10);
+        setTimeout(() => {
+          showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', clientX + 15, clientY - 10);
+        }, 150);
 
         if (newLevel.level > oldLevel.level) {
           const { showLevelUp, showTierUp } = await import('../lib/ui');
