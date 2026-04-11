@@ -188,6 +188,8 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
             position: 'absolute',
             width: baseW * scale,
             height: baseH * scale,
+            maxWidth: 'none',
+            maxHeight: 'none',
             top: '50%',
             left: '50%',
             transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
