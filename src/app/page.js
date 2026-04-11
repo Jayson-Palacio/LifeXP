@@ -35,23 +35,17 @@ export default function LandingPage() {
           </div>
           
           <div style={{ marginTop: '10vh', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-xl)', textAlign: 'left' }}>
-            <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: 'var(--space-xl)', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(255,255,255,0.1)', transition: 'transform 0.3s ease' }} 
-                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div className="landing-feature">
                <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-sm)' }}>🎯</div>
                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>Epic Missions</h3>
                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.5 }}>Assign daily chores, weekly habits, or one-off tasks. Kids earn XP and unlock customized rewards.</p>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: 'var(--space-xl)', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(255,255,255,0.1)', transition: 'transform 0.3s ease' }}
-                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div className="landing-feature">
                <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-sm)' }}>🎁</div>
                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>Real Rewards</h3>
                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.5 }}>Let them cash out their gold coins for screen time, toys, or custom treats from the Parent Shop.</p>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: 'var(--space-xl)', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(255,255,255,0.1)', transition: 'transform 0.3s ease' }}
-                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div className="landing-feature">
                <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-sm)' }}>📈</div>
                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>Level Up Fast</h3>
                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.5 }}>A built-in RPG leveling system ensures your kids stay addicted to being helpful.</p>

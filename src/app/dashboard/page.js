@@ -1,6 +1,6 @@
 import { createClient } from '../../utils/supabase/server';
 import { redirect } from 'next/navigation';
-import RoleSelectClient from '../components/RoleSelectClient';
+import RoleSelectClient from '../../components/RoleSelectClient';
 
 export const dynamic = 'force-dynamic';
 
