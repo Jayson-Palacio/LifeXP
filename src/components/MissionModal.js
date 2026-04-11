@@ -32,10 +32,14 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
     <form onSubmit={async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
+      const coin_val = fd.get('coin_reward');
+      const coin_reward = coin_val !== null && coin_val !== '' ? parseInt(coin_val) : 5;
+      const xp_reward = Math.min((coin_reward * 10) + 10, 500);
+
       const newObj = {
         name: fd.get('name'),
-        xp_reward: parseInt(fd.get('xp_reward')) || 10,
-        coin_reward: parseInt(fd.get('coin_reward')) || 5,
+        xp_reward,
+        coin_reward,
         icon: fd.get('icon') || '⭐',
         image: pendingMissionImage || (isEdit ? modal.data?.image || null : null),
         max_completions: parseInt(fd.get('max_completions')) || 1,
@@ -59,16 +63,10 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
         <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="e.g. Make your bed" />
       </div>
 
-      {/* XP + Coins */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-        <div className="input-group" style={{ flex: 1 }}>
-          <label>XP <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(1–500)</span></label>
-          <input type="number" name="xp_reward" className="input" min={1} max={500} defaultValue={Math.min(modal.data?.xp_reward || 10, 500)} />
-        </div>
-        <div className="input-group" style={{ flex: 1 }}>
-          <label>Coins</label>
-          <input type="number" name="coin_reward" className="input" min={0} max={200} defaultValue={modal.data?.coin_reward || 5} />
-        </div>
+      {/* Coins */}
+      <div className="input-group" style={{ marginBottom: 14 }}>
+        <label>Coins <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(XP is automatically calculated!)</span></label>
+        <input type="number" name="coin_reward" className="input" min={0} max={200} defaultValue={modal.data?.coin_reward ?? 5} />
       </div>
 
       {/* FREQUENCY */}
