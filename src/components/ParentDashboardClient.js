@@ -213,7 +213,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
         <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Your Family</h2>
-        <button className="btn btn-ghost" onClick={() => router.push('/')} style={{ fontSize: '0.9rem' }}>Exit Mode</button>
+        <button className="cool-home-btn" onClick={() => router.push('/')}>
+          🏠 <span>Home</span>
+        </button>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>

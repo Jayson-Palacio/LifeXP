@@ -131,34 +131,69 @@
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Parent Lock Icon */
+/* Prominent Premium Parent Button */
 .sleek-parent-btn {
-  position: absolute;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.3);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text-muted);
-  font-size: 1.2rem;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 30px;
+  padding: 12px 28px;
+  color: var(--text-bright);
+  font-size: 1.05rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   z-index: 100;
+  margin-top: auto;
+  margin-bottom: var(--space-xl);
 }
 
 .sleek-parent-btn:hover {
-  background: rgba(255,255,255,0.1);
-  color: var(--text-bright);
-  transform: scale(1.1) rotate(5deg);
+  background: rgba(255,255,255,0.08);
+  transform: translateY(-4px) scale(1.02);
   border-color: rgba(255,255,255,0.3);
-  box-shadow: 0 0 15px rgba(255,255,255,0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4), var(--glow-primary);
+}
+
+.sleek-parent-btn-text {
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.02em;
+}
+
+/* Very Cool Home Button */
+.cool-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(168, 85, 247, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 30px;
+  padding: 8px 18px;
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
+  text-decoration: none;
+}
+
+.cool-home-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  color: var(--text-bright);
+  border-color: var(--primary);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3), var(--glow-primary);
 }
 
 .role-select-buttons {

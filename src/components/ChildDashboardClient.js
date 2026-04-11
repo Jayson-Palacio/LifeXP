@@ -247,13 +247,11 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         borderBottom: '1px solid var(--bg-glass-border)',
       }}>
         <button
+          className="cool-home-btn"
           onClick={() => router.push('/')}
-          style={{
-            background: 'var(--bg-glass)', border: '1px solid var(--bg-glass-border)',
-            borderRadius: 'var(--radius-full)', padding: '6px 14px',
-            color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
-          }}
-        >🏠</button>
+        >
+          🏠 <span>Home</span>
+        </button>
 
         <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>
           {tierName} · Lv {level}
