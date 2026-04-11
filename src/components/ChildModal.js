@@ -9,7 +9,8 @@ import InlineCrop from './CropOverlay';
 export default function ChildModal({ modal, closeModal, onSuccess }) {
   const isEdit = !!modal.data;
   const [cropSrc, setCropSrc] = useState(null);
-  const [pendingBase64, setPendingBase64] = useState(null);
+  const existingIsPhoto = modal.data?.avatar?.startsWith('data:image');
+  const [pendingBase64, setPendingBase64] = useState(existingIsPhoto ? modal.data.avatar : null);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -73,7 +74,8 @@ export default function ChildModal({ modal, closeModal, onSuccess }) {
                 {pendingBase64 ? (
                   <>
                     <img src={pendingBase64} alt="Avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                    <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>📷 Photo selected — tap to change</span>
+                    <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>📷 Photo set — tap to change</span>
+                    <button type="button" style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }} onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); setPendingBase64(null); }}>✕</button>
                   </>
                 ) : (
                   <span style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem' }}>📷 Upload a photo</span>
@@ -86,7 +88,7 @@ export default function ChildModal({ modal, closeModal, onSuccess }) {
               <GroupedEmojiPicker
                 groups={AVATAR_EMOJI_GROUPS}
                 name="avatar"
-                defaultValue={modal.data?.avatar || AVATAR_EMOJIS[0]}
+                defaultValue={(!existingIsPhoto && modal.data?.avatar) ? modal.data.avatar : AVATAR_EMOJIS[0]}
                 onChange={() => setPendingBase64(null)}
               />
             )}

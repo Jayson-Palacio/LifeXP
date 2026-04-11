@@ -74,20 +74,17 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
       {/* FREQUENCY */}
       <div className="input-group" style={{ marginBottom: 14 }}>
         <label>Repeats</label>
-        <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-          {[['daily', '📅 Daily'], ['weekly', '📆 Weekly'], ['monthly', '🗓️ Monthly'], ['date_range', '📌 Date Range']].map(([val, label]) => (
-            <button key={val} type="button" onClick={() => setMissionFrequency(val)}
-              style={{
-                padding: '7px 13px', borderRadius: 'var(--radius-full)',
-                border: `2px solid ${missionFrequency === val ? 'var(--primary)' : 'var(--bg-glass-border)'}`,
-                background: missionFrequency === val ? 'var(--primary-dim)' : 'var(--bg-glass)',
-                color: missionFrequency === val ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
-              }}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <select 
+          className="input" 
+          value={missionFrequency} 
+          onChange={(e) => setMissionFrequency(e.target.value)}
+          style={{ marginTop: 8 }}
+        >
+          <option value="daily">📅 Daily</option>
+          <option value="weekly">📆 Weekly</option>
+          <option value="monthly">🗓️ Monthly</option>
+          <option value="date_range">📌 Date Range</option>
+        </select>
       </div>
 
       {/* PER-PERIOD COMPLETION COUNT */}
@@ -119,7 +116,7 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
 
       {/* MISSION PHOTO */}
       <div className="input-group" style={{ marginBottom: 14 }}>
-        <label>Mission Photo <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(optional — helps kids who can't read)</span></label>
+        <label>Mission Photo</label>
         <label style={{ cursor: 'pointer', display: 'block', marginBottom: 8 }}>
           <input
             type="file" accept="image/*" style={{ display: 'none' }}
@@ -155,14 +152,16 @@ export default function MissionModal({ modal, closeModal, onSuccess }) {
       </div>
 
       {/* ICON EMOJI */}
-      <div className="input-group" style={{ marginBottom: 14 }}>
-        <label>Emoji Icon <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(used alongside photo)</span></label>
-        <GroupedEmojiPicker
-          groups={MISSION_EMOJI_GROUPS}
-          name="icon"
-          defaultValue={modal.data?.icon || MISSION_EMOJIS[0]}
-        />
-      </div>
+      {!(pendingMissionImage || modal.data?.image) && (
+        <div className="input-group" style={{ marginBottom: 14 }}>
+          <label>Emoji Icon</label>
+          <GroupedEmojiPicker
+            groups={MISSION_EMOJI_GROUPS}
+            name="icon"
+            defaultValue={modal.data?.icon || MISSION_EMOJIS[0]}
+          />
+        </div>
+      )}
 
       <div className="modal-actions">
         <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
