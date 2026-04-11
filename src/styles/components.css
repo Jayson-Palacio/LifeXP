@@ -30,8 +30,8 @@
   box-shadow: var(--glow-primary);
 }
 .btn-primary:hover {
-  background: #818cf8;
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+  filter: brightness(1.15);
+  box-shadow: var(--glow-primary);
 }
 
 .btn-success {
@@ -170,7 +170,7 @@
   -webkit-appearance: none;
   margin: 0;
 }
-.input[type="number"] { -moz-appearance: textfield; }
+.input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
 /* ============================================
    XP BAR
@@ -202,7 +202,7 @@
 
 .xp-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--gold), var(--amber));
+  background: var(--primary);
   border-radius: var(--radius-full);
   transition: width 0.8s var(--ease-out);
   position: relative;
@@ -299,22 +299,34 @@
   padding: var(--space-lg) 0;
 }
 
-.page-header .back-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
+/* Standalone back button (used outside .page-header) */
+.back-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 44px;
   background: var(--bg-glass);
   border: 1px solid var(--bg-glass-border);
   border-radius: var(--radius-md);
   color: var(--text-bright);
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  font-family: var(--font-main);
   transition: all var(--duration-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
-.page-header .back-btn:hover {
+.back-btn:hover {
   background: var(--bg-surface-alt);
+}
+.back-btn:active {
+  transform: scale(0.92);
+}
+
+.page-header .back-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
 }
 
 .page-title {
@@ -532,6 +544,24 @@
 .emoji-option.selected {
   border-color: var(--primary);
   background: var(--primary-dim);
+}
+
+/* emoji-picker-item — used in radio-label picker pattern (child/reward modals) */
+.emoji-picker-item {
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-out);
+  cursor: pointer;
+}
+.emoji-picker-item:hover {
+  background: var(--bg-surface-alt);
+}
+/* When the hidden radio sibling is checked, style the visual item */
+.emoji-picker label input[type="radio"]:checked ~ .emoji-picker-item,
+.emoji-picker label input[type="radio"]:checked + .emoji-picker-item {
+  border-color: var(--primary);
+  background: var(--primary-dim);
+  box-shadow: var(--glow-primary);
 }
 
 /* ============================================

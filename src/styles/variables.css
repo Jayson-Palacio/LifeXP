@@ -4,31 +4,37 @@
   --bg-surface:     #171723;
   --bg-surface-alt: #222234;
   --bg-glass:       rgba(255, 255, 255, 0.03);
-  --bg-glass-border: rgba(255, 255, 255, 0.06);
+  --bg-glass-border: rgba(255, 255, 255, 0.08);
 
-  /* Accents - The Journey of Light Colors */
-  --seedling:       #4ade80;
-  --morning-sky:    #7dd3fc;
-  --golden-hour:    #fbbf24;
-  --forest-deep:    #059669;
-  --lavender-mist:  #a78bfa;
-  --stone:          #94a3b8;
-  --candle-flame:   #f59e0b;
-  --celestial:      #818cf8;
-  --rose-gold:      #fb7185;
-  --sapphire:       #3b82f6;
+  /* Named colors used throughout CSS */
+  --gold:    #facc15;
+  --amber:   #f59e0b;
+  --purple:  #a855f7;
+  --cyan:    #06b6d4;
+  --green:   #22c55e;
+  --red:     #ef4444;
 
-  /* State Colors */
-  --red:            #ef4444;
-  --green:          #22c55e;
-  
+  /* Dim / translucent variants */
+  --gold-dim:    rgba(250, 204, 21, 0.15);
+  --amber-dim:   rgba(245, 158, 11, 0.15);
+  --purple-dim:  rgba(168, 85, 247, 0.15);
+  --cyan-dim:    rgba(6, 182, 212, 0.15);
+  --green-dim:   rgba(34, 197, 94, 0.15);
+  --red-dim:     rgba(239, 68, 68, 0.15);
+
+  /* Glow shortcuts */
+  --glow-gold:   0 0 20px rgba(250, 204, 21, 0.25);
+  --glow-green:  0 0 20px rgba(34, 197, 94, 0.25);
+  --glow-purple: 0 0 20px rgba(168, 85, 247, 0.25);
+  --glow-cyan:   0 0 20px rgba(6, 182, 212, 0.25);
+
   /* Text */
   --text-bright:    #f8fafc;
   --text-muted:     #94a3b8;
   --text-dim:       #475569;
 
-  /* Themes Dynamic - Default to Seedling */
-  --primary:        var(--seedling);
+  /* Themes Dynamic — Default to Seedling */
+  --primary:        #4ade80;
   --primary-dim:    rgba(74, 222, 128, 0.15);
   --glow-primary:   0 0 20px rgba(74, 222, 128, 0.25);
 
@@ -48,7 +54,7 @@
   --space-2xl:      48px;
 
   /* Font */
-  --font-main:      'Outfit', system-ui, -apple-system, sans-serif;
+  --font-main:      var(--font-outfit, 'Outfit'), system-ui, -apple-system, sans-serif;
 
   /* Transitions */
   --ease-out:       cubic-bezier(0.22, 1, 0.36, 1);
@@ -58,19 +64,17 @@
   --duration-slow:  600ms;
 }
 
-/* Theme Classes */
-.theme-seedling { --primary: var(--seedling); --primary-dim: rgba(74, 222, 128, 0.15); --glow-primary: 0 0 20px rgba(74, 222, 128, 0.25); }
-.theme-morning-sky { --primary: var(--morning-sky); --primary-dim: rgba(125, 211, 252, 0.15); --glow-primary: 0 0 20px rgba(125, 211, 252, 0.25); }
-.theme-golden-hour { --primary: var(--golden-hour); --primary-dim: rgba(251, 191, 36, 0.15); --glow-primary: 0 0 20px rgba(251, 191, 36, 0.25); }
-.theme-forest-deep { --primary: var(--forest-deep); --primary-dim: rgba(5, 150, 105, 0.15); --glow-primary: 0 0 20px rgba(5, 150, 105, 0.25); }
-.theme-lavender-mist { --primary: var(--lavender-mist); --primary-dim: rgba(167, 139, 250, 0.15); --glow-primary: 0 0 20px rgba(167, 139, 250, 0.25); }
-.theme-stone { --primary: var(--stone); --primary-dim: rgba(148, 163, 184, 0.15); --glow-primary: 0 0 20px rgba(148, 163, 184, 0.25); }
-.theme-candle-flame { --primary: var(--candle-flame); --primary-dim: rgba(245, 158, 11, 0.15); --glow-primary: 0 0 20px rgba(245, 158, 11, 0.25); }
-.theme-celestial { --primary: var(--celestial); --primary-dim: rgba(129, 140, 248, 0.15); --glow-primary: 0 0 20px rgba(129, 140, 248, 0.25); }
-.theme-rose-gold { --primary: var(--rose-gold); --primary-dim: rgba(251, 113, 133, 0.15); --glow-primary: 0 0 20px rgba(251, 113, 133, 0.25); }
-.theme-sapphire { --primary: var(--sapphire); --primary-dim: rgba(59, 130, 246, 0.15); --glow-primary: 0 0 20px rgba(59, 130, 246, 0.25); }
-.theme-everlight { 
-  --primary: #fff; 
-  --primary-dim: rgba(255, 255, 255, 0.2); 
-  --glow-primary: 0 0 30px rgba(255, 255, 255, 0.4); 
-}
+/* ============================================
+   TIER THEME CLASSES
+   ============================================ */
+.theme-seedling      { --primary: #4ade80;  --primary-dim: rgba(74, 222, 128, 0.15);  --glow-primary: 0 0 20px rgba(74, 222, 128, 0.25); }
+.theme-morning-sky   { --primary: #7dd3fc;  --primary-dim: rgba(125, 211, 252, 0.15); --glow-primary: 0 0 20px rgba(125, 211, 252, 0.25); }
+.theme-golden-hour   { --primary: #fbbf24;  --primary-dim: rgba(251, 191, 36, 0.15);  --glow-primary: 0 0 20px rgba(251, 191, 36, 0.25); }
+.theme-forest-deep   { --primary: #059669;  --primary-dim: rgba(5, 150, 105, 0.15);   --glow-primary: 0 0 20px rgba(5, 150, 105, 0.25); }
+.theme-lavender-mist { --primary: #a78bfa;  --primary-dim: rgba(167, 139, 250, 0.15); --glow-primary: 0 0 20px rgba(167, 139, 250, 0.25); }
+.theme-stone         { --primary: #94a3b8;  --primary-dim: rgba(148, 163, 184, 0.15); --glow-primary: 0 0 20px rgba(148, 163, 184, 0.25); }
+.theme-candle-flame  { --primary: #f59e0b;  --primary-dim: rgba(245, 158, 11, 0.15);  --glow-primary: 0 0 20px rgba(245, 158, 11, 0.25); }
+.theme-celestial     { --primary: #818cf8;  --primary-dim: rgba(129, 140, 248, 0.15); --glow-primary: 0 0 20px rgba(129, 140, 248, 0.25); }
+.theme-rose-gold     { --primary: #fb7185;  --primary-dim: rgba(251, 113, 133, 0.15); --glow-primary: 0 0 20px rgba(251, 113, 133, 0.25); }
+.theme-sapphire      { --primary: #3b82f6;  --primary-dim: rgba(59, 130, 246, 0.15);  --glow-primary: 0 0 20px rgba(59, 130, 246, 0.25); }
+.theme-everlight     { --primary: #fff;     --primary-dim: rgba(255, 255, 255, 0.2);  --glow-primary: 0 0 30px rgba(255, 255, 255, 0.4); }

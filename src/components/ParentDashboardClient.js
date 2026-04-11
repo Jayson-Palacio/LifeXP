@@ -8,6 +8,7 @@ import { AVATAR_EMOJIS, MISSION_EMOJIS, REWARD_EMOJIS } from '../lib/ui';
 import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
 import AppShell from './AppShell';
 import AvatarDisplay from './AvatarDisplay';
+import CropOverlay from './CropOverlay';
 
 export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending }) {
   const router = useRouter();
@@ -23,7 +24,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   
   // Modals specific
   const [modal, setModal] = useState(null); // { type: 'mission'|'reward'|'child', data: null }
-  const [inspectChildId, setInspectChildId] = useState(null); // the id of the child currently viewed in the drawer
+  const [inspectChildId, setInspectChildId] = useState(null);
+  const [cropSrc, setCropSrc] = useState(null); // raw data URL for the crop overlay
+  const [pendingBase64, setPendingBase64] = useState(null); // confirmed cropped base64
 
   const handleApprove = async (comp, e) => {
     e.stopPropagation();
@@ -97,7 +100,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     showToast('Kid removed from app.');
   };
 
-  const closeModal = () => setModal(null);
+  const closeModal = () => { setModal(null); setPendingBase64(null); };
 
   // M I S S I O N   M O D A L
   const renderMissionModal = () => {
@@ -221,48 +224,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
       const reader = new FileReader();
       reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const maxDim = 200;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > maxDim) {
-              height *= maxDim / width;
-              width = maxDim;
-            }
-          } else {
-            if (height > maxDim) {
-              width *= maxDim / height;
-              height = maxDim;
-            }
-          }
-
-          canvas.width = maxDim;
-          canvas.height = maxDim;
-          const ctx = canvas.getContext('2d');
-          
-          // Crop centrally
-          const srcSize = Math.min(img.width, img.height);
-          const srcX = (img.width - srcSize) / 2;
-          const srcY = (img.height - srcSize) / 2;
-          
-          ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, maxDim, maxDim);
-          
-          // Downscale quality slightly
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-          // Find the hidden input and update its value to the base64 string
-          const hiddenInput = document.getElementById('base64-avatar-input');
-          if (hiddenInput) {
-             hiddenInput.value = dataUrl;
-             // Visually show preview
-             hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        };
-        img.src = event.target.result;
+        // Instead of auto-cropping, show the interactive crop overlay
+        setCropSrc(event.target.result);
       };
       reader.readAsDataURL(file);
     };
@@ -273,7 +236,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         const fd = new FormData(e.target);
         
         // Prefer base64 upload if it was filled 
-        let finalAvatar = fd.get('base64_avatar');
+        let finalAvatar = pendingBase64 || fd.get('base64_avatar');
         if (!finalAvatar) finalAvatar = fd.get('avatar');
         
         const newObj = {
@@ -285,8 +248,18 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           setChildren(prev => prev.map(c => c.id === modal.data.id ? { ...c, ...newObj } : c));
           showToast('Kid profile updated!');
         } else {
-          const { data } = await supabase.from('children').insert([{ ...newObj, total_xp_earned: 0, coins: 0, theme: 'seedling' }]).select().single();
-          setChildren(prev => [...prev, data]);
+          const { data, error } = await supabase.from('children').insert([{ 
+            ...newObj, 
+            xp: 0,
+            total_xp_earned: 0, 
+            coins: 0, 
+            theme: 'seedling' 
+          }]).select().single();
+          if (error) {
+            showToast('Error adding kid: ' + error.message, 'error');
+            return;
+          }
+          if (data) setChildren(prev => [...prev, data]);
           showToast(`Welcome ${newObj.name}! 🎉`);
         }
         closeModal();
@@ -298,19 +271,18 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         <div className="input-group" style={{ marginBottom: 16 }}>
           <label>Photo or Emoji</label>
           
-          {/* Hidden text input for base64 upload to hold React state-free value */}
-          <input type="text" id="base64-avatar-input" name="base64_avatar" style={{ display: 'none' }} onChange={(e) => {
-             const preview = document.getElementById('photo-preview');
-             if (preview) { preview.style.backgroundImage = `url(${e.target.value})`; preview.style.backgroundSize = 'cover'; preview.innerHTML = ''; }
-          }} />
+          {/* Hidden text input — still needed to display preview */}
+          <input type="text" id="base64-avatar-input" name="base64_avatar" value={pendingBase64 || ''} readOnly style={{ display: 'none' }} />
 
           <div className="emoji-picker" style={{ gap: '8px', marginTop: 8 }}>
-            
-            {/* Custom Photo Upload Radio Option */}
+            {/* Photo Upload Option */}
             <label style={{ cursor: 'pointer', position: 'relative' }}>
                <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-               <div id="photo-preview" style={{ display: 'flex', flexDirection: 'column', aspectRatio: '1', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', background: 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: '2px dashed var(--bg-glass-border)' }} className="emoji-picker-item">
-                  📷 <span style={{fontSize: '0.6rem'}}>Upload</span>
+               <div id="photo-preview" style={{ display: 'flex', flexDirection: 'column', aspectRatio: '1', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', background: pendingBase64 ? 'transparent' : 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: pendingBase64 ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)', overflow: 'hidden' }} className="emoji-picker-item">
+                  {pendingBase64 
+                    ? <img src={pendingBase64} alt="Custom" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    : <>📷 <span style={{fontSize: '0.6rem'}}>Upload</span></>
+                  }
                </div>
             </label>
 
@@ -548,22 +520,24 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                modal.type === 'reward' ? (modal.data ? 'Edit Reward' : 'New Reward') :
                (modal.data ? 'Edit Kid Profile' : 'Add Kid to Family')}
             </h3>
-            {/* Some CSS tweaks to old modal form inputs to fit new theme are already applied in components.css */}
             {modal.type === 'mission' && renderMissionModal()}
             {modal.type === 'reward' && renderRewardModal()}
             {modal.type === 'child' && renderChildModal()}
           </div>
         </div>
       )}
-      
-      <style jsx global>{`
-         /* Force hide standard generic radio dots within the emoji picker components */
-         .emoji-picker label input[type="radio"]:checked + .emoji-picker-item {
-             border-color: var(--primary);
-             background: var(--primary-dim);
-             box-shadow: var(--glow-primary);
-         }
-      `}</style>
+
+      {/* Photo Crop Overlay — shown when user uploads a photo */}
+      {cropSrc && (
+        <CropOverlay
+          imageSrc={cropSrc}
+          onConfirm={(dataUrl) => {
+            setPendingBase64(dataUrl);
+            setCropSrc(null);
+          }}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
     </>
   );
 }

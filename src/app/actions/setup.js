@@ -15,7 +15,14 @@ export async function submitSetupData(pin, childName, childAvatar, missionName, 
     }
     
     // 2. Add Child
-    await supabase.from('children').insert([{ name: childName, avatar: childAvatar }]);
+    await supabase.from('children').insert([{ 
+      name: childName, 
+      avatar: childAvatar, 
+      xp: 0, 
+      total_xp_earned: 0, 
+      coins: 0, 
+      theme: 'seedling' 
+    }]);
     
     // 3. Add Mission
     await supabase.from('missions').insert([{
