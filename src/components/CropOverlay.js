@@ -2,40 +2,43 @@
 
 import { useState, useRef, useCallback } from 'react';
 
-// InlineCropPicker — renders inline inside the child modal form
-// imageSrc: raw data URL from FileReader
-// onConfirm(dataUrl) — called with the cropped base64 JPEG
-// onCancel() — go back to emoji grid without saving
+// InlineCrop — image drag + pinch-to-zoom crop
+// Renders inline inside the modal — no z-index issues
 export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
   const containerRef = useRef(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
   const [dragging, setDragging] = useState(false);
   const startRef = useRef(null);
-  const CROP_SIZE = 200; // diameter of the crop circle in container px
+  const pinchRef = useRef(null); // track initial pinch distance + scale
+  const CROP_SIZE = 200;
+  const CONTAINER_SIZE = 280; // px (square)
+
+  // ─── Pan ───────────────────────────────────────────────────────
+  const clampOffset = useCallback((x, y, s = scale) => {
+    const imgSize = CONTAINER_SIZE * s;
+    const maxX = (imgSize - CROP_SIZE) / 2;
+    const maxY = (imgSize - CROP_SIZE) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  }, [scale]);
 
   const handlePointerDown = (e) => {
+    if (e.touches?.length === 2) return; // let pinch handler take over
     e.preventDefault();
     setDragging(true);
-    startRef.current = {
-      x: e.clientX - offset.x,
-      y: e.clientY - offset.y,
-    };
+    startRef.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
   };
 
   const handlePointerMove = useCallback((e) => {
     if (!startRef.current) return;
-    const container = containerRef.current;
-    if (!container) return;
-    const { width, height } = container.getBoundingClientRect();
-    const halfCrop = CROP_SIZE / 2;
-    let newX = e.clientX - startRef.current.x;
-    let newY = e.clientY - startRef.current.y;
-    newX = Math.max(-width / 2 + halfCrop, Math.min(width / 2 - halfCrop, newX));
-    newY = Math.max(-height / 2 + halfCrop, Math.min(height / 2 - halfCrop, newY));
-    setOffset({ x: newX, y: newY });
-  }, []);
+    const raw = { x: e.clientX - startRef.current.x, y: e.clientY - startRef.current.y };
+    setOffset(clampOffset(raw.x, raw.y));
+  }, [clampOffset]);
 
   const handlePointerUp = useCallback(() => {
     setDragging(false);
@@ -44,122 +47,170 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
     window.removeEventListener('pointerup', handlePointerUp);
   }, [handlePointerMove]);
 
+  // ─── Pinch to zoom (touch) ────────────────────────────────────
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchRef.current = { startDist: dist, startScale: scale };
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault();
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const newScale = Math.max(0.8, Math.min(4, pinchRef.current.startScale * (dist / pinchRef.current.startDist)));
+      setScale(newScale);
+      setOffset(o => clampOffset(o.x, o.y, newScale));
+    }
+  };
+
+  const handleTouchEnd = () => { pinchRef.current = null; };
+
+  // ─── Scroll wheel zoom (desktop) ──────────────────────────────
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setScale(s => {
+      const next = Math.max(0.8, Math.min(4, s * delta));
+      setOffset(o => clampOffset(o.x, o.y, next));
+      return next;
+    });
+  };
+
+  // ─── Export ───────────────────────────────────────────────────
   const handleConfirm = () => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const { width: cw, height: ch } = container.getBoundingClientRect();
-    const img = container.querySelector('img.crop-source');
-    if (!img) return;
-    const imgRect = img.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-
-    const scaleX = img.naturalWidth / imgRect.width;
-    const scaleY = img.naturalHeight / imgRect.height;
-
-    const circleCenterX = cw / 2 + offset.x;
-    const circleCenterY = ch / 2 + offset.y;
-    const imgOffsetX = imgRect.left - containerRect.left;
-    const imgOffsetY = imgRect.top - containerRect.top;
-
-    const cropX = (circleCenterX - imgOffsetX - CROP_SIZE / 2) * scaleX;
-    const cropY = (circleCenterY - imgOffsetY - CROP_SIZE / 2) * scaleY;
-    const cropW = CROP_SIZE * scaleX;
-    const cropH = CROP_SIZE * scaleY;
-
-    const OUT = 200;
     const canvas = document.createElement('canvas');
+    const OUT = 240;
     canvas.width = OUT;
     canvas.height = OUT;
     const ctx = canvas.getContext('2d');
+
+    // Circular clip
     ctx.beginPath();
     ctx.arc(OUT / 2, OUT / 2, OUT / 2, 0, Math.PI * 2);
     ctx.clip();
-    ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, OUT, OUT);
+
+    const img = new Image();
+    img.src = imageSrc;
+
+    // The image is rendered at CONTAINER_SIZE * scale, centered
+    // The crop circle is offset by (offset.x, offset.y) from container center
+    // We need to figure out what area of the image falls inside the crop circle
+    const renderedW = CONTAINER_SIZE * scale;
+    const renderedH = CONTAINER_SIZE * scale;
+
+    // Position of crop circle top-left in container space
+    const circleLeft = (CONTAINER_SIZE - CROP_SIZE) / 2 + offset.x;
+    const circleTop  = (CONTAINER_SIZE - CROP_SIZE) / 2 + offset.y;
+
+    // Image top-left in container space (image is centered in container)
+    const imgLeft = (CONTAINER_SIZE - renderedW) / 2;
+    const imgTop  = (CONTAINER_SIZE - renderedH) / 2;
+
+    // Natural image scale factor
+    const scaleToNatural = img.naturalWidth / renderedW;
+
+    const srcX = (circleLeft - imgLeft) * scaleToNatural;
+    const srcY = (circleTop - imgTop) * scaleToNatural;
+    const srcW = CROP_SIZE * scaleToNatural;
+    const srcH = CROP_SIZE * scaleToNatural;
+
+    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUT, OUT);
     onConfirm(canvas.toDataURL('image/jpeg', 0.88));
   };
 
+  const imgSize = CONTAINER_SIZE * scale;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
       <p style={{
-        fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)',
-        textAlign: 'center', margin: 0, letterSpacing: '0.03em'
+        fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)',
+        textAlign: 'center', margin: 0,
       }}>
-        Drag to position your face in the circle
+        Drag to pan · Pinch or scroll to zoom
       </p>
 
-      {/* Crop viewport */}
+      {/* Single container — image rendered once, crop ring overlaid */}
       <div
         ref={containerRef}
         style={{
           position: 'relative',
-          width: '100%',
-          maxWidth: 300,
-          aspectRatio: '1',
+          width: CONTAINER_SIZE,
+          height: CONTAINER_SIZE,
           overflow: 'hidden',
           borderRadius: 'var(--radius-md)',
-          background: '#000',
+          background: '#111',
           cursor: dragging ? 'grabbing' : 'grab',
           touchAction: 'none',
           userSelect: 'none',
+          flexShrink: 0,
         }}
         onPointerDown={handlePointerDown}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
       >
-        {/* Dim full image */}
+        {/* The image — rendered ONCE, scaled + panned */}
         <img
-          className="crop-source"
           src={imageSrc}
-          alt="Crop source"
+          alt="Crop"
+          draggable={false}
           style={{
-            width: '100%',
-            height: '100%',
+            position: 'absolute',
+            width: imgSize,
+            height: imgSize,
             objectFit: 'contain',
-            display: 'block',
-            opacity: 0.3,
+            top: '50%',
+            left: '50%',
+            transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
             pointerEvents: 'none',
           }}
         />
 
-        {/* Bright circle preview */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
-          width: CROP_SIZE, height: CROP_SIZE,
-          borderRadius: '50%', overflow: 'hidden',
-          pointerEvents: 'none',
-        }}>
-          <img
-            src={imageSrc}
-            alt=""
-            style={{
-              position: 'absolute',
-              // Offset the inner image opposite to the crop circle position so it aligns
-              top: `calc(50% - ${offset.y}px - ${CROP_SIZE / 2}px)`,
-              left: `calc(50% - ${offset.x}px - ${CROP_SIZE / 2}px)`,
-              width: '100%',
-              height: '100%',
-              // 100% of the outer container, positioned relative to it
-              minWidth: 300, minHeight: 300,
-              objectFit: 'contain',
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
+        {/* Dark overlay with circular hole — using box-shadow trick */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: `translate(-50%, -50%)`,
+            width: CROP_SIZE,
+            height: CROP_SIZE,
+            borderRadius: '50%',
+            boxShadow: `0 0 0 ${CONTAINER_SIZE}px rgba(0,0,0,0.55), 0 0 0 3px var(--primary), var(--glow-primary)`,
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
 
-        {/* Ring border */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
-          width: CROP_SIZE, height: CROP_SIZE,
-          borderRadius: '50%',
-          border: '3px solid var(--primary)',
-          boxShadow: '0 0 0 9999px rgba(0,0,0,0.5), var(--glow-primary)',
-          pointerEvents: 'none',
-        }} />
+      {/* Zoom slider for accessibility */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: CONTAINER_SIZE }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🔍</span>
+        <input
+          type="range"
+          min={80}
+          max={400}
+          value={Math.round(scale * 100)}
+          onChange={(e) => {
+            const next = parseInt(e.target.value) / 100;
+            setScale(next);
+            setOffset(o => clampOffset(o.x, o.y, next));
+          }}
+          style={{ flex: 1, accentColor: 'var(--primary)' }}
+        />
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{Math.round(scale * 100)}%</span>
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+      <div style={{ display: 'flex', gap: 8, width: CONTAINER_SIZE }}>
         <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={onCancel}>
           ← Back
         </button>

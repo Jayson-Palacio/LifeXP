@@ -30,7 +30,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const [inspectChildId, setInspectChildId] = useState(null);
   const [cropSrc, setCropSrc] = useState(null);
   const [pendingBase64, setPendingBase64] = useState(null);
-  const [missionFrequency, setMissionFrequency] = useState(null); // track frequency for new mission modal
+  const [missionFrequency, setMissionFrequency] = useState(null);
+  const [missionCropSrc, setMissionCropSrc] = useState(null);
+  const [pendingMissionImage, setPendingMissionImage] = useState(null);
 
   // Real-time subscription for new pending completions
   useEffect(() => {
@@ -119,13 +121,27 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     showToast('Kid removed from app.');
   };
 
-  const closeModal = () => { setModal(null); setPendingBase64(null); };
+  const closeModal = () => { setModal(null); setPendingBase64(null); setPendingMissionImage(null); setMissionCropSrc(null); setMissionFrequency(null); };
 
   // M I S S I O N   M O D A L
   const renderMissionModal = () => {
     const isEdit = !!modal.data;
     const defaultFrequency = modal.data?.frequency || 'daily';
     const freq = missionFrequency === null ? defaultFrequency : missionFrequency;
+
+    // If we're in crop mode for mission image, show crop UI
+    if (missionCropSrc) {
+      return (
+        <div>
+          <p style={{ textAlign: 'center', marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Crop the mission photo</p>
+          <InlineCrop
+            imageSrc={missionCropSrc}
+            onConfirm={(dataUrl) => { setPendingMissionImage(dataUrl); setMissionCropSrc(null); }}
+            onCancel={() => setMissionCropSrc(null)}
+          />
+        </div>
+      );
+    }
 
     return (
       <form onSubmit={async (e) => {
@@ -135,8 +151,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           name: fd.get('name'),
           xp_reward: parseInt(fd.get('xp_reward')) || 10,
           coin_reward: parseInt(fd.get('coin_reward')) || 5,
-          icon: fd.get('icon'),
+          icon: fd.get('icon') || '⭐',
+          image: pendingMissionImage || (isEdit ? modal.data?.image || null : null),
           max_completions: parseInt(fd.get('max_completions')) || 1,
+          max_completions_per_period: parseInt(fd.get('max_completions_per_period')) || 1,
           frequency: freq,
           start_date: freq === 'date_range' ? fd.get('start_date') || null : null,
           end_date: freq === 'date_range' ? fd.get('end_date') || null : null,
@@ -151,15 +169,18 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           showToast('Mission created! 🎯');
         }
         setMissionFrequency(null);
+        setPendingMissionImage(null);
         closeModal();
       }}>
-        <div className="input-group" style={{ marginBottom: 16 }}>
+        <div className="input-group" style={{ marginBottom: 14 }}>
           <label>Mission Name</label>
           <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="e.g. Make your bed" />
         </div>
-        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+
+        {/* XP + Coins */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
           <div className="input-group" style={{ flex: 1 }}>
-            <label>XP <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>(1–500)</span></label>
+            <label>XP <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(1–500)</span></label>
             <input type="number" name="xp_reward" className="input" min={1} max={500} defaultValue={Math.min(modal.data?.xp_reward || 10, 500)} />
           </div>
           <div className="input-group" style={{ flex: 1 }}>
@@ -169,54 +190,98 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         </div>
 
         {/* FREQUENCY */}
-        <div className="input-group" style={{ marginBottom: 16 }}>
+        <div className="input-group" style={{ marginBottom: 14 }}>
           <label>Repeats</label>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
             {[['daily', '📅 Daily'], ['weekly', '📆 Weekly'], ['monthly', '🗓️ Monthly'], ['date_range', '📌 Date Range']].map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setMissionFrequency(val)}
+              <button key={val} type="button" onClick={() => setMissionFrequency(val)}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-full)',
+                  padding: '7px 13px', borderRadius: 'var(--radius-full)',
                   border: `2px solid ${freq === val ? 'var(--primary)' : 'var(--bg-glass-border)'}`,
                   background: freq === val ? 'var(--primary-dim)' : 'var(--bg-glass)',
                   color: freq === val ? 'var(--primary)' : 'var(--text-muted)',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
+                  fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
+                }}>
                 {label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* DATE RANGE PICKERS — stacked vertically for iPad compatibility */}
+        {/* PER-PERIOD COMPLETION COUNT */}
+        <div className="input-group" style={{ marginBottom: 14 }}>
+          <label>Times per {freq === 'weekly' ? 'week' : freq === 'monthly' ? 'month' : freq === 'date_range' ? 'day' : 'day'}
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6 }}>(e.g. brush teeth = 2)</span>
+          </label>
+          <input
+            type="number" name="max_completions_per_period" className="input"
+            min={1} max={20}
+            defaultValue={modal.data?.max_completions_per_period || 1}
+            style={{ maxWidth: 100 }}
+          />
+        </div>
+
+        {/* DATE RANGE — compact for iPad */}
         {freq === 'date_range' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
             <div className="input-group">
-              <label>Start Date</label>
-              <input type="date" name="start_date" className="input" defaultValue={modal.data?.start_date || ''} required />
+              <label>Start</label>
+              <input type="date" name="start_date" className="input input-sm" defaultValue={modal.data?.start_date || ''} required />
             </div>
             <div className="input-group">
-              <label>End Date</label>
-              <input type="date" name="end_date" className="input" defaultValue={modal.data?.end_date || ''} required />
+              <label>End</label>
+              <input type="date" name="end_date" className="input input-sm" defaultValue={modal.data?.end_date || ''} required />
             </div>
           </div>
         )}
 
-        <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Icon</label>
+        {/* MISSION PHOTO */}
+        <div className="input-group" style={{ marginBottom: 14 }}>
+          <label>Mission Photo <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(optional — helps kids who can't read)</span></label>
+          <label style={{ cursor: 'pointer', display: 'block', marginBottom: 8 }}>
+            <input
+              type="file" accept="image/*" style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => setMissionCropSrc(ev.target.result);
+                reader.readAsDataURL(file);
+              }}
+            />
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '9px 14px', borderRadius: 'var(--radius-md)',
+              border: pendingMissionImage || modal.data?.image ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)',
+              background: pendingMissionImage || modal.data?.image ? 'var(--primary-dim)' : 'var(--bg-glass)',
+              cursor: 'pointer',
+            }}>
+              {(pendingMissionImage || modal.data?.image) ? (
+                <>
+                  <img
+                    src={pendingMissionImage || modal.data?.image}
+                    alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }}
+                  />
+                  <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.85rem' }}>📷 Photo set — tap to change</span>
+                  {(pendingMissionImage || modal.data?.image) && <button type="button" style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }} onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); setPendingMissionImage(null); }}>✕</button>}
+                </>
+              ) : (
+                <span style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.85rem' }}>📷 Upload mission photo</span>
+              )}
+            </div>
+          </label>
+        </div>
+
+        {/* ICON EMOJI */}
+        <div className="input-group" style={{ marginBottom: 14 }}>
+          <label>Emoji Icon <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(used alongside photo)</span></label>
           <GroupedEmojiPicker
             groups={MISSION_EMOJI_GROUPS}
             name="icon"
             defaultValue={modal.data?.icon || MISSION_EMOJIS[0]}
           />
         </div>
+
         <div className="modal-actions">
           <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
           <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Create Mission'}</button>

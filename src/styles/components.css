@@ -172,6 +172,23 @@
 }
 .input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
+/* Compact input — 20% smaller for tight spaces (date range on iPad) */
+.input-sm {
+  padding: 9px 12px;
+  font-size: 0.85rem;
+}
+
+/* Date input — prevent iOS zoom and ensure touch-friendly size */
+.input[type="date"] {
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+.input-sm[type="date"] {
+  min-height: 38px;
+  font-size: 0.82rem;
+  padding: 7px 10px;
+}
+
 /* ============================================
    XP BAR
    ============================================ */

@@ -1,65 +1,99 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '../lib/levels';
 import { showToast, showFloat } from '../lib/ui';
-import AppShell from './AppShell';
 import TierCrest from './TierCrest';
 import AvatarDisplay from './AvatarDisplay';
 
 export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards }) {
   const router = useRouter();
-  
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
-  const [activeTab, setActiveTab] = useState('hall');
+  const [showThemePicker, setShowThemePicker] = useState(false);
+  const themePickerRef = useRef(null);
 
-  const { level, tierName, tierSymbol, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
+  const { level, tierName, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
   const xpProgress = getXPProgress(child.total_xp_earned || child.xp || 0);
   const xpDisplay = getXPDisplay(child.total_xp_earned || child.xp || 0);
-  
-  const activeTheme = child.theme ? child.theme : tierColor;
+  const activeTheme = child.theme || tierColor;
+  const unlockedColors = getUnlockedColors(level);
 
-  // Set body class for theme
+  // Apply body theme class
   useEffect(() => {
     document.body.className = `theme-${activeTheme}`;
     return () => { document.body.className = ''; };
   }, [activeTheme]);
 
-  // Derive mission states
-  const missionStates = missions.map(m => {
-    const thisMissionCompletions = completions.filter(c => c.mission_id === m.id);
-    const validCompletions = thisMissionCompletions.filter(c => c.status !== 'rejected');
-    const rejectedCompletions = thisMissionCompletions.filter(c => c.status === 'rejected');
-    
-    const totalDone = validCompletions.length;
-    const max = m.max_completions || 1;
-    
-    if (totalDone >= max) {
-      return { ...m, totalDone, max, status: validCompletions.some(c => c.status === 'pending') ? 'pending' : 'approved' };
-    }
-    
-    const isRetry = rejectedCompletions.length > 0 && totalDone === 0;
-    return { ...m, totalDone, max, status: isRetry ? 'rejected' : 'available' };
-  });
+  // Close theme picker when clicking outside
+  useEffect(() => {
+    if (!showThemePicker) return;
+    const handler = (e) => {
+      if (themePickerRef.current && !themePickerRef.current.contains(e.target)) {
+        setShowThemePicker(false);
+      }
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [showThemePicker]);
 
+  // ─── Mission state calculation ─────────────────────────────────
+  const getMissionState = (m) => {
+    const all = completions.filter(c => c.mission_id === m.id);
+    const valid = all.filter(c => c.status !== 'rejected');
+    const hasPending = valid.some(c => c.status === 'pending');
+    const approved = valid.filter(c => c.status === 'approved').length;
+
+    // How many they can do per period
+    const maxPerPeriod = m.max_completions_per_period || 1;
+
+    // Count completions within the current period
+    const now = new Date();
+    const periodStart = (() => {
+      if (m.frequency === 'weekly') {
+        const d = new Date(now); d.setDate(now.getDate() - now.getDay()); d.setHours(0,0,0,0); return d;
+      }
+      if (m.frequency === 'monthly') {
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+      // daily or date_range: just today
+      const d = new Date(now); d.setHours(0,0,0,0); return d;
+    })();
+
+    const periodDone = valid.filter(c => new Date(c.submitted_at) >= periodStart).length;
+    const periodRemaining = maxPerPeriod - periodDone;
+
+    // Not active for date_range missions outside their dates
+    if (m.frequency === 'date_range' && m.start_date && m.end_date) {
+      const today = now.toISOString().split('T')[0];
+      if (today < m.start_date || today > m.end_date) return null;
+    }
+
+    if (periodRemaining <= 0 && !hasPending) return { ...m, status: 'done', periodDone, maxPerPeriod };
+    if (hasPending) return { ...m, status: 'pending', periodDone, maxPerPeriod, periodRemaining };
+    const isRetry = all.some(c => c.status === 'rejected') && periodDone === 0;
+    return { ...m, status: isRetry ? 'retry' : 'available', periodDone, maxPerPeriod, periodRemaining };
+  };
+
+  const missionStates = missions.map(getMissionState).filter(Boolean);
+
+  // ─── Handlers ─────────────────────────────────────────────────
   const handleSubmitMission = async (missionId, e) => {
     e.target.disabled = true;
     e.target.textContent = '...';
-    
-    const newCompletion = {
+    const { data } = await supabase.from('completions').insert([{
       mission_id: missionId,
       child_id: child.id,
-      status: 'pending'
-    };
-    
-    const { data } = await supabase.from('completions').insert([newCompletion]).select().single();
+      status: 'pending',
+    }]).select().single();
     if (data) {
       setCompletions(prev => [...prev, data]);
-      // Note: Full celebration system (sounds + modal) will be implemented in ui.js later.
-      showToast('Mission done! ⏳ Waiting for parent checking');
+      showToast('Done! ⏳ Waiting for parent approval');
+    } else {
+      e.target.disabled = false;
+      e.target.textContent = 'Done! ✓';
     }
   };
 
@@ -69,226 +103,268 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
     if (child.coins < r.cost) {
       e.target.disabled = false;
-      e.target.textContent = 'Need more 🪙';
+      e.target.textContent = 'Need coins';
       return showToast('Not enough coins!', 'error');
     }
 
     try {
-      // Check redemption limits
-      const { data: existing } = await supabase
-        .from('redemptions')
-        .select('redeemed_at')
-        .eq('reward_id', r.id)
-        .eq('child_id', child.id);
-
+      const { data: existing } = await supabase.from('redemptions').select('redeemed_at').eq('reward_id', r.id).eq('child_id', child.id);
       const now = new Date();
-      const startOfDay   = new Date(now); startOfDay.setHours(0,0,0,0);
-      const startOfWeek  = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
+      const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
+      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
       const countSince = (since) => (existing || []).filter(x => new Date(x.redeemed_at) >= since).length;
 
       if (r.max_total_redemptions && (existing || []).length >= r.max_total_redemptions) {
-        e.target.disabled = false;
-        e.target.textContent = 'Limit reached';
-        return showToast(`🔒 "${r.name}" has a total limit of ${r.max_total_redemptions}`, 'error');
+        e.target.disabled = false; e.target.textContent = 'Limit';
+        return showToast(`🔒 Total limit reached for "${r.name}"`, 'error');
       }
       if (r.max_daily_redemptions && countSince(startOfDay) >= r.max_daily_redemptions) {
-        e.target.disabled = false;
-        e.target.textContent = 'Daily limit';
-        return showToast(`⏰ Daily limit reached for "${r.name}"`, 'error');
+        e.target.disabled = false; e.target.textContent = 'Daily limit';
+        return showToast(`⏰ Daily limit for "${r.name}"`, 'error');
       }
       if (r.max_weekly_redemptions && countSince(startOfWeek) >= r.max_weekly_redemptions) {
-        e.target.disabled = false;
-        e.target.textContent = 'Weekly limit';
-        return showToast(`📆 Weekly limit reached for "${r.name}"`, 'error');
+        e.target.disabled = false; e.target.textContent = 'Weekly limit';
+        return showToast(`📆 Weekly limit for "${r.name}"`, 'error');
       }
       if (r.max_monthly_redemptions && countSince(startOfMonth) >= r.max_monthly_redemptions) {
-        e.target.disabled = false;
-        e.target.textContent = 'Monthly limit';
-        return showToast(`🗓️ Monthly limit reached for "${r.name}"`, 'error');
+        e.target.disabled = false; e.target.textContent = 'Monthly limit';
+        return showToast(`🗓️ Monthly limit for "${r.name}"`, 'error');
       }
 
       const newCoins = child.coins - r.cost;
       await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id }]);
       await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
-
       setChild({ ...child, coins: newCoins });
-
       const rect = e.target.getBoundingClientRect();
       showFloat(`-${r.cost} 🪙`, '#f59e0b', rect.left + rect.width / 2, rect.top);
       showToast(`🎉 Redeemed: ${r.name}!`);
-
     } catch (err) {
-      console.error(err);
-      showToast('Error redeeming reward', 'error');
+      showToast('Error redeeming', 'error');
     } finally {
       e.target.disabled = false;
-      e.target.textContent = 'Redeem';
+      e.target.textContent = 'Redeem!';
     }
   };
-
 
   const handleChangeTheme = async (t) => {
     await supabase.from('children').update({ theme: t.id }).eq('id', child.id);
     setChild({ ...child, theme: t.id });
-    showToast(`🎨 Theme changed to ${t.name}!`);
+    setShowThemePicker(false);
+    showToast(`🎨 ${t.name}`);
   };
 
-  const unlockedColors = getUnlockedColors(level);
+  const activeColor = unlockedColors.find(c => c.id === activeTheme);
 
-  const renderHall = () => (
-    <div className="page page-enter" style={{ paddingTop: 'var(--space-2xl)' }}>
-      <button className="back-btn" onClick={() => router.push('/')} style={{ position: 'absolute', top: 'var(--space-lg)', right: 'var(--space-lg)', zIndex: 10 }}>🏠</button>
-      
-      <div className="hero-card" style={{ boxShadow: 'var(--glow-primary)', borderColor: 'var(--primary-dim)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-md)' }}>
-          <div style={{ width: 100, height: 100 }}>
-            <TierCrest tierName={tierName} glowColor="var(--primary)" />
-          </div>
-        </div>
-        
-        <div className="hero-avatar"><AvatarDisplay avatarString={child.avatar} /></div>
-        <h2 className="hero-name">{child.name}</h2>
-        
-        <div className="hero-level" style={{ color: 'var(--primary)', marginTop: 8, fontSize: '1.1rem' }}>
-          {tierName} · Level {level}
-        </div>
+  // ─── Render ───────────────────────────────────────────────────
+  return (
+    <div className={`theme-${activeTheme}`} style={{ minHeight: '100dvh', overflowY: 'auto', paddingBottom: 40 }}>
 
-        <div className="xp-bar-container" style={{ marginTop: 'var(--space-xl)' }}>
-          <div className="xp-bar-label">
-            <span>Next: Level {level + 1}</span>
-            <span>{xpDisplay}</span>
-          </div>
-          <div className="xp-bar-track" style={{ height: 16 }}>
-            <div className="xp-bar-fill" style={{ width: `${Math.round(xpProgress * 100)}%`, background: 'var(--primary)', transition: 'width 0.8s ease-out' }}></div>
-          </div>
+      {/* ── TOP NAV ── */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 16px',
+        background: 'rgba(var(--bg-deep-rgb, 10,8,20),0.85)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--bg-glass-border)',
+      }}>
+        <button
+          onClick={() => router.push('/')}
+          style={{
+            background: 'var(--bg-glass)', border: '1px solid var(--bg-glass-border)',
+            borderRadius: 'var(--radius-full)', padding: '6px 14px',
+            color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+          }}
+        >🏠</button>
+
+        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>
+          {tierName} · Lv {level}
         </div>
 
-        <div className="hero-stats" style={{ marginTop: 'var(--space-xl)' }}>
-          <div className="stat-item" style={{ fontSize: '1.2rem' }}>
-            <span className="stat-icon">🪙</span>
-            <span className="stat-value-amber">{child.coins} coins</span>
-          </div>
-          {child.streak > 0 && (
-            <div className="stat-item" style={{ fontSize: '1.2rem' }}>
-              <span className="stat-icon">🔥</span>
-              <span className="stat-value-cyan">{child.streak}-day streak</span>
+        {/* Theme Circle Button */}
+        <div ref={themePickerRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowThemePicker(v => !v)}
+            title="Change Theme"
+            style={{
+              width: 34, height: 34, borderRadius: '50%', border: '2px solid var(--primary)',
+              background: activeColor?.hex === 'animated'
+                ? 'linear-gradient(135deg, #facc15, #a855f7, #06b6d4)'
+                : (activeColor?.hex || 'var(--primary)'),
+              boxShadow: 'var(--glow-primary)',
+              cursor: 'pointer', flexShrink: 0,
+            }}
+          />
+
+          {/* Theme Picker Dropdown */}
+          {showThemePicker && (
+            <div style={{
+              position: 'absolute', top: 44, right: 0,
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--bg-glass-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 12,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+              zIndex: 200,
+              minWidth: 180,
+              animation: 'slideUp 0.15s ease-out',
+            }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                Your Themes
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {unlockedColors.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleChangeTheme(c)}
+                    title={c.name}
+                    style={{
+                      width: 32, height: 32, borderRadius: '50%', border: activeTheme === c.id ? '3px solid #fff' : '2px solid transparent',
+                      background: c.hex === 'animated' ? 'linear-gradient(135deg, #facc15, #a855f7, #06b6d4)' : c.hex,
+                      boxShadow: activeTheme === c.id ? `0 0 8px ${c.hex === 'animated' ? '#a855f7' : c.hex}` : 'none',
+                      cursor: 'pointer', transition: 'transform 0.12s',
+                    }}
+                  />
+                ))}
+              </div>
+              {unlockedColors.length < 8 && (
+                <div style={{ marginTop: 8, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  🔒 Level up to unlock more
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="section" style={{ marginTop: 'var(--space-2xl)' }}>
-        <h3 className="section-title" style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>✨ Themes Unlocked</h3>
-        <div className="avatar-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-sm)' }}>
-          {unlockedColors.map(c => (
-            <button key={c.id} className={`avatar-option ${activeTheme === c.id ? 'selected' : ''}`} onClick={() => handleChangeTheme(c)}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: c.hex === 'animated' ? 'linear-gradient(135deg, #facc15, #a855f7, #06b6d4)' : c.hex, boxShadow: `0 0 10px ${c.hex === 'animated' ? '#a855f7' : c.hex}` }}></div>
-            </button>
-          ))}
-          {/* Mock locked colors to show there's more to earn */}
-          {[1,2,3,4].map(idx => (
-           <div key={`locked-${idx}`} className="avatar-option" style={{ opacity: 0.3, cursor: 'not-allowed', background: 'var(--bg-surface-alt)' }}>
-              🔒
-           </div> 
-          )).slice(0, 8 - unlockedColors.length)}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderMissions = () => (
-    <div className="page page-enter" style={{ paddingTop: 'var(--space-2xl)' }}>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-xl)', textAlign: 'center' }}>Today's Missions</h2>
-      
-      {missions.length === 0 ? (
-        <div className="empty-state">
-           <TierCrest tierName={tierName} />
-           <h3 style={{ marginTop: 24 }}>All caught up!</h3>
-           <p className="empty-state-text">You're amazing today. 🎉</p>
-        </div>
-      ) : missionStates.map(m => (
-        <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
-          <span className="mission-icon" style={{ fontSize: '2.5rem' }}>{m.icon}</span>
-          <div className="mission-info" style={{ marginLeft: 8 }}>
-            <div className="mission-name" style={{ fontSize: '1.2rem', marginBottom: 8 }}>{m.name}</div>
-            <div className="mission-rewards">
-              <span className="badge badge-gold" style={{ fontSize: '0.9rem' }}>⭐ {m.xp_reward} XP</span>
-              <span className="badge badge-amber" style={{ fontSize: '0.9rem' }}>🪙 {m.coin_reward}</span>
+      {/* ── HERO CARD ── */}
+      <div style={{ padding: '20px 16px 0' }}>
+        <div className="hero-card" style={{ boxShadow: 'var(--glow-primary)', borderColor: 'var(--primary-dim)', marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <div style={{ width: 64, height: 64 }}>
+              <TierCrest tierName={tierName} glowColor="var(--primary)" />
             </div>
           </div>
-          <div className="mission-actions" style={{ marginLeft: 'auto' }}>
-            {(m.status === 'available' || m.status === 'rejected') ? (
-              <button 
-                className="btn btn-primary" 
-                style={{ padding: '16px 24px', fontSize: '1.2rem', minWidth: 120 }}
-                onClick={(e) => handleSubmitMission(m.id, e)}
-              >
-                {m.status === 'rejected' ? 'Retry ↻' : 'Done! ✓'}
-              </button>
-            ) : m.status === 'pending' ? (
-              <div style={{ textAlign: 'center', opacity: 0.8 }}>
-                <span style={{ fontSize: '2rem' }}>⏳</span>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Waiting</div>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', animation: 'scaleIn 0.5s ease-out' }}>
-                <span style={{ fontSize: '2rem' }}>✅</span>
-                <div style={{ fontSize: '0.8rem', color: 'var(--green)' }}>Done!</div>
-              </div>
-            )}
+          <div className="hero-avatar"><AvatarDisplay avatarString={child.avatar} /></div>
+          <h2 className="hero-name">{child.name}</h2>
+
+          <div className="xp-bar-container" style={{ marginTop: 16 }}>
+            <div className="xp-bar-label">
+              <span>Next: Lv {level + 1}</span>
+              <span>{xpDisplay}</span>
+            </div>
+            <div className="xp-bar-track" style={{ height: 14 }}>
+              <div className="xp-bar-fill" style={{ width: `${Math.round(xpProgress * 100)}%`, background: 'var(--primary)', transition: 'width 0.8s ease-out' }} />
+            </div>
+          </div>
+
+          <div className="hero-stats" style={{ marginTop: 16 }}>
+            <div className="stat-item"><span className="stat-icon">🪙</span><span className="stat-value-amber">{child.coins} coins</span></div>
+            {child.streak > 0 && <div className="stat-item"><span className="stat-icon">🔥</span><span className="stat-value-cyan">{child.streak}-day streak</span></div>}
           </div>
         </div>
-      ))}
-    </div>
-  );
-
-  const renderShop = () => (
-    <div className="page page-enter" style={{ paddingTop: 'var(--space-2xl)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 'var(--space-xl)', position: 'relative' }}>
-         <h2 style={{ fontSize: '2rem', fontWeight: 800, textAlign: 'center' }}>Reward Shop</h2>
-         <div className="stat-item" style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--amber-dim)' }}>
-           <span className="stat-icon">🪙</span>
-           <span className="stat-value-amber">{child.coins}</span>
-         </div>
       </div>
 
-      {rewards.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-emoji">🛒</div>
-          <p className="empty-state-text">No rewards right now.</p>
-        </div>
-      ) : (
-        <div className="reward-grid">
-          {rewards.map(r => {
-            const canAfford = child.coins >= r.cost;
-            return (
-              <div key={r.id} className="reward-card" style={{ padding: 'var(--space-xl)', border: `2px solid ${canAfford ? 'var(--primary)' : 'var(--bg-glass-border)'}`, opacity: canAfford ? 1 : 0.6 }}>
-                <div className="reward-icon" style={{ fontSize: '3rem' }}>{r.icon}</div>
-                <div className="reward-name" style={{ fontSize: '1.2rem', marginTop: 12 }}>{r.name}</div>
-                <div className="reward-cost" style={{ fontSize: '1.1rem', margin: '12px 0' }}>🪙 {r.cost}</div>
-                <button 
-                  className={`btn ${canAfford ? 'btn-primary' : 'btn-ghost'} btn-block`}
-                  style={{ padding: '12px' }}
-                  disabled={!canAfford}
-                  onClick={(e) => handleRedeem(r, e)}
-                >
-                  {canAfford ? 'Redeem!' : 'Need coins'}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+      {/* ── MISSIONS ── */}
+      <div style={{ padding: '0 16px', marginBottom: 32 }}>
+        <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 14, letterSpacing: '-0.01em' }}>
+          🎯 Today's Missions
+        </h3>
 
-  return (
-    <AppShell role="kid" activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'hall' && renderHall()}
-      {activeTab === 'missions' && renderMissions()}
-      {activeTab === 'shop' && renderShop()}
-    </AppShell>
+        {missionStates.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-emoji">🌟</div>
+            <p className="empty-state-text">All done — you're amazing!</p>
+          </div>
+        ) : missionStates.map(m => {
+          const hasProgress = m.maxPerPeriod > 1;
+          return (
+            <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: '14px 16px', marginBottom: 10 }}>
+              {/* Mission icon: photo or emoji */}
+              <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
+                {m.image
+                  ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : m.icon
+                }
+              </div>
+
+              <div className="mission-info" style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
+                <div className="mission-name" style={{ fontSize: '1.05rem', marginBottom: 4 }}>{m.name}</div>
+                <div className="mission-rewards">
+                  <span className="badge badge-gold" style={{ fontSize: '0.82rem' }}>⭐ {m.xp_reward} XP</span>
+                  <span className="badge badge-amber" style={{ fontSize: '0.82rem' }}>🪙 {m.coin_reward}</span>
+                  {hasProgress && (
+                    <span className="badge" style={{ fontSize: '0.75rem', background: 'var(--bg-deep)', color: 'var(--text-muted)' }}>
+                      {m.periodDone}/{m.maxPerPeriod}×
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mission-actions" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                {(m.status === 'available' || m.status === 'retry') ? (
+                  <button
+                    className="btn btn-primary"
+                    style={{ padding: '12px 20px', fontSize: '1.1rem', minWidth: 90 }}
+                    onClick={(e) => handleSubmitMission(m.id, e)}
+                  >
+                    {m.status === 'retry' ? 'Retry ↻' : 'Done! ✓'}
+                  </button>
+                ) : m.status === 'pending' ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <span style={{ fontSize: '1.8rem' }}>⏳</span>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Waiting</div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', animation: 'scaleIn 0.5s ease-out' }}>
+                    <span style={{ fontSize: '1.8rem' }}>✅</span>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--green)' }}>Done!</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── REWARD SHOP ── */}
+      <div style={{ padding: '0 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.01em' }}>🛒 Reward Shop</h3>
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--amber-dim)', borderRadius: 'var(--radius-full)', padding: '6px 14px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--amber)' }}>
+            🪙 {child.coins}
+          </div>
+        </div>
+
+        {rewards.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-emoji">🛒</div>
+            <p className="empty-state-text">No rewards set up yet.</p>
+          </div>
+        ) : (
+          <div className="reward-grid">
+            {rewards.map(r => {
+              const canAfford = child.coins >= r.cost;
+              return (
+                <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)', border: `2px solid ${canAfford ? 'var(--primary)' : 'var(--bg-glass-border)'}`, opacity: canAfford ? 1 : 0.6 }}>
+                  <div className="reward-icon" style={{ fontSize: '2.8rem' }}>{r.icon}</div>
+                  <div className="reward-name" style={{ fontSize: '1rem', marginTop: 10 }}>{r.name}</div>
+                  <div className="reward-cost" style={{ fontSize: '1rem', margin: '8px 0' }}>🪙 {r.cost}</div>
+                  <button
+                    className={`btn ${canAfford ? 'btn-primary' : 'btn-ghost'} btn-block`}
+                    style={{ padding: '10px' }}
+                    disabled={!canAfford}
+                    onClick={(e) => handleRedeem(r, e)}
+                  >
+                    {canAfford ? 'Redeem!' : 'Need coins'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
