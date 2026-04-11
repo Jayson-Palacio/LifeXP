@@ -1,8 +1,9 @@
 "use server"
 
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../utils/supabase/server';
 
 export async function verifyParentPin(pin) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('app_settings')
     .select('parent_pin')
@@ -13,6 +14,7 @@ export async function verifyParentPin(pin) {
 }
 
 export async function changeParentPin(currentPin, newPin) {
+  const supabase = createClient();
   const { data } = await supabase
     .from('app_settings')
     .select('parent_pin')
@@ -32,6 +34,7 @@ export async function changeParentPin(currentPin, newPin) {
 }
 
 export async function updateAppSettings(settings) {
+  const supabase = createClient();
   const { error } = await supabase
     .from('app_settings')
     .update(settings)

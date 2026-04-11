@@ -1,8 +1,9 @@
 "use server"
 
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../utils/supabase/server';
 
 export async function submitSetupData(pin, childName, childAvatar, missionName, missionIcon) {
+  const supabase = createClient();
   try {
     // 1. Update App Settings
     const { error: settingsError } = await supabase

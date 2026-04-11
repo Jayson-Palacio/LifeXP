@@ -1,8 +1,9 @@
-import { supabase } from '../../../lib/supabase';
+import { createClient } from '../../../utils/supabase/server';
 import { redirect } from 'next/navigation';
 import ChildDashboardClient from '../../../components/ChildDashboardClient';
 
 export default async function ChildDashboardPage({ params }) {
+  const supabase = createClient();
   const { id } = await params;
 
   // Fetch child

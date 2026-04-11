@@ -172,6 +172,20 @@ export default function SettingsTab({ initialSettings }) {
           </div>
         )}
       </div>
+
+      {/* ACCOUNT SETTINGS */}
+      <div style={{ marginTop: 'var(--space-2xl)', textAlign: 'center' }}>
+        <button 
+          onClick={async () => {
+            const { logout } = await import('../app/login/actions');
+            await logout();
+          }}
+          className="btn btn-ghost" 
+          style={{ color: 'var(--red)' }}
+        >
+          Sign Out of Kaeluma
+        </button>
+      </div>
     </div>
   );
 }
