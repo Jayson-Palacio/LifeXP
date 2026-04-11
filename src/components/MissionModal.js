@@ -13,11 +13,11 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
   
   const [missionFrequency, setMissionFrequency] = useState(defaultFrequency);
   const [missionCropSrc, setMissionCropSrc] = useState(null);
-  const [pendingMissionImage, setPendingMissionImage] = useState(null);
+  const [missionImage, setMissionImage] = useState(isEdit ? modal.data?.image || null : null);
   
   // Track coins for dynamic XP calculation
   const [coinAmount, setCoinAmount] = useState(modal.data?.coin_reward ?? 5);
-  const calculatedXP = Math.min((coinAmount * 10) + 10, 500);
+  const calculatedXP = Math.min(Math.max((coinAmount * 10), 10), 500);
 
   // Assignment tracking
   const defaultAssigned = modal.data?.assigned_to || [];
@@ -34,7 +34,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
         <p style={{ textAlign: 'center', marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Crop the mission photo</p>
         <InlineCrop
           imageSrc={missionCropSrc}
-          onConfirm={(dataUrl) => { setPendingMissionImage(dataUrl); setMissionCropSrc(null); }}
+          onConfirm={(dataUrl) => { setMissionImage(dataUrl); setMissionCropSrc(null); }}
           onCancel={() => setMissionCropSrc(null)}
         />
       </div>
@@ -51,7 +51,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
         xp_reward: calculatedXP,
         coin_reward: coinAmount,
         icon: fd.get('icon') || '⭐',
-        image: pendingMissionImage || (isEdit ? modal.data?.image || null : null),
+        image: missionImage,
         max_completions: parseInt(fd.get('max_completions')) || 1,
         max_completions_per_period: parseInt(fd.get('max_completions_per_period')) || 1,
         frequency: missionFrequency,
@@ -194,18 +194,18 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '9px 14px', borderRadius: 'var(--radius-md)',
-            border: pendingMissionImage || modal.data?.image ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)',
-            background: pendingMissionImage || modal.data?.image ? 'var(--primary-dim)' : 'var(--bg-glass)',
+            border: missionImage ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)',
+            background: missionImage ? 'var(--primary-dim)' : 'var(--bg-glass)',
             cursor: 'pointer',
           }}>
-            {(pendingMissionImage || modal.data?.image) ? (
+            {missionImage ? (
               <>
                 <img
-                  src={pendingMissionImage || modal.data?.image}
+                  src={missionImage}
                   alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }}
                 />
                 <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.85rem' }}>📷 Photo set — tap to change</span>
-                {(pendingMissionImage || modal.data?.image) && <button type="button" style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }} onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); setPendingMissionImage(null); }}>✕</button>}
+                <button type="button" style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }} onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); setMissionImage(null); }}>✕</button>
               </>
             ) : (
               <span style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.85rem' }}>📷 Upload mission photo</span>
@@ -215,7 +215,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
       </div>
 
       {/* ICON EMOJI */}
-      {!(pendingMissionImage || modal.data?.image) && (
+      {!missionImage && (
         <div className="input-group" style={{ marginBottom: 14 }}>
           <label>Emoji Icon</label>
           <GroupedEmojiPicker
