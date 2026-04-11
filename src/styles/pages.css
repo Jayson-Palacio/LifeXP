@@ -20,28 +20,145 @@
   min-height: 100dvh;
   text-align: center;
   padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
 }
 
-.role-select-logo {
-  font-size: 4rem;
-  margin-bottom: var(--space-md);
-  animation: levelUpPulse 1s var(--ease-bounce);
+/* Kaeluma Background */
+.kaeluma-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(-45deg, #0f172a, #312e81, #1e1b4b, #000000);
+  background-size: 400% 400%;
+  animation: cosmicGradient 15s ease infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.role-select-title {
-  font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: var(--space-xs);
-  background: linear-gradient(135deg, var(--gold), var(--purple));
+@keyframes cosmicGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Premium Kaeluma Typography */
+.kaeluma-logo-spin {
+  font-size: 5.5rem;
+  margin-bottom: -10px;
+  animation: floatSpin 6s ease-in-out infinite, dropFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0; /* from dropFadeIn */
+  text-shadow: 0 0 30px rgba(129, 140, 248, 0.6);
+}
+
+@keyframes floatSpin {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(8deg); }
+}
+
+.kaeluma-title {
+  font-size: 4.5rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #a855f7, #6366f1, #ec4899);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
+  margin: 0;
+  opacity: 0;
+  animation: dropFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+@keyframes dropFadeIn {
+  from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .role-select-subtitle {
   color: var(--text-muted);
   margin-bottom: var(--space-2xl);
-  font-size: 0.95rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: dropFadeIn 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+/* Glassmorphism Profile Cards */
+.kaeluma-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-lg);
+  min-width: 170px;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.4s var(--ease-bounce);
+  opacity: 0; 
+  animation: cardPopIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.kaeluma-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; right: 0; bottom: 0;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: skewX(-20deg);
+  transition: all 0.5s ease;
+}
+
+.kaeluma-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-8px) scale(1.05);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), var(--glow-primary); 
+}
+
+.kaeluma-card:hover::before {
+  left: 200%;
+  transition: all 0.6s ease;
+}
+
+@keyframes cardPopIn {
+  0% { opacity: 0; transform: translateY(40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Parent Lock Icon */
+.sleek-parent-btn {
+  position: absolute;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.sleek-parent-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-bright);
+  transform: scale(1.1) rotate(5deg);
+  border-color: rgba(255,255,255,0.3);
+  box-shadow: 0 0 15px rgba(255,255,255,0.1);
 }
 
 .role-select-buttons {

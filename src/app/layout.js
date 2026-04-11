@@ -13,8 +13,8 @@ const outfit = Outfit({
 });
 
 export const metadata = {
-  title: "LifeXP — Turn Real Life Into a Game",
-  description: "LifeXP — Turn your kid's daily tasks into a game they actually enjoy. Earn XP, level up, and redeem rewards!",
+  title: "Kaeluma — Turn Real Life Into a Game",
+  description: "Kaeluma — Turn your kid's daily tasks into a magical game they actually enjoy. Earn XP, level up, and redeem rewards!",
 };
 
 export default function RootLayout({ children }) {
