@@ -6,13 +6,18 @@ export async function submitSetupData(pin, childName, childAvatar, missionName, 
   const supabase = await createClient();
   try {
     // 1. Update App Settings
-    const { error: settingsError } = await supabase
-      .from('app_settings')
-      .update({ parent_pin: pin, setup_complete: true })
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-      
-    if (settingsError) {
-      await supabase.from('app_settings').insert([{ parent_pin: pin, setup_complete: true }]);
+    const { data: existingSettings } = await supabase.from('app_settings').select('id').maybeSingle();
+    
+    if (existingSettings) {
+      await supabase.from('app_settings')
+        .update({ parent_pin: pin, setup_complete: true })
+        .eq('id', existingSettings.id);
+    } else {
+      await supabase.from('app_settings').insert([{ 
+        parent_pin: pin, 
+        setup_complete: true,
+        family_name: 'Our Family'
+      }]);
     }
     
     // 2. Add Child
