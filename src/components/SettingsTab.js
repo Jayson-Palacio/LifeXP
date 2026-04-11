@@ -67,7 +67,12 @@ export default function SettingsTab({ initialSettings }) {
 
   return (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-xl)' }}>⚙️ Settings</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>⚙️ Settings</h2>
+        <button className="cool-home-btn" onClick={() => window.location.href='/'}>
+          🏠 <span>Home</span>
+        </button>
+      </div>
 
       {/* APPROVAL TOGGLE */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>

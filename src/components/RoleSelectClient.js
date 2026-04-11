@@ -77,7 +77,7 @@ export default function RoleSelectClient({ childrenData }) {
         onClick={handleParentClick}
         title="Parent Mode"
       >
-        🔒
+        🔒 <span className="sleek-parent-btn-text">Parent Mode</span>
       </button>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', maxWidth: 800, margin: '0 auto', zIndex: 1 }}>

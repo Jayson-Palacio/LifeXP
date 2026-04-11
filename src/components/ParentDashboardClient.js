@@ -272,7 +272,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const renderManage = () => (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-lg)' }}>Library</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Library</h2>
+        <button className="cool-home-btn" onClick={() => router.push('/')}>
+          🏠 <span>Home</span>
+        </button>
+      </div>
       
       <div style={{ display: 'flex', background: 'var(--bg-glass)', borderRadius: 'var(--radius-full)', padding: 4, marginBottom: 'var(--space-xl)', border: '1px solid var(--bg-glass-border)' }}>
         <button className={`btn ${manageTab === 'missions' ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={() => setManageTab('missions')}>🎯 Missions</button>
