@@ -443,7 +443,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                if (!reward) return null;
                return (
                  <div key={red.id} style={{ flexShrink: 0, width: 140, padding: 12, borderRadius: 'var(--radius-md)', background: 'var(--bg-surface)', border: '1px solid var(--amber-dim)', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                   <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>{reward.icon || '🎁'}</div>
+                   <div style={{ width: 48, height: 48, margin: '0 auto 8px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
+                     {reward.image
+                       ? <img src={reward.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                       : (reward.icon || '🎁')
+                     }
+                   </div>
                    <div style={{ fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reward.name}</div>
                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Waiting for parent</div>
                  </div>
@@ -462,21 +467,33 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           </div>
         </div>
 
-        {rewards.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-emoji">🛒</div>
-            <p className="empty-state-text">No rewards set up yet.</p>
-          </div>
-        ) : (
-          <div className="reward-grid">
-            {rewards.map(r => {
-              const canAfford = child.coins >= r.cost;
-              return (
-                <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)', border: `2px solid ${canAfford ? 'var(--primary)' : 'var(--bg-glass-border)'}`, opacity: canAfford ? 1 : 0.6 }}>
-                  <div className="reward-icon" style={{ fontSize: '2.8rem' }}>{r.icon}</div>
-                  <div className="reward-name" style={{ fontSize: '1rem', marginTop: 10 }}>{r.name}</div>
-                  <div className="reward-cost" style={{ fontSize: '1rem', margin: '8px 0' }}>🪙 {r.cost}</div>
-                  <button
+        {(() => {
+          const childRewards = rewards.filter(r => !r.assigned_to || r.assigned_to.length === 0 || r.assigned_to.includes(child.id));
+          
+          if (childRewards.length === 0) {
+            return (
+              <div className="empty-state">
+                <div className="empty-state-emoji">🛒</div>
+                <p className="empty-state-text">No rewards set up yet.</p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="reward-grid">
+              {childRewards.map(r => {
+                const canAfford = child.coins >= r.cost;
+                return (
+                  <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)', border: `2px solid ${canAfford ? 'var(--primary)' : 'var(--bg-glass-border)'}`, opacity: canAfford ? 1 : 0.6 }}>
+                    <div className="reward-icon" style={{ width: 64, height: 64, margin: '0 auto 12px', borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2.8rem' }}>
+                      {r.image
+                        ? <img src={r.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : (r.icon || '🎁')
+                      }
+                    </div>
+                    <div className="reward-name" style={{ fontSize: '1rem', marginTop: 10 }}>{r.name}</div>
+                    <div className="reward-cost" style={{ fontSize: '1rem', margin: '8px 0' }}>🪙 {r.cost}</div>
+                    <button
                     className={`btn ${canAfford ? 'btn-primary' : 'btn-ghost'} btn-block`}
                     style={{ padding: '10px' }}
                     disabled={!canAfford}
@@ -487,8 +504,9 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                 </div>
               );
             })}
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

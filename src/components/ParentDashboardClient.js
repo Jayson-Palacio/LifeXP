@@ -188,7 +188,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
              return (
                 <div key={red.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--secondary-dim, rgba(168,85,247,0.3))', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-md)', boxShadow: 'var(--glow-primary)' }}>
                   <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                     <div style={{ fontSize: '3rem', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyItems: 'center' }}>{reward.icon || '🎁'}</div>
+                     <div style={{ flexShrink: 0, width: 56, height: 56, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
+                       {reward.image
+                         ? <img src={reward.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                         : (reward.icon || '🎁')
+                       }
+                     </div>
                      <div>
                         <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{child.name} redeemed:</div>
                         <div style={{ fontWeight: 800, fontSize: '1.4rem' }}>{reward.name}</div>
@@ -301,15 +306,28 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         <div>
           <button className="btn btn-primary btn-block btn-lg" style={{ marginBottom: 'var(--space-2xl)' }} onClick={() => setModal({ type: 'reward', data: null })}>+ Add Reward</button>
           
-          <div className="reward-grid">
-            {rewards.map(r => (
-              <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)' }}>
-                <div className="reward-icon" style={{ fontSize: '3rem' }}>{r.icon}</div>
-                <div className="reward-name" style={{ fontSize: '1.1rem', marginTop: 12 }}>{r.name}</div>
-                <div className="reward-cost" style={{ fontSize: '1rem', marginTop: 8, marginBottom: 16 }}>🪙 {r.cost}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModal({ type: 'reward', data: r })}>Edit</button>
-                  <button className="btn btn-ghost" style={{ color: 'var(--red)' }} onClick={() => handleDeleteReward(r.id)}>🗑</button>
+          <div>
+            {rewards.length === 0 ? (
+              <div className="empty-state">
+                 <p className="empty-state-text">No rewards added yet.</p>
+              </div>
+            ) : rewards.map(r => (
+              <div key={r.id} className="mission-card" style={{ padding: 'var(--space-lg)' }}>
+                <div className="mission-icon" style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '1.8rem' }}>
+                  {r.image
+                    ? <img src={r.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : r.icon
+                  }
+                </div>
+                <div className="mission-info" style={{ marginLeft: 8 }}>
+                  <div className="mission-name" style={{ fontSize: '1.2rem' }}>{r.name}</div>
+                  <div className="mission-rewards" style={{ marginTop: 8 }}>
+                    <span className="badge badge-amber">🪙 {r.cost}</span>
+                  </div>
+                </div>
+                <div className="mission-actions" style={{ marginLeft: 'auto' }}>
+                  <button className="btn btn-ghost btn-icon" onClick={() => setModal({ type: 'reward', data: r })}>✎</button>
+                  <button className="btn btn-ghost btn-icon" style={{ color: 'var(--red)' }} onClick={() => handleDeleteReward(r.id)}>🗑</button>
                 </div>
               </div>
             ))}
@@ -437,6 +455,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             {modal.type === 'reward' && 
               <RewardModal 
                 modal={modal} 
+                childrenList={children}
                 closeModal={closeModal} 
                 onSuccess={(data, isEdit) => {
                   if (isEdit) setRewards(prev => prev.map(r => r.id === data.id ? data : r));
