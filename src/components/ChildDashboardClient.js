@@ -13,6 +13,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [loadingMissions, setLoadingMissions] = useState({});
   const themePickerRef = useRef(null);
 
   const { level, tierName, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
@@ -71,8 +72,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       if (today < m.start_date || today > m.end_date) return null;
     }
 
-    if (periodRemaining <= 0 && !hasPending) return { ...m, status: 'done', periodDone, maxPerPeriod };
-    if (hasPending) return { ...m, status: 'pending', periodDone, maxPerPeriod, periodRemaining };
+    if (periodRemaining <= 0) {
+      if (hasPending) return { ...m, status: 'pending', periodDone, maxPerPeriod, periodRemaining };
+      return { ...m, status: 'done', periodDone, maxPerPeriod, periodRemaining };
+    }
     const isRetry = all.some(c => c.status === 'rejected') && periodDone === 0;
     return { ...m, status: isRetry ? 'retry' : 'available', periodDone, maxPerPeriod, periodRemaining };
   };
@@ -81,8 +84,9 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
   // ─── Handlers ─────────────────────────────────────────────────
   const handleSubmitMission = async (mission, e) => {
-    e.target.disabled = true;
-    e.target.textContent = '...';
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    setLoadingMissions(prev => ({ ...prev, [mission.id]: true }));
 
     if (!requireApproval) {
       // Auto-approve: credit XP and coins immediately
@@ -104,8 +108,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         const { getLevelForXP: getLvl } = await import('../lib/levels');
         const oldLevel = getLvl(currentXp);
         const newLevel = getLvl(newXp);
-        showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', e.clientX + 20, e.clientY - 20);
-        showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', e.clientX + 20, e.clientY + 10);
+        showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', clientX + 20, clientY - 20);
+        showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', clientX + 20, clientY + 10);
 
         if (newLevel.level > oldLevel.level) {
           const { showLevelUp, showTierUp } = await import('../lib/ui');
@@ -118,9 +122,6 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           }
         }
         showToast('Mission complete! ⭐ Rewards added!');
-      } else {
-        e.target.disabled = false;
-        e.target.textContent = 'Done! ✓';
       }
     } else {
       // Require approval path: just insert as pending
@@ -129,14 +130,14 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         child_id: child.id,
         status: 'pending',
       }]).select().single();
+      
       if (data) {
         setCompletions(prev => [...prev, data]);
         showToast('Done! ⏳ Waiting for parent approval');
-      } else {
-        e.target.disabled = false;
-        e.target.textContent = 'Done! ✓';
       }
     }
+    
+    setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
   };
 
   const handleRedeem = async (r, e) => {
@@ -348,20 +349,23 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                 {(m.status === 'available' || m.status === 'retry') ? (
                   <button
                     className="btn btn-primary"
-                    style={{ padding: '12px 20px', fontSize: '1.1rem', minWidth: 90 }}
+                    style={{ padding: '12px 20px', fontSize: '1.1rem', minWidth: 100, display: 'flex', justifyContent: 'center' }}
                     onClick={(e) => handleSubmitMission(m, e)}
+                    disabled={loadingMissions[m.id]}
                   >
-                    {m.status === 'retry' ? 'Retry ↻' : 'Done! ✓'}
+                    {loadingMissions[m.id] ? (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                    ) : (m.status === 'retry' ? 'Retry ↻' : 'Done! ✓')}
                   </button>
                 ) : m.status === 'pending' ? (
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ fontSize: '1.8rem' }}>⏳</span>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Waiting</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 'var(--radius-full)', background: 'var(--bg-glass)', border: '1px solid var(--amber-dim)', color: 'var(--amber)', fontWeight: 700, fontSize: '0.95rem' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Waiting</span>
                   </div>
                 ) : (
-                  <div style={{ textAlign: 'center', animation: 'scaleIn 0.5s ease-out' }}>
-                    <span style={{ fontSize: '1.8rem' }}>✅</span>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--green)' }}>Done!</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 'var(--radius-full)', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.25)', color: 'var(--green)', fontWeight: 800, fontSize: '0.95rem', animation: 'scaleIn 0.3s ease-out', boxShadow: '0 0 12px rgba(34, 197, 94, 0.1)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Done</span>
                   </div>
                 )}
               </div>
