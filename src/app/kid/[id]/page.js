@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import ChildDashboardClient from '../../../components/ChildDashboardClient';
 
 export default async function ChildDashboardPage({ params }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { id } = await params;
 
   // Fetch child

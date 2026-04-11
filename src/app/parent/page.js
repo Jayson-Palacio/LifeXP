@@ -5,7 +5,7 @@ import ParentDashboardClient from '../../components/ParentDashboardClient';
 export const dynamic = 'force-dynamic';
 
 export default async function ParentDashboardPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const [
     { data: appSettings },

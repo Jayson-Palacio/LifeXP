@@ -5,7 +5,7 @@ import RoleSelectClient from '../../components/RoleSelectClient';
 export const dynamic = 'force-dynamic';
 
 export default async function RoleSelectPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const { data: settings } = await supabase.from('app_settings').select('setup_complete').single();
   const setupComplete = settings?.setup_complete;

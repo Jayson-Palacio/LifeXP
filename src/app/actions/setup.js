@@ -3,7 +3,7 @@
 import { createClient } from '../../utils/supabase/server';
 
 export async function submitSetupData(pin, childName, childAvatar, missionName, missionIcon) {
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     // 1. Update App Settings
     const { error: settingsError } = await supabase
