@@ -17,7 +17,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const router = useRouter();
   
   // AppShell state
-  const [activeTab, setActiveTab] = useState('family');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [manageTab, setManageTab] = useState('missions');
   
   // Data State
   const [children, setChildren] = useState(initialChildren || []);
@@ -119,22 +120,55 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const closeModal = () => { setModal(null); };
 
-  const renderFamily = () => (
+  const renderOverview = () => (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      <button className="back-btn" onClick={() => router.push('/')} style={{ position: 'absolute', top: 'var(--space-lg)', right: 'var(--space-lg)' }}>Exit</button>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-xl)' }}>Your Family</h2>
+      {pending.length > 0 && (
+        <div style={{ marginBottom: 'var(--space-2xl)' }}>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 'var(--space-lg)' }}>Approvals Waiting</h2>
+          {pending.map(comp => {
+             const child = children.find(c => c.id === comp.child_id) || {};
+             const mission = missions.find(m => m.id === comp.mission_id) || {};
+             return (
+              <div key={comp.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--primary-dim)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-md)', boxShadow: 'var(--glow-primary)' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                   <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3rem' }} />
+                   <div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{child.name} submitted:</div>
+                      <div style={{ fontWeight: 800, fontSize: '1.4rem' }}>{mission.icon} {mission.name}</div>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                        <span className="badge badge-gold" style={{ fontSize: '0.9rem', padding: '4px 8px' }}>⭐ {mission.xp_reward} XP</span>
+                        <span className="badge badge-amber" style={{ fontSize: '0.9rem', padding: '4px 8px' }}>🪙 {mission.coin_reward}</span>
+                      </div>
+                   </div>
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
+                   <button className="btn btn-ghost" style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: 'none' }} onClick={(e) => handleReject(comp, e)}>✗ Reject</button>
+                   <button className="btn btn-success" style={{ flex: 2, padding: '12px', fontSize: '1.1rem' }} onClick={(e) => handleApprove(comp, e)}>✓ Approve!</button>
+                </div>
+              </div>
+             );
+          })}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Your Family</h2>
+        <button className="btn btn-ghost" onClick={() => router.push('/')} style={{ fontSize: '0.9rem' }}>Exit Mode</button>
+      </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
         {children.map(child => {
           const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
           const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
           const activeTheme = child.theme ? child.theme : tierColor;
+          
+          const childMissions = missions.filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(child.id));
 
           return (
             <div 
               key={child.id} 
               className={`theme-${activeTheme}`}
-              style={{ padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--primary-dim)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--glow-primary)', cursor: 'pointer' }}
+              style={{ padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--primary-dim)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--glow-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
               onClick={() => setInspectChildId(child.id)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
@@ -153,11 +187,15 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                 <span style={{ color: 'var(--amber)', fontWeight: 'bold' }}>🪙 {child.coins}</span>
                 {child.streak > 0 && <span style={{ color: 'var(--cyan)', fontWeight: 'bold' }}>🔥 {child.streak} days</span>}
               </div>
+              <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+                <div style={{ background: 'var(--bg-deep)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  🎯 {childMissions.length} Active Missions
+                </div>
+              </div>
             </div>
           );
         })}
         
-        {/* ADD KID BUTTON */}
         <div 
           style={{ padding: 'var(--space-lg)', background: 'var(--bg-glass)', border: '1px dashed var(--text-dim)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 140 }}
           onClick={() => setModal({ type: 'child', data: null })}
@@ -169,89 +207,59 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     </div>
   );
 
-  const renderApprovals = () => (
+  const renderManage = () => (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-xl)' }}>Approvals Waiting</h2>
+      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-lg)' }}>Library</h2>
       
-      {pending.length === 0 ? (
-        <div className="empty-state">
-           <div style={{ fontSize: '4rem', marginBottom: 16 }}>✅</div>
-           <h3 style={{ fontSize: '1.2rem' }}>All caught up!</h3>
-           <p className="empty-state-text">No pending approvals right now.</p>
-        </div>
-      ) : pending.map(comp => {
-         const child = children.find(c => c.id === comp.child_id) || {};
-         const mission = missions.find(m => m.id === comp.mission_id) || {};
-         return (
-          <div key={comp.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--text-dim)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-lg)' }}>
-            <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-               <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3rem' }} />
-               <div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{child.name} submitted:</div>
-                  <div style={{ fontWeight: 800, fontSize: '1.4rem' }}>{mission.icon} {mission.name}</div>
-                  <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                    <span className="badge badge-gold" style={{ fontSize: '1rem', padding: '6px 12px' }}>⭐ {mission.xp_reward} XP</span>
-                    <span className="badge badge-amber" style={{ fontSize: '1rem', padding: '6px 12px' }}>🪙 {mission.coin_reward}</span>
-                  </div>
-               </div>
-            </div>
-            {/* The One-Tap Power Actions */}
-            <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
-               <button className="btn btn-ghost" style={{ flex: 1, padding: '16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: 'none' }} onClick={(e) => handleReject(comp, e)}>✗ Reject</button>
-               <button className="btn btn-success" style={{ flex: 2, padding: '16px', fontSize: '1.2rem' }} onClick={(e) => handleApprove(comp, e)}>✓ Approve!</button>
-            </div>
-          </div>
-         );
-      })}
-    </div>
-  );
-
-  const renderMissions = () => (
-    <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-xl)' }}>Manage Missions</h2>
-      <button className="btn btn-primary btn-block btn-lg" style={{ marginBottom: 'var(--space-2xl)' }} onClick={() => setModal({ type: 'mission', data: null })}>+ Add Mission</button>
-      
-      {missions.length === 0 ? (
-        <div className="empty-state">
-           <p className="empty-state-text">No missions added yet.</p>
-        </div>
-      ) : missions.map(m => (
-        <div key={m.id} className="mission-card" style={{ padding: 'var(--space-lg)' }}>
-          <span className="mission-icon" style={{ fontSize: '2.5rem' }}>{m.icon}</span>
-          <div className="mission-info" style={{ marginLeft: 8 }}>
-            <div className="mission-name" style={{ fontSize: '1.2rem' }}>{m.name}</div>
-            <div className="mission-rewards" style={{ marginTop: 8 }}>
-              <span className="badge badge-gold">⭐ {m.xp_reward}</span>
-              <span className="badge badge-amber">🪙 {m.coin_reward}</span>
-            </div>
-          </div>
-          <div className="mission-actions" style={{ marginLeft: 'auto' }}>
-            <button className="btn btn-ghost btn-icon" onClick={() => setModal({ type: 'mission', data: m })}>✎</button>
-            <button className="btn btn-ghost btn-icon" style={{ color: 'var(--red)' }} onClick={() => handleDeleteMission(m.id)}>🗑</button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderRewards = () => (
-    <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 'var(--space-xl)' }}>Manage Rewards</h2>
-      <button className="btn btn-primary btn-block btn-lg" style={{ marginBottom: 'var(--space-2xl)' }} onClick={() => setModal({ type: 'reward', data: null })}>+ Add Reward</button>
-      
-      <div className="reward-grid">
-        {rewards.map(r => (
-          <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)' }}>
-            <div className="reward-icon" style={{ fontSize: '3rem' }}>{r.icon}</div>
-            <div className="reward-name" style={{ fontSize: '1.1rem', marginTop: 12 }}>{r.name}</div>
-            <div className="reward-cost" style={{ fontSize: '1rem', marginTop: 8, marginBottom: 16 }}>🪙 {r.cost}</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModal({ type: 'reward', data: r })}>Edit</button>
-              <button className="btn btn-ghost" style={{ color: 'var(--red)' }} onClick={() => handleDeleteReward(r.id)}>🗑</button>
-            </div>
-          </div>
-        ))}
+      <div style={{ display: 'flex', background: 'var(--bg-glass)', borderRadius: 'var(--radius-full)', padding: 4, marginBottom: 'var(--space-xl)', border: '1px solid var(--bg-glass-border)' }}>
+        <button className={`btn ${manageTab === 'missions' ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={() => setManageTab('missions')}>🎯 Missions</button>
+        <button className={`btn ${manageTab === 'rewards' ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={() => setManageTab('rewards')}>🎁 Rewards</button>
       </div>
+
+      {manageTab === 'missions' ? (
+        <div>
+          <button className="btn btn-primary btn-block btn-lg" style={{ marginBottom: 'var(--space-2xl)' }} onClick={() => setModal({ type: 'mission', data: null })}>+ Add Mission</button>
+          
+          {missions.length === 0 ? (
+            <div className="empty-state">
+               <p className="empty-state-text">No missions added yet.</p>
+            </div>
+          ) : missions.map(m => (
+            <div key={m.id} className="mission-card" style={{ padding: 'var(--space-lg)' }}>
+              <span className="mission-icon" style={{ fontSize: '2.5rem' }}>{m.icon}</span>
+              <div className="mission-info" style={{ marginLeft: 8 }}>
+                <div className="mission-name" style={{ fontSize: '1.2rem' }}>{m.name}</div>
+                <div className="mission-rewards" style={{ marginTop: 8 }}>
+                  <span className="badge badge-gold">⭐ {m.xp_reward}</span>
+                  <span className="badge badge-amber">🪙 {m.coin_reward}</span>
+                </div>
+              </div>
+              <div className="mission-actions" style={{ marginLeft: 'auto' }}>
+                <button className="btn btn-ghost btn-icon" onClick={() => setModal({ type: 'mission', data: m })}>✎</button>
+                <button className="btn btn-ghost btn-icon" style={{ color: 'var(--red)' }} onClick={() => handleDeleteMission(m.id)}>🗑</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div>
+          <button className="btn btn-primary btn-block btn-lg" style={{ marginBottom: 'var(--space-2xl)' }} onClick={() => setModal({ type: 'reward', data: null })}>+ Add Reward</button>
+          
+          <div className="reward-grid">
+            {rewards.map(r => (
+              <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)' }}>
+                <div className="reward-icon" style={{ fontSize: '3rem' }}>{r.icon}</div>
+                <div className="reward-name" style={{ fontSize: '1.1rem', marginTop: 12 }}>{r.name}</div>
+                <div className="reward-cost" style={{ fontSize: '1rem', marginTop: 8, marginBottom: 16 }}>🪙 {r.cost}</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModal({ type: 'reward', data: r })}>Edit</button>
+                  <button className="btn btn-ghost" style={{ color: 'var(--red)' }} onClick={() => handleDeleteReward(r.id)}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -291,6 +299,31 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                       <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: 8 }}>{child.streak} Day Streak</div>
                    </div>
                </div>
+               
+               <div style={{ marginBottom: 'var(--space-2xl)' }}>
+                 <h4 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 12 }}>🎯 Active Missions</h4>
+                 {(() => {
+                    const childMissions = missions.filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(child.id));
+                    if (childMissions.length === 0) return <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No active missions.</div>;
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {childMissions.map(m => (
+                           <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: 'var(--radius-md)' }}>
+                              <span style={{ fontSize: '1.8rem' }}>{m.icon}</span>
+                              <div style={{ flex: 1}}>
+                                <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>{m.name}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.max_completions_per_period}x {m.frequency}</div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6, flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <span className="badge badge-gold" style={{ fontSize: '0.75rem', padding: '2px 6px' }}>⭐ {m.xp_reward}</span>
+                                <span className="badge badge-amber" style={{ fontSize: '0.75rem', padding: '2px 6px' }}>🪙 {m.coin_reward}</span>
+                              </div>
+                           </div>
+                        ))}
+                      </div>
+                    );
+                 })()}
+               </div>
 
                <div style={{ marginBottom: 'var(--space-2xl)' }}>
                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontWeight: 'bold' }}>
@@ -316,10 +349,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   return (
     <>
       <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length }}>
-        {activeTab === 'family' && renderFamily()}
-        {activeTab === 'approvals' && renderApprovals()}
-        {activeTab === 'missions' && renderMissions()}
-        {activeTab === 'rewards' && renderRewards()}
+        {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'manage' && renderManage()}
         {activeTab === 'settings' && <SettingsTab initialSettings={settings} />}
       </AppShell>
 

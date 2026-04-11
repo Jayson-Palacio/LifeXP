@@ -19,11 +19,9 @@ export default function AppShell({
   ];
 
   const parentTabs = [
-    { id: 'family',    label: 'Family',    icon: '👨‍👩‍👧' },
-    { id: 'approvals', label: 'Approvals', icon: '✅', badge: notifications.approvals },
-    { id: 'missions',  label: 'Missions',  icon: '🎯' },
-    { id: 'rewards',   label: 'Rewards',   icon: '🎁' },
-    { id: 'settings',  label: 'Settings',  icon: '⚙️' }
+    { id: 'overview', label: 'Overview', icon: '🏠', badge: notifications.approvals },
+    { id: 'manage',   label: 'Manage',   icon: '🎯' },
+    { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
 
   const tabs = role === 'parent' ? parentTabs : kidTabs;
