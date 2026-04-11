@@ -1,34 +1,53 @@
 "use client";
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 // InlineCrop — image drag + pinch-to-zoom crop
-// Renders inline inside the modal — no z-index issues
 export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
   const containerRef = useRef(null);
+  const [naturalSize, setNaturalSize] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [dragging, setDragging] = useState(false);
   const startRef = useRef(null);
   const pinchRef = useRef(null);
-  const CROP_SIZE = 200;
-  const CONTAINER_SIZE = 280; // px (square)
 
-  // ─── Pan ───────────────────────────────────────────────────────
+  const CROP_SIZE = 200;
+  const CONTAINER_SIZE = 280;
+
+  // Measure natural dimensions on mount
+  useEffect(() => {
+    let active = true;
+    const img = new Image();
+    img.onload = () => {
+      if (active) setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    };
+    img.src = imageSrc;
+    return () => { active = false; };
+  }, [imageSrc]);
+
+  // Determine visual base size so the smallest dimension fills the container
+  let baseW = CONTAINER_SIZE;
+  let baseH = CONTAINER_SIZE;
+  if (naturalSize) {
+    const isLandscape = naturalSize.w > naturalSize.h;
+    baseW = isLandscape ? (naturalSize.w / naturalSize.h) * CONTAINER_SIZE : CONTAINER_SIZE;
+    baseH = isLandscape ? CONTAINER_SIZE : (naturalSize.h / naturalSize.w) * CONTAINER_SIZE;
+  }
+
   const clampOffset = useCallback((x, y, s = scale) => {
-    const imgSize = CONTAINER_SIZE * s;
-    const maxX = (imgSize - CROP_SIZE) / 2;
-    const maxY = (imgSize - CROP_SIZE) / 2;
+    if (!naturalSize) return { x: 0, y: 0 };
+    const maxX = (baseW * s - CROP_SIZE) / 2;
+    const maxY = (baseH * s - CROP_SIZE) / 2;
     return {
       x: Math.max(-maxX, Math.min(maxX, x)),
       y: Math.max(-maxY, Math.min(maxY, y)),
     };
-  }, [scale]);
+  }, [scale, baseW, baseH, naturalSize]);
 
   // ─── Desktop Pan (Mouse/Pen) ─────────────────────────────────────
   const handlePointerDown = (e) => {
-    if (e.pointerType === 'touch') return; // let TouchEvents handle this
-    e.preventDefault();
+    if (e.pointerType === 'touch') return;
     setDragging(true);
     startRef.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
     window.addEventListener('pointermove', handlePointerMove);
@@ -53,7 +72,7 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
       setDragging(true);
       startRef.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
     } else if (e.touches.length === 2) {
-      startRef.current = null; // stop panning
+      startRef.current = null;
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -63,11 +82,10 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
   };
 
   const handleTouchMove = (e) => {
+    // touch-action: none prevents scrolling, so we don't need preventDefault() here which causes warnings/fails
     if (e.touches.length === 1 && startRef.current) {
-      e.preventDefault(); // prevent native scroll while panning
       setOffset(clampOffset(e.touches[0].clientX - startRef.current.x, e.touches[0].clientY - startRef.current.y));
     } else if (e.touches.length === 2 && pinchRef.current) {
-      e.preventDefault(); // prevent native pinch zoom
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -86,7 +104,6 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
 
   // ─── Scroll wheel zoom (desktop) ──────────────────────────────
   const handleWheel = (e) => {
-    e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setScale(s => {
       const next = Math.max(0.8, Math.min(4, s * delta));
@@ -97,6 +114,8 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
 
   // ─── Export ───────────────────────────────────────────────────
   const handleConfirm = () => {
+    if (!naturalSize) return;
+
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -105,22 +124,17 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
       canvas.height = OUT;
       const ctx = canvas.getContext('2d');
 
-      // Circular clip
       ctx.beginPath();
       ctx.arc(OUT / 2, OUT / 2, OUT / 2, 0, Math.PI * 2);
       ctx.clip();
 
-      const imgSize = CONTAINER_SIZE * scale;
-      // Because objectFit: 'cover' is used, visual scale matches the smaller dimension to the container
-      const scaleToNatural = Math.min(img.naturalWidth / imgSize, img.naturalHeight / imgSize);
-      
-      const visualW = img.naturalWidth / scaleToNatural;
-      const visualH = img.naturalHeight / scaleToNatural;
+      const visualW = baseW * scale;
+      const visualH = baseH * scale;
 
-      // Calculate where the 200px crop hole is relative to the visual image top-left
-      // offset.x means the image moved RIGHT relative to container center. So the crop hole moved LEFT relative to image center.
       const srcVisualX = visualW / 2 - CROP_SIZE / 2 - offset.x; 
       const srcVisualY = visualH / 2 - CROP_SIZE / 2 - offset.y;
+
+      const scaleToNatural = naturalSize.w / visualW;
 
       const srcX = srcVisualX * scaleToNatural;
       const srcY = srcVisualY * scaleToNatural;
@@ -133,7 +147,9 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
     img.src = imageSrc;
   };
 
-  const imgSize = CONTAINER_SIZE * scale;
+  if (!naturalSize) {
+    return <div style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading image...</div>;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
@@ -144,7 +160,6 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
         Drag to pan · Pinch or scroll to zoom
       </p>
 
-      {/* Single container — image rendered once, crop ring overlaid */}
       <div
         ref={containerRef}
         style={{
@@ -165,16 +180,14 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
       >
-        {/* The image — rendered ONCE, scaled + panned */}
         <img
           src={imageSrc}
           alt="Crop"
           draggable={false}
           style={{
             position: 'absolute',
-            width: imgSize,
-            height: imgSize,
-            objectFit: 'cover',
+            width: baseW * scale,
+            height: baseH * scale,
             top: '50%',
             left: '50%',
             transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
@@ -182,7 +195,6 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
           }}
         />
 
-        {/* Dark overlay with circular hole — using box-shadow trick */}
         <div
           style={{
             position: 'absolute',
@@ -198,7 +210,6 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
         />
       </div>
 
-      {/* Zoom slider for accessibility */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: CONTAINER_SIZE }}>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🔍</span>
         <input
@@ -216,7 +227,6 @@ export default function InlineCrop({ imageSrc, onConfirm, onCancel }) {
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{Math.round(scale * 100)}%</span>
       </div>
 
-      {/* Actions */}
       <div style={{ display: 'flex', gap: 8, width: CONTAINER_SIZE }}>
         <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={onCancel}>
           ← Back
