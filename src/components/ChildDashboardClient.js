@@ -8,7 +8,7 @@ import { showToast, showFloat } from '../lib/ui';
 import TierCrest from './TierCrest';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards }) {
+export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, requireApproval = true }) {
   const router = useRouter();
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
@@ -80,20 +80,62 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const missionStates = missions.map(getMissionState).filter(Boolean);
 
   // ─── Handlers ─────────────────────────────────────────────────
-  const handleSubmitMission = async (missionId, e) => {
+  const handleSubmitMission = async (mission, e) => {
     e.target.disabled = true;
     e.target.textContent = '...';
-    const { data } = await supabase.from('completions').insert([{
-      mission_id: missionId,
-      child_id: child.id,
-      status: 'pending',
-    }]).select().single();
-    if (data) {
-      setCompletions(prev => [...prev, data]);
-      showToast('Done! ⏳ Waiting for parent approval');
+
+    if (!requireApproval) {
+      // Auto-approve: credit XP and coins immediately
+      const currentXp = child.total_xp_earned || child.xp || 0;
+      const newXp = currentXp + mission.xp_reward;
+      const newCoins = child.coins + mission.coin_reward;
+
+      const { data } = await supabase.from('completions').insert([{
+        mission_id: mission.id,
+        child_id: child.id,
+        status: 'approved',
+      }]).select().single();
+
+      if (data) {
+        await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins }).eq('id', child.id);
+        setChild(prev => ({ ...prev, xp: newXp, total_xp_earned: newXp, coins: newCoins }));
+        setCompletions(prev => [...prev, data]);
+
+        const { getLevelForXP: getLvl } = await import('../lib/levels');
+        const oldLevel = getLvl(currentXp);
+        const newLevel = getLvl(newXp);
+        showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', e.clientX + 20, e.clientY - 20);
+        showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', e.clientX + 20, e.clientY + 10);
+
+        if (newLevel.level > oldLevel.level) {
+          const { showLevelUp, showTierUp } = await import('../lib/ui');
+          const { checkColorUnlocks } = await import('../lib/levels');
+          if (newLevel.tierName !== oldLevel.tierName) {
+            showTierUp(newLevel.level, newLevel.tierName);
+          } else {
+            const unlocks = checkColorUnlocks(oldLevel.level, newLevel.level);
+            showLevelUp(newLevel.level, newLevel.tierName, unlocks.length > 0 ? unlocks[0] : null);
+          }
+        }
+        showToast('Mission complete! ⭐ Rewards added!');
+      } else {
+        e.target.disabled = false;
+        e.target.textContent = 'Done! ✓';
+      }
     } else {
-      e.target.disabled = false;
-      e.target.textContent = 'Done! ✓';
+      // Require approval path: just insert as pending
+      const { data } = await supabase.from('completions').insert([{
+        mission_id: mission.id,
+        child_id: child.id,
+        status: 'pending',
+      }]).select().single();
+      if (data) {
+        setCompletions(prev => [...prev, data]);
+        showToast('Done! ⏳ Waiting for parent approval');
+      } else {
+        e.target.disabled = false;
+        e.target.textContent = 'Done! ✓';
+      }
     }
   };
 
@@ -307,7 +349,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                   <button
                     className="btn btn-primary"
                     style={{ padding: '12px 20px', fontSize: '1.1rem', minWidth: 90 }}
-                    onClick={(e) => handleSubmitMission(m.id, e)}
+                    onClick={(e) => handleSubmitMission(m, e)}
                   >
                     {m.status === 'retry' ? 'Retry ↻' : 'Done! ✓'}
                   </button>

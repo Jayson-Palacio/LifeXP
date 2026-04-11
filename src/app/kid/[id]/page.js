@@ -18,6 +18,10 @@ export default async function ChildDashboardPage({ params }) {
   
   // Fetch rewards
   const { data: rewards } = await supabase.from('rewards').select('*').order('cost');
+
+  // Fetch global settings for require_approval
+  const { data: appSettings } = await supabase.from('app_settings').select('require_approval').single();
+  const requireApproval = appSettings?.require_approval !== false;
   
   // Fetch today's completions for this child by getting all completions and filtering (or just querying)
   const todayStart = new Date();
@@ -35,6 +39,7 @@ export default async function ChildDashboardPage({ params }) {
       missions={missions || []}
       initialCompletions={completions || []}
       rewards={rewards || []}
+      requireApproval={requireApproval}
     />
   );
 }
