@@ -12,30 +12,28 @@ export default function AppShell({
 }) {
   const router = useRouter();
 
-  // Defines the tabs based on the active role
   const kidTabs = [
-    { id: 'hall', label: 'Hall', icon: '🏅' },
+    { id: 'hall',     label: 'Hall',     icon: '🏅' },
     { id: 'missions', label: 'Missions', icon: '🎯' },
-    { id: 'shop', label: 'Shop', icon: '🛒' }
+    { id: 'shop',     label: 'Shop',     icon: '🛒' }
   ];
 
   const parentTabs = [
-    { id: 'family', label: 'Family', icon: '👨‍👩‍👧' },
+    { id: 'family',    label: 'Family',    icon: '👨‍👩‍👧' },
     { id: 'approvals', label: 'Approvals', icon: '✅', badge: notifications.approvals },
-    { id: 'missions', label: 'Missions', icon: '🎯' },
-    { id: 'rewards', label: 'Rewards', icon: '🎁' }
+    { id: 'missions',  label: 'Missions',  icon: '🎯' },
+    { id: 'rewards',   label: 'Rewards',   icon: '🎁' },
+    { id: 'settings',  label: 'Settings',  icon: '⚙️' }
   ];
 
   const tabs = role === 'parent' ? parentTabs : kidTabs;
 
   return (
     <div className="app-shell">
-      {/* Scrollable Content Area */}
       <div className="app-shell-content">
         {children}
       </div>
 
-      {/* Persistent Bottom Navigation */}
       <nav className="bottom-nav">
         <div className="bottom-nav-inner">
           {tabs.map(tab => (

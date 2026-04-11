@@ -1,40 +1,58 @@
--- Execute this in the Supabase SQL Editor to set up your tables
+-- LifeXP Complete Schema (run this in Supabase SQL Editor)
+-- Safe to run on a fresh project
 
--- Enable UUID extension (usually enabled by default in Supabase)
 create extension if not exists "uuid-ossp";
 
--- App setup / settings (single row table)
-create table app_settings (
+-- ============================================
+-- APP SETTINGS (single row)
+-- ============================================
+create table if not exists app_settings (
   id uuid primary key default uuid_generate_v4(),
   parent_pin text,
-  setup_complete boolean default false
+  setup_complete boolean default false,
+  require_approval boolean default true,
+  family_name text default 'Our Family'
 );
 
-create table children (
+-- ============================================
+-- CHILDREN
+-- ============================================
+create table if not exists children (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   avatar text not null,
   xp integer default 0,
+  total_xp_earned integer default 0,
   coins integer default 0,
   level integer default 1,
   streak integer default 0,
   last_completion_date text,
   pending_level_up boolean default false,
   new_level_info jsonb,
-  theme text default 'indigo'
+  theme text default 'seedling',
+  unlocked_colors text[] default ARRAY['seedling']
 );
 
-create table missions (
+-- ============================================
+-- MISSIONS
+-- ============================================
+create table if not exists missions (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   xp_reward integer default 10,
   coin_reward integer default 5,
   icon text,
   is_recurring boolean default true,
-  max_completions integer default 1
+  max_completions integer default 1,
+  frequency text default 'daily',  -- 'daily' | 'weekly' | 'monthly' | 'date_range'
+  start_date date,
+  end_date date
 );
 
-create table completions (
+-- ============================================
+-- COMPLETIONS
+-- ============================================
+create table if not exists completions (
   id uuid primary key default uuid_generate_v4(),
   mission_id uuid references missions(id) on delete cascade,
   child_id uuid references children(id) on delete cascade,
@@ -43,28 +61,43 @@ create table completions (
   reviewed_at timestamp with time zone
 );
 
-create table rewards (
+-- ============================================
+-- REWARDS
+-- ============================================
+create table if not exists rewards (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   cost integer not null,
   icon text
 );
 
-create table redemptions (
+-- ============================================
+-- REDEMPTIONS
+-- ============================================
+create table if not exists redemptions (
   id uuid primary key default uuid_generate_v4(),
   reward_id uuid references rewards(id) on delete cascade,
   child_id uuid references children(id) on delete cascade,
   redeemed_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Turn on Row Level Security and allow anonymous access for prototyping
--- WARNING: In production, you would restrict these policies. For this local gamified app we allow anon access.
+-- ============================================
+-- ROW LEVEL SECURITY (anon access for kiosk)
+-- ============================================
 alter table app_settings enable row level security;
 alter table children enable row level security;
 alter table missions enable row level security;
 alter table completions enable row level security;
 alter table rewards enable row level security;
 alter table redemptions enable row level security;
+
+-- Drop policies if they already exist (safe re-run)
+drop policy if exists "Allow anon full access to app_settings" on app_settings;
+drop policy if exists "Allow anon full access to children" on children;
+drop policy if exists "Allow anon full access to missions" on missions;
+drop policy if exists "Allow anon full access to completions" on completions;
+drop policy if exists "Allow anon full access to rewards" on rewards;
+drop policy if exists "Allow anon full access to redemptions" on redemptions;
 
 create policy "Allow anon full access to app_settings" on app_settings for all using (true) with check (true);
 create policy "Allow anon full access to children" on children for all using (true) with check (true);
@@ -73,5 +106,8 @@ create policy "Allow anon full access to completions" on completions for all usi
 create policy "Allow anon full access to rewards" on rewards for all using (true) with check (true);
 create policy "Allow anon full access to redemptions" on redemptions for all using (true) with check (true);
 
--- Insert a default app_settings row if it doesn't exist
-insert into app_settings (setup_complete) values (false);
+-- ============================================
+-- DEFAULT ROW (required for setup check)
+-- ============================================
+insert into app_settings (setup_complete) values (false)
+on conflict do nothing;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { showToast, showFloat } from '../lib/ui';
@@ -9,8 +9,9 @@ import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
 import AppShell from './AppShell';
 import AvatarDisplay from './AvatarDisplay';
 import CropOverlay from './CropOverlay';
+import SettingsTab from './SettingsTab';
 
-export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending }) {
+export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialSettings }) {
   const router = useRouter();
   
   // AppShell state
@@ -21,12 +22,29 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const [missions, setMissions] = useState(initialMissions || []);
   const [rewards, setRewards] = useState(initialRewards || []);
   const [pending, setPending] = useState(initialPending || []);
+  const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
   
   // Modals specific
-  const [modal, setModal] = useState(null); // { type: 'mission'|'reward'|'child', data: null }
+  const [modal, setModal] = useState(null);
   const [inspectChildId, setInspectChildId] = useState(null);
-  const [cropSrc, setCropSrc] = useState(null); // raw data URL for the crop overlay
-  const [pendingBase64, setPendingBase64] = useState(null); // confirmed cropped base64
+  const [cropSrc, setCropSrc] = useState(null);
+  const [pendingBase64, setPendingBase64] = useState(null);
+  const [missionFrequency, setMissionFrequency] = useState(null); // track frequency for new mission modal
+
+  // Real-time subscription for new pending completions
+  useEffect(() => {
+    const channel = supabase
+      .channel('completions-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'completions' }, (payload) => {
+        if (payload.new.status === 'pending') {
+          setPending(prev => [payload.new, ...prev]);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
 
   const handleApprove = async (comp, e) => {
     e.stopPropagation();
@@ -105,6 +123,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   // M I S S I O N   M O D A L
   const renderMissionModal = () => {
     const isEdit = !!modal.data;
+    const defaultFrequency = modal.data?.frequency || 'daily';
+    const freq = missionFrequency === null ? defaultFrequency : missionFrequency;
+
     return (
       <form onSubmit={async (e) => {
         e.preventDefault();
@@ -114,7 +135,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           xp_reward: parseInt(fd.get('xp_reward')) || 10,
           coin_reward: parseInt(fd.get('coin_reward')) || 5,
           icon: fd.get('icon'),
-          max_completions: parseInt(fd.get('max_completions')) || 1
+          max_completions: parseInt(fd.get('max_completions')) || 1,
+          frequency: freq,
+          start_date: freq === 'date_range' ? fd.get('start_date') || null : null,
+          end_date: freq === 'date_range' ? fd.get('end_date') || null : null,
         };
         if (isEdit) {
           await supabase.from('missions').update(newObj).eq('id', modal.data.id);
@@ -122,9 +146,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           showToast('Mission updated!');
         } else {
           const { data } = await supabase.from('missions').insert([newObj]).select().single();
-          setMissions(prev => [...prev, data]);
+          if (data) setMissions(prev => [...prev, data]);
           showToast('Mission created! 🎯');
         }
+        setMissionFrequency(null);
         closeModal();
       }}>
         <div className="input-group" style={{ marginBottom: 16 }}>
@@ -141,6 +166,48 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             <input type="number" name="coin_reward" className="input" defaultValue={modal.data?.coin_reward || 5} />
           </div>
         </div>
+
+        {/* FREQUENCY */}
+        <div className="input-group" style={{ marginBottom: 16 }}>
+          <label>Repeats</label>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            {[['daily', '📅 Daily'], ['weekly', '📆 Weekly'], ['monthly', '🗓️ Monthly'], ['date_range', '📌 Date Range']].map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setMissionFrequency(val)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 'var(--radius-full)',
+                  border: `2px solid ${freq === val ? 'var(--primary)' : 'var(--bg-glass-border)'}`,
+                  background: freq === val ? 'var(--primary-dim)' : 'var(--bg-glass)',
+                  color: freq === val ? 'var(--primary)' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* DATE RANGE PICKERS */}
+        {freq === 'date_range' && (
+          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Start Date</label>
+              <input type="date" name="start_date" className="input" defaultValue={modal.data?.start_date || ''} required />
+            </div>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>End Date</label>
+              <input type="date" name="end_date" className="input" defaultValue={modal.data?.end_date || ''} required />
+            </div>
+          </div>
+        )}
+
         <div className="input-group" style={{ marginBottom: 16 }}>
           <label>Icon</label>
           <div className="emoji-picker" style={{ gap: 8, marginTop: 8 }}>
@@ -161,6 +228,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       </form>
     );
   };
+
 
   // R E W A R D   M O D A L
   const renderRewardModal = () => {
@@ -499,6 +567,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
      );
   };
 
+
   return (
     <>
       <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length }}>
@@ -506,6 +575,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         {activeTab === 'approvals' && renderApprovals()}
         {activeTab === 'missions' && renderMissions()}
         {activeTab === 'rewards' && renderRewards()}
+        {activeTab === 'settings' && <SettingsTab initialSettings={settings} />}
       </AppShell>
 
       {/* Slide-Up Drawer for Kid Inspect Mode */}
