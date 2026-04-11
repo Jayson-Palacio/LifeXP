@@ -8,9 +8,10 @@ import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS, REWARD_EMOJI_GROUPS, AVATAR_
 import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
 import AppShell from './AppShell';
 import AvatarDisplay from './AvatarDisplay';
-import InlineCrop from './CropOverlay';
-import GroupedEmojiPicker from './GroupedEmojiPicker';
 import SettingsTab from './SettingsTab';
+import MissionModal from './MissionModal';
+import RewardModal from './RewardModal';
+import ChildModal from './ChildModal';
 
 export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialSettings }) {
   const router = useRouter();
@@ -28,11 +29,6 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   // Modals specific
   const [modal, setModal] = useState(null);
   const [inspectChildId, setInspectChildId] = useState(null);
-  const [cropSrc, setCropSrc] = useState(null);
-  const [pendingBase64, setPendingBase64] = useState(null);
-  const [missionFrequency, setMissionFrequency] = useState(null);
-  const [missionCropSrc, setMissionCropSrc] = useState(null);
-  const [pendingMissionImage, setPendingMissionImage] = useState(null);
 
   // Real-time subscription for new pending completions
   useEffect(() => {
@@ -121,352 +117,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     showToast('Kid removed from app.');
   };
 
-  const closeModal = () => { setModal(null); setPendingBase64(null); setPendingMissionImage(null); setMissionCropSrc(null); setMissionFrequency(null); };
-
-  // M I S S I O N   M O D A L
-  const renderMissionModal = () => {
-    const isEdit = !!modal.data;
-    const defaultFrequency = modal.data?.frequency || 'daily';
-    const freq = missionFrequency === null ? defaultFrequency : missionFrequency;
-
-    // If we're in crop mode for mission image, show crop UI
-    if (missionCropSrc) {
-      return (
-        <div>
-          <p style={{ textAlign: 'center', marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Crop the mission photo</p>
-          <InlineCrop
-            imageSrc={missionCropSrc}
-            onConfirm={(dataUrl) => { setPendingMissionImage(dataUrl); setMissionCropSrc(null); }}
-            onCancel={() => setMissionCropSrc(null)}
-          />
-        </div>
-      );
-    }
-
-    return (
-      <form onSubmit={async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        const newObj = {
-          name: fd.get('name'),
-          xp_reward: parseInt(fd.get('xp_reward')) || 10,
-          coin_reward: parseInt(fd.get('coin_reward')) || 5,
-          icon: fd.get('icon') || '⭐',
-          image: pendingMissionImage || (isEdit ? modal.data?.image || null : null),
-          max_completions: parseInt(fd.get('max_completions')) || 1,
-          max_completions_per_period: parseInt(fd.get('max_completions_per_period')) || 1,
-          frequency: freq,
-          start_date: freq === 'date_range' ? fd.get('start_date') || null : null,
-          end_date: freq === 'date_range' ? fd.get('end_date') || null : null,
-        };
-        if (isEdit) {
-          await supabase.from('missions').update(newObj).eq('id', modal.data.id);
-          setMissions(prev => prev.map(m => m.id === modal.data.id ? { ...m, ...newObj } : m));
-          showToast('Mission updated!');
-        } else {
-          const { data } = await supabase.from('missions').insert([newObj]).select().single();
-          if (data) setMissions(prev => [...prev, data]);
-          showToast('Mission created! 🎯');
-        }
-        setMissionFrequency(null);
-        setPendingMissionImage(null);
-        closeModal();
-      }}>
-        <div className="input-group" style={{ marginBottom: 14 }}>
-          <label>Mission Name</label>
-          <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="e.g. Make your bed" />
-        </div>
-
-        {/* XP + Coins */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-          <div className="input-group" style={{ flex: 1 }}>
-            <label>XP <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(1–500)</span></label>
-            <input type="number" name="xp_reward" className="input" min={1} max={500} defaultValue={Math.min(modal.data?.xp_reward || 10, 500)} />
-          </div>
-          <div className="input-group" style={{ flex: 1 }}>
-            <label>Coins</label>
-            <input type="number" name="coin_reward" className="input" min={0} max={200} defaultValue={modal.data?.coin_reward || 5} />
-          </div>
-        </div>
-
-        {/* FREQUENCY */}
-        <div className="input-group" style={{ marginBottom: 14 }}>
-          <label>Repeats</label>
-          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-            {[['daily', '📅 Daily'], ['weekly', '📆 Weekly'], ['monthly', '🗓️ Monthly'], ['date_range', '📌 Date Range']].map(([val, label]) => (
-              <button key={val} type="button" onClick={() => setMissionFrequency(val)}
-                style={{
-                  padding: '7px 13px', borderRadius: 'var(--radius-full)',
-                  border: `2px solid ${freq === val ? 'var(--primary)' : 'var(--bg-glass-border)'}`,
-                  background: freq === val ? 'var(--primary-dim)' : 'var(--bg-glass)',
-                  color: freq === val ? 'var(--primary)' : 'var(--text-muted)',
-                  fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
-                }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* PER-PERIOD COMPLETION COUNT */}
-        <div className="input-group" style={{ marginBottom: 14 }}>
-          <label>Times per {freq === 'weekly' ? 'week' : freq === 'monthly' ? 'month' : freq === 'date_range' ? 'day' : 'day'}
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6 }}>(e.g. brush teeth = 2)</span>
-          </label>
-          <input
-            type="number" name="max_completions_per_period" className="input"
-            min={1} max={20}
-            defaultValue={modal.data?.max_completions_per_period || 1}
-            style={{ maxWidth: 100 }}
-          />
-        </div>
-
-        {/* DATE RANGE — compact for iPad */}
-        {freq === 'date_range' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-            <div className="input-group">
-              <label>Start</label>
-              <input type="date" name="start_date" className="input input-sm" defaultValue={modal.data?.start_date || ''} required />
-            </div>
-            <div className="input-group">
-              <label>End</label>
-              <input type="date" name="end_date" className="input input-sm" defaultValue={modal.data?.end_date || ''} required />
-            </div>
-          </div>
-        )}
-
-        {/* MISSION PHOTO */}
-        <div className="input-group" style={{ marginBottom: 14 }}>
-          <label>Mission Photo <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(optional — helps kids who can't read)</span></label>
-          <label style={{ cursor: 'pointer', display: 'block', marginBottom: 8 }}>
-            <input
-              type="file" accept="image/*" style={{ display: 'none' }}
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => setMissionCropSrc(ev.target.result);
-                reader.readAsDataURL(file);
-              }}
-            />
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '9px 14px', borderRadius: 'var(--radius-md)',
-              border: pendingMissionImage || modal.data?.image ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)',
-              background: pendingMissionImage || modal.data?.image ? 'var(--primary-dim)' : 'var(--bg-glass)',
-              cursor: 'pointer',
-            }}>
-              {(pendingMissionImage || modal.data?.image) ? (
-                <>
-                  <img
-                    src={pendingMissionImage || modal.data?.image}
-                    alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }}
-                  />
-                  <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.85rem' }}>📷 Photo set — tap to change</span>
-                  {(pendingMissionImage || modal.data?.image) && <button type="button" style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }} onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); setPendingMissionImage(null); }}>✕</button>}
-                </>
-              ) : (
-                <span style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.85rem' }}>📷 Upload mission photo</span>
-              )}
-            </div>
-          </label>
-        </div>
-
-        {/* ICON EMOJI */}
-        <div className="input-group" style={{ marginBottom: 14 }}>
-          <label>Emoji Icon <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(used alongside photo)</span></label>
-          <GroupedEmojiPicker
-            groups={MISSION_EMOJI_GROUPS}
-            name="icon"
-            defaultValue={modal.data?.icon || MISSION_EMOJIS[0]}
-          />
-        </div>
-
-        <div className="modal-actions">
-          <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
-          <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Create Mission'}</button>
-        </div>
-      </form>
-    );
-  };
-
-
-  // R E W A R D   M O D A L
-  const renderRewardModal = () => {
-    const isEdit = !!modal.data;
-    return (
-      <form onSubmit={async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        const toIntOrNull = (key) => { const v = parseInt(fd.get(key)); return isNaN(v) || v <= 0 ? null : v; };
-        const newObj = {
-          name: fd.get('name'),
-          cost: parseInt(fd.get('cost')) || 10,
-          icon: fd.get('icon'),
-          max_daily_redemptions: toIntOrNull('max_daily'),
-          max_weekly_redemptions: toIntOrNull('max_weekly'),
-          max_monthly_redemptions: toIntOrNull('max_monthly'),
-          max_total_redemptions: toIntOrNull('max_total'),
-        };
-        if (isEdit) {
-          await supabase.from('rewards').update(newObj).eq('id', modal.data.id);
-          setRewards(prev => prev.map(r => r.id === modal.data.id ? { ...r, ...newObj } : r));
-          showToast('Reward updated!');
-        } else {
-          const { data } = await supabase.from('rewards').insert([newObj]).select().single();
-          if (data) setRewards(prev => [...prev, data]);
-          showToast('Reward created! 🎁');
-        }
-        closeModal();
-      }}>
-        <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Reward Name</label>
-          <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="Extra Screen Time" />
-        </div>
-        <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Coin Cost</label>
-          <input type="number" name="cost" className="input" min={1} defaultValue={modal.data?.cost || 10} />
-        </div>
-
-        {/* REDEMPTION LIMITS */}
-        <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: 16 }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Redemption Limits <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(leave blank = unlimited)</span></div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {[
-              ['max_daily',   '📅 Per Day'],
-              ['max_weekly',  '📆 Per Week'],
-              ['max_monthly', '🗓️ Per Month'],
-              ['max_total',   '🔒 Total Ever']
-            ].map(([key, label]) => (
-              <div key={key}>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{label}</label>
-                <input
-                  type="number"
-                  name={key}
-                  className="input"
-                  min={1}
-                  placeholder="∞"
-                  defaultValue={modal.data?.[`${key.replace('max_', 'max_').replace('max_daily','max_daily_redemptions').replace('max_weekly','max_weekly_redemptions').replace('max_monthly','max_monthly_redemptions').replace('max_total','max_total_redemptions')}`] || ''}
-                  style={{ fontSize: '0.9rem', padding: '8px 10px' }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Icon</label>
-          <GroupedEmojiPicker
-            groups={REWARD_EMOJI_GROUPS}
-            name="icon"
-            defaultValue={modal.data?.icon || REWARD_EMOJIS[0]}
-          />
-        </div>
-        <div className="modal-actions">
-          <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
-          <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Create Reward'}</button>
-        </div>
-      </form>
-    );
-  };
-
-  // C H I L D   M O D A L
-  const renderChildModal = () => {
-    const isEdit = !!modal.data;
-
-    const handleFileChange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => setCropSrc(ev.target.result);
-      reader.readAsDataURL(file);
-    };
-
-    return (
-      <form onSubmit={async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        let finalAvatar = pendingBase64 || fd.get('base64_avatar');
-        if (!finalAvatar) finalAvatar = fd.get('avatar');
-        const newObj = { name: fd.get('name'), avatar: finalAvatar };
-        if (isEdit) {
-          await supabase.from('children').update(newObj).eq('id', modal.data.id);
-          setChildren(prev => prev.map(c => c.id === modal.data.id ? { ...c, ...newObj } : c));
-          showToast('Kid profile updated!');
-        } else {
-          const { data, error } = await supabase.from('children').insert([{
-            ...newObj, xp: 0, total_xp_earned: 0, coins: 0, theme: 'seedling'
-          }]).select().single();
-          if (error) { showToast('Error adding kid: ' + error.message, 'error'); return; }
-          if (data) setChildren(prev => [...prev, data]);
-          showToast(`Welcome ${newObj.name}! 🎉`);
-        }
-        closeModal();
-      }}>
-        <input type="text" name="base64_avatar" value={pendingBase64 || ''} readOnly style={{ display: 'none' }} />
-
-        <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Name</label>
-          <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="Kid's First Name" />
-        </div>
-
-        <div className="input-group" style={{ marginBottom: 16 }}>
-          <label>Photo or Emoji</label>
-
-          {/* If we have cropSrc, show InlineCrop; otherwise show the picker */}
-          {cropSrc ? (
-            <InlineCrop
-              imageSrc={cropSrc}
-              onConfirm={(dataUrl) => { setPendingBase64(dataUrl); setCropSrc(null); }}
-              onCancel={() => setCropSrc(null)}
-            />
-          ) : (
-            <>
-              {/* Upload button or confirmed photo preview */}
-              <label style={{ cursor: 'pointer', display: 'block', marginBottom: 8 }}>
-                <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  border: pendingBase64 ? '2px solid var(--primary)' : '2px dashed var(--bg-glass-border)',
-                  background: pendingBase64 ? 'var(--primary-dim)' : 'var(--bg-glass)',
-                  cursor: 'pointer',
-                }}>
-                  {pendingBase64 ? (
-                    <>
-                      <img src={pendingBase64} alt="Avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                      <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>📷 Photo selected — tap to change</span>
-                    </>
-                  ) : (
-                    <span style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem' }}>📷 Upload a photo</span>
-                  )}
-                </div>
-              </label>
-
-              {/* Grouped emoji grid */}
-              {!pendingBase64 && (
-                <GroupedEmojiPicker
-                  groups={AVATAR_EMOJI_GROUPS}
-                  name="avatar"
-                  defaultValue={modal.data?.avatar || AVATAR_EMOJIS[0]}
-                  onChange={() => setPendingBase64(null)}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Only show save button when not in crop mode */}
-        {!cropSrc && (
-          <div className="modal-actions">
-            <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
-            <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Add Kid'}</button>
-          </div>
-        )}
-      </form>
-    );
-  };
+  const closeModal = () => { setModal(null); };
 
   const renderFamily = () => (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
@@ -684,9 +335,39 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                modal.type === 'reward' ? (modal.data ? 'Edit Reward' : 'New Reward') :
                (modal.data ? 'Edit Kid Profile' : 'Add Kid to Family')}
             </h3>
-            {modal.type === 'mission' && renderMissionModal()}
-            {modal.type === 'reward' && renderRewardModal()}
-            {modal.type === 'child' && renderChildModal()}
+            {modal.type === 'mission' && 
+              <MissionModal 
+                modal={modal} 
+                closeModal={closeModal} 
+                onSuccess={(data, isEdit) => {
+                  if (isEdit) setMissions(prev => prev.map(m => m.id === data.id ? data : m));
+                  else setMissions(prev => [...prev, data]);
+                  showToast(isEdit ? 'Mission updated!' : 'Mission created! 🎯');
+                }} 
+              />
+            }
+            {modal.type === 'reward' && 
+              <RewardModal 
+                modal={modal} 
+                closeModal={closeModal} 
+                onSuccess={(data, isEdit) => {
+                  if (isEdit) setRewards(prev => prev.map(r => r.id === data.id ? data : r));
+                  else setRewards(prev => [...prev, data]);
+                  showToast(isEdit ? 'Reward updated!' : 'Reward created! 🎁');
+                }}
+              />
+            }
+            {modal.type === 'child' && 
+              <ChildModal 
+                modal={modal} 
+                closeModal={closeModal} 
+                onSuccess={(data, isEdit) => {
+                  if (isEdit) setChildren(prev => prev.map(c => c.id === data.id ? data : c));
+                  else setChildren(prev => [...prev, data]);
+                  showToast(isEdit ? 'Kid profile updated!' : `Welcome ${data.name}! 🎉`);
+                }}
+              />
+            }
           </div>
         </div>
       )}

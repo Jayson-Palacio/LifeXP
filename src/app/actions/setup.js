@@ -30,8 +30,9 @@ export async function submitSetupData(pin, childName, childAvatar, missionName, 
       icon: missionIcon,
       xp_reward: 10,
       coin_reward: 5,
-      is_recurring: true,
-      max_completions: 1
+      frequency: 'daily',
+      max_completions: 1,
+      max_completions_per_period: 1
     }]);
 
     return { success: true };

@@ -2,17 +2,18 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AVATAR_EMOJIS, MISSION_EMOJIS } from '../lib/constants';
+import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS } from '../lib/ui';
 import { submitSetupData } from '../app/actions/setup';
+import GroupedEmojiPicker from './GroupedEmojiPicker';
 
 export default function SetupClient() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [pin, setPin] = useState('');
   const [childName, setChildName] = useState('');
-  const [childAvatar, setChildAvatar] = useState(AVATAR_EMOJIS[0]);
+  const [childAvatar, setChildAvatar] = useState(AVATAR_EMOJI_GROUPS[0].emojis[0]);
   const [missionName, setMissionName] = useState('');
-  const [missionIcon, setMissionIcon] = useState(MISSION_EMOJIS[0]);
+  const [missionIcon, setMissionIcon] = useState(MISSION_EMOJI_GROUPS[0].emojis[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const nameInputRef = useRef(null);
@@ -99,17 +100,12 @@ export default function SetupClient() {
             </div>
             <div className="input-group">
               <label>Avatar</label>
-              <div className="avatar-grid">
-                {AVATAR_EMOJIS.map(e => (
-                  <button 
-                    key={e} 
-                    className={`avatar-option ${e === childAvatar ? 'selected' : ''}`} 
-                    onClick={() => setChildAvatar(e)}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
+              <GroupedEmojiPicker
+                groups={AVATAR_EMOJI_GROUPS}
+                name="avatar"
+                defaultValue={childAvatar}
+                onChange={setChildAvatar}
+              />
             </div>
             <button 
               className="btn btn-primary btn-block btn-lg" 
@@ -142,17 +138,12 @@ export default function SetupClient() {
             </div>
             <div className="input-group" style={{ marginBottom: 'var(--space-lg)' }}>
               <label>Icon</label>
-              <div className="emoji-picker">
-                {MISSION_EMOJIS.map(e => (
-                  <button 
-                    key={e} 
-                    className={`emoji-option ${e === missionIcon ? 'selected' : ''}`} 
-                    onClick={() => setMissionIcon(e)}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
+              <GroupedEmojiPicker
+                groups={MISSION_EMOJI_GROUPS}
+                name="missionIcon"
+                defaultValue={missionIcon}
+                onChange={setMissionIcon}
+              />
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--space-lg)' }}>
               Reward: ⭐ 10 XP &nbsp; 🪙 5 Coins (you can customize later)
