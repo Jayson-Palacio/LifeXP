@@ -160,6 +160,23 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     showToast('Kid removed from app.');
   };
 
+  const handleAdjustCoins = async (childId, amount, e) => {
+    if (e) e.stopPropagation();
+    const child = children.find(c => c.id === childId);
+    if (!child) return;
+    
+    // Prevent negative balances if we deduct more than they have
+    const newCoins = Math.max(0, child.coins + amount); 
+    await supabase.from('children').update({ coins: newCoins }).eq('id', childId);
+    setChildren(prev => prev.map(c => c.id === childId ? { ...c, coins: newCoins } : c));
+    
+    if (amount > 0) {
+      showToast(`Granted ${amount} 🪙`);
+    } else {
+      showToast(`Deducted ${Math.abs(amount)} 🪙`);
+    }
+  };
+
   const closeModal = () => { setModal(null); };
 
   const renderOverview = () => {
@@ -442,6 +459,13 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                    <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
                       <span className="stat-icon" style={{ fontSize: '2rem' }}>🪙</span>
                       <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: 8 }}>{child.coins} Coins</div>
+
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
+                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -100, e)}>-100</button>
+                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -10, e)}>-10</button>
+                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 10, e)}>+10</button>
+                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 100, e)}>+100</button>
+                      </div>
                    </div>
                    <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
                       <span className="stat-icon" style={{ fontSize: '2rem' }}>🔥</span>
