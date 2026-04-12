@@ -31,6 +31,15 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   // Modals specific
   const [modal, setModal] = useState(null);
   const [inspectChildId, setInspectChildId] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyData, setHistoryData] = useState(null); // null = not loaded yet
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Reset history state when opening drawer for a new kid
+  useEffect(() => {
+    setHistoryOpen(false);
+    setHistoryData(null);
+  }, [inspectChildId]);
 
   // Real-time subscription for new pending completions and redemptions
   useEffect(() => {
@@ -188,6 +197,47 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       showToast(`Granted ${amount} 🪙`);
     } else {
       showToast(`Deducted ${Math.abs(amount)} 🪙`);
+    }
+  };
+
+  const loadHistory = async (childId) => {
+    setHistoryLoading(true);
+    try {
+      const [{ data: comps }, { data: reds }] = await Promise.all([
+        supabase.from('completions').select('*, missions(name, icon)').eq('child_id', childId).order('submitted_at', { ascending: false }).limit(30),
+        supabase.from('redemptions').select('*, rewards(name, icon)').eq('child_id', childId).order('redeemed_at', { ascending: false }).limit(30),
+      ]);
+
+      const events = [
+        ...(comps || []).map(c => ({
+          id: `c-${c.id}`,
+          type: 'mission',
+          label: c.missions?.name || 'Unknown Mission',
+          icon: c.missions?.icon || '🎯',
+          status: c.status,
+          date: new Date(c.submitted_at || c.created_at),
+        })),
+        ...(reds || []).map(r => ({
+          id: `r-${r.id}`,
+          type: 'reward',
+          label: r.rewards?.name || 'Unknown Reward',
+          icon: r.rewards?.icon || '🎁',
+          status: r.status,
+          date: new Date(r.redeemed_at || r.created_at),
+        })),
+      ].sort((a, b) => b.date - a.date);
+
+      setHistoryData(events);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleToggleHistory = (childId) => {
+    const willOpen = !historyOpen;
+    setHistoryOpen(willOpen);
+    if (willOpen && historyData === null) {
+      loadHistory(childId);
     }
   };
 
@@ -445,6 +495,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   // Render Kid Slide-up Drawer
   const renderKidDrawer = () => {
+     // Reset history when drawer opens for a new kid
      if (!inspectChildId) return null;
      const child = children.find(c => c.id === inspectChildId);
      if (!child) return null;
@@ -519,6 +570,97 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                     <div style={{ height: '100%', width: `${xpProgress * 100}%`, background: 'var(--primary)', borderRadius: '8px' }} />
                  </div>
                  <div style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>Total XP: {child.total_xp_earned || child.xp || 0}</div>
+               </div>
+
+               {/* History Accordion */}
+               <div style={{ marginBottom: 'var(--space-2xl)' }}>
+                 <button
+                   onClick={() => handleToggleHistory(child.id)}
+                   style={{
+                     width: '100%',
+                     background: 'var(--bg-surface)',
+                     border: '1px solid var(--bg-glass-border)',
+                     borderRadius: historyOpen ? 'var(--radius-md) var(--radius-md) 0 0' : 'var(--radius-md)',
+                     padding: '14px 18px',
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'space-between',
+                     cursor: 'pointer',
+                     color: 'var(--text-bright)',
+                     fontWeight: 800,
+                     fontSize: '1rem',
+                     transition: 'border-radius 0.2s',
+                   }}
+                 >
+                   <span>📜 Activity History</span>
+                   <svg
+                     width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                     style={{ transform: historyOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}
+                   >
+                     <polyline points="6 9 12 15 18 9" />
+                   </svg>
+                 </button>
+
+                 <div style={{
+                   overflow: 'hidden',
+                   maxHeight: historyOpen ? '600px' : '0px',
+                   transition: 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                   background: 'var(--bg-surface)',
+                   border: historyOpen ? '1px solid var(--bg-glass-border)' : 'none',
+                   borderTop: 'none',
+                   borderRadius: '0 0 var(--radius-md) var(--radius-md)',
+                 }}>
+                   <div style={{ padding: '12px 18px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                     {historyLoading && (
+                       <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px 0', fontSize: '0.9rem' }}>Loading history…</div>
+                     )}
+                     {!historyLoading && historyData && historyData.length === 0 && (
+                       <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px 0', fontSize: '0.9rem' }}>No activity yet.</div>
+                     )}
+                     {!historyLoading && historyData && historyData.map(evt => {
+                       const statusColor = {
+                         approved: 'var(--green)',
+                         pending: 'var(--amber)',
+                         rejected: 'var(--red)',
+                         fulfilled: 'var(--green)',
+                         refunded: 'var(--cyan)',
+                       }[evt.status] || 'var(--text-muted)';
+
+                       const statusLabel = {
+                         approved: 'Approved',
+                         pending: 'Pending',
+                         rejected: 'Rejected',
+                         fulfilled: 'Delivered',
+                         refunded: 'Refunded',
+                       }[evt.status] || evt.status;
+
+                       const typePrefix = evt.type === 'mission' ? '✅' : '🛍️';
+
+                       return (
+                         <div key={evt.id} style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: 12,
+                           padding: '10px 0',
+                           borderBottom: '1px solid var(--bg-glass-border)',
+                         }}>
+                           <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>{evt.icon}</div>
+                           <div style={{ flex: 1, minWidth: 0 }}>
+                             <div style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                               {typePrefix} {evt.label}
+                             </div>
+                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                               {evt.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                             </div>
+                           </div>
+                           <div style={{ fontSize: '0.75rem', fontWeight: 800, color: statusColor, flexShrink: 0, background: `${statusColor}18`, padding: '3px 8px', borderRadius: 'var(--radius-full)' }}>
+                             {statusLabel}
+                           </div>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
                </div>
 
                <div style={{ borderTop: '1px solid var(--bg-glass-border)', paddingTop: 'var(--space-xl)', display: 'flex', gap: 'var(--space-md)' }}>
