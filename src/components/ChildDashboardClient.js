@@ -476,7 +476,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         </div>
 
         {(() => {
-          const childRewards = rewards.filter(r => !r.assigned_to || r.assigned_to.length === 0 || r.assigned_to.includes(child.id));
+          const childRewards = rewards.filter(r => r.is_active !== false && (!r.assigned_to || r.assigned_to.length === 0 || r.assigned_to.includes(child.id)));
           
           if (childRewards.length === 0) {
             return (

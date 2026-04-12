@@ -70,7 +70,14 @@ create table if not exists rewards (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   cost integer not null,
-  icon text
+  icon text,
+  image text,
+  assigned_to uuid[],
+  max_total_redemptions integer,
+  max_daily_redemptions integer,
+  max_weekly_redemptions integer,
+  max_monthly_redemptions integer,
+  is_active boolean default true
 );
 
 -- ============================================
