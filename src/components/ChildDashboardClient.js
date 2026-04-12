@@ -250,17 +250,6 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--bg-glass-border)',
       }}>
-        <button
-          className="cool-home-btn"
-          onClick={() => router.push('/')}
-        >
-          🏠 <span>Home</span>
-        </button>
-
-        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>
-          {tierName} · Lv {level}
-        </div>
-
         {/* Theme Circle Button */}
         <div ref={themePickerRef} style={{ position: 'relative' }}>
           <button
@@ -279,7 +268,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           {/* Theme Picker Dropdown */}
           {showThemePicker && (
             <div style={{
-              position: 'absolute', top: 44, right: 0,
+              position: 'absolute', top: 44, left: 0, /* Swapped to left alignment */
               background: 'var(--bg-surface)',
               border: '1px solid var(--bg-glass-border)',
               borderRadius: 'var(--radius-lg)',
@@ -315,6 +304,17 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             </div>
           )}
         </div>
+
+        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>
+          {tierName} · Lv {level}
+        </div>
+
+        <button
+          className="cool-home-btn"
+          onClick={() => router.push('/')}
+        >
+          🏠 <span>Home</span>
+        </button>
       </div>
 
       {/* ── HERO BANNER ── */}
