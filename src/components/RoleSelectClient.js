@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { verifyParentPin } from '../app/actions/auth';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function RoleSelectClient({ childrenData, missions, completions }) {
+export default function RoleSelectClient({ childrenData, missions, completions, parentPin }) {
   const router = useRouter();
   const [view, setView] = useState('select'); // 'select' | 'pin'
   const [pin, setPin] = useState('');
@@ -66,7 +65,7 @@ export default function RoleSelectClient({ childrenData, missions, completions }
     setError('');
   };
 
-  const handleKeyClick = async (val) => {
+  const handleKeyClick = (val) => {
     if (val === 'del') {
       setPin(prev => prev.slice(0, -1));
     } else if (pin.length < 4) {
@@ -74,8 +73,8 @@ export default function RoleSelectClient({ childrenData, missions, completions }
       setPin(newPin);
       
       if (newPin.length === 4) {
-        const isValid = await verifyParentPin(newPin);
-        if (isValid) {
+        // Compare locally — no server round trip needed
+        if (newPin === parentPin) {
           router.push('/parent');
         } else {
           setIsShaking(true);
