@@ -13,7 +13,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const router = useRouter();
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
-  const [pendingRedemptions, setPendingRedemptions] = useState(initialRedemptions || []);
+  const [allRedemptions, setAllRedemptions] = useState(initialRedemptions || []);
+  const pendingRedemptions = allRedemptions.filter(r => r.status === 'pending');
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [loadingMissions, setLoadingMissions] = useState({});
   const themePickerRef = useRef(null);
@@ -47,8 +48,9 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     const channel = supabase
       .channel('redemptions-live')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'redemptions', filter: `child_id=eq.${child.id}` }, (payload) => {
+        setAllRedemptions(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+        
         if (payload.new.status !== 'pending') {
-          setPendingRedemptions(prev => prev.filter(r => r.id !== payload.new.id));
           if (payload.new.status === 'refunded') {
             const reward = rewards.find(r => r.id === payload.new.reward_id);
             if (reward) {
@@ -186,14 +188,16 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     }
 
     try {
-      const { data: existing } = await supabase.from('redemptions').select('redeemed_at').eq('reward_id', r.id).eq('child_id', child.id);
+      const { data: rawExisting } = await supabase.from('redemptions').select('redeemed_at, status').eq('reward_id', r.id).eq('child_id', child.id);
+      const existing = (rawExisting || []).filter(x => x.status !== 'refunded');
+      
       const now = new Date();
       const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
       const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const countSince = (since) => (existing || []).filter(x => new Date(x.redeemed_at) >= since).length;
+      const countSince = (since) => existing.filter(x => new Date(x.redeemed_at) >= since).length;
 
-      if (r.max_total_redemptions && (existing || []).length >= r.max_total_redemptions) {
+      if (r.max_total_redemptions && existing.length >= r.max_total_redemptions) {
         e.target.disabled = false; e.target.textContent = 'Limit';
         return showToast(`🔒 Total limit reached for "${r.name}"`, 'error');
       }
@@ -211,9 +215,9 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       }
 
       const newCoins = child.coins - r.cost;
-      const { data: inserted } = await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id }]).select().single();
+      const { data: inserted } = await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id, status: 'pending' }]).select().single();
       if (inserted) {
-        setPendingRedemptions(prev => [inserted, ...prev]);
+        setAllRedemptions(prev => [inserted, ...prev]);
       }
       await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
       setChild({ ...child, coins: newCoins });
@@ -486,28 +490,58 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           return (
             <div className="reward-grid">
               {childRewards.map(r => {
+                const now = new Date();
+                const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
+                const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                const validRedemptions = allRedemptions.filter(x => x.reward_id === r.id && x.status !== 'refunded');
+                const countSince = (since) => validRedemptions.filter(x => new Date(x.redeemed_at) >= since).length;
+                const totalCount = validRedemptions.length;
+                
+                const dailyCount = countSince(startOfDay);
+                const weeklyCount = countSince(startOfWeek);
+                const monthlyCount = countSince(startOfMonth);
+
+                let limitHit = false;
+                let limitText = null;
+
+                if (r.max_daily_redemptions) { limitText = `Daily: ${dailyCount}/${r.max_daily_redemptions}`; if (dailyCount >= r.max_daily_redemptions) limitHit = true; }
+                else if (r.max_weekly_redemptions) { limitText = `Weekly: ${weeklyCount}/${r.max_weekly_redemptions}`; if (weeklyCount >= r.max_weekly_redemptions) limitHit = true; }
+                else if (r.max_monthly_redemptions) { limitText = `Monthly: ${monthlyCount}/${r.max_monthly_redemptions}`; if (monthlyCount >= r.max_monthly_redemptions) limitHit = true; }
+                else if (r.max_total_redemptions) { limitText = `Total: ${totalCount}/${r.max_total_redemptions}`; if (totalCount >= r.max_total_redemptions) limitHit = true; }
+
                 const canAfford = child.coins >= r.cost;
+                const canProceed = canAfford && !limitHit;
+
                 return (
-                  <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)', border: `2px solid ${canAfford ? 'var(--primary)' : 'var(--bg-glass-border)'}`, opacity: canAfford ? 1 : 0.6 }}>
+                  <div key={r.id} className="reward-card" style={{ padding: 'var(--space-lg)', border: `2px solid ${canProceed ? 'var(--primary)' : 'var(--bg-glass-border)'}`, opacity: canProceed ? 1 : 0.6 }}>
                     <div className="reward-icon" style={{ width: 64, height: 64, margin: '0 auto 12px', borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2.8rem' }}>
                       {r.image
                         ? <img src={r.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : (r.icon || '🎁')
                       }
                     </div>
-                    <div className="reward-name" style={{ fontSize: '1rem', marginTop: 10 }}>{r.name}</div>
+                    
+                    {limitText && (
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: limitHit ? 'var(--red)' : 'var(--text-muted)', marginBottom: 4 }}>
+                        {limitHit && '🚫 '} {limitText}
+                      </div>
+                    )}
+
+                    <div className="reward-name" style={{ fontSize: '1rem', marginTop: 4 }}>{r.name}</div>
                     <div className="reward-cost" style={{ fontSize: '1rem', margin: '8px 0' }}>🪙 {r.cost}</div>
                     <button
-                    className={`btn ${canAfford ? 'btn-primary' : 'btn-ghost'} btn-block`}
-                    style={{ padding: '10px' }}
-                    disabled={!canAfford}
-                    onClick={(e) => handleRedeem(r, e)}
-                  >
-                    {canAfford ? 'Redeem!' : 'Need coins'}
-                  </button>
-                </div>
-              );
-            })}
+                      className={`btn ${canProceed ? 'btn-primary' : 'btn-ghost'} btn-block`}
+                      style={{ padding: '10px' }}
+                      disabled={!canProceed}
+                      onClick={(e) => handleRedeem(r, e)}
+                    >
+                      {limitHit ? 'Limit Reached' : canAfford ? 'Redeem!' : 'Need coins'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           );
         })()}

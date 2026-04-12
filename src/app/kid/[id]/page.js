@@ -34,12 +34,11 @@ export default async function ChildDashboardPage({ params }) {
     .eq('child_id', id)
     .gte('submitted_at', todayStart.toISOString());
 
-  // Fetch pending redemptions for this child
-  const { data: redemptions } = await supabase
+  // Fetch all redemptions for this child to compute limits
+  const { data: allRedemptions } = await supabase
     .from('redemptions')
     .select('*')
-    .eq('child_id', id)
-    .eq('status', 'pending');
+    .eq('child_id', id);
 
   return (
     <ChildDashboardClient 
@@ -47,7 +46,7 @@ export default async function ChildDashboardPage({ params }) {
       missions={missions || []}
       initialCompletions={completions || []}
       rewards={rewards || []}
-      initialRedemptions={redemptions || []}
+      initialRedemptions={allRedemptions || []}
       requireApproval={requireApproval}
     />
   );
