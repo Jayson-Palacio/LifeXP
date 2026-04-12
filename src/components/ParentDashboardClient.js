@@ -475,8 +475,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                       <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: 8 }}>{child.coins} Coins</div>
 
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
-                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -10, e)}>-10</button>
-                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 10, e)}>+10</button>
+                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -1, e)}>-1</button>
+                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 1, e)}>+1</button>
                       </div>
                    </div>
                    <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
