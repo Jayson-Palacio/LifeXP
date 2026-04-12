@@ -17,8 +17,9 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
   const [specificDays, setSpecificDays] = useState(isEdit ? modal.data?.specific_days || [] : []);
   
   // Track coins for dynamic XP calculation
-  const [coinAmount, setCoinAmount] = useState(modal.data?.coin_reward ?? 5);
-  const calculatedXP = Math.min(Math.max((coinAmount * 10), 10), 500);
+  const [coinAmount, setCoinAmount] = useState(modal.data?.coin_reward?.toString() ?? '5');
+  const parsedCoins = parseInt(coinAmount) || 0;
+  const calculatedXP = Math.min(Math.max((parsedCoins * 10), 10), 500);
 
   // Assignment tracking
   const defaultAssigned = modal.data?.assigned_to || [];
@@ -29,28 +30,27 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
     setAssignedTo(prev => prev.includes(childId) ? prev.filter(id => id !== childId) : [...prev, childId]);
   };
 
-  if (missionCropSrc) {
-    return (
-      <div>
-        <p style={{ textAlign: 'center', marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Crop the mission photo</p>
-        <InlineCrop
-          imageSrc={missionCropSrc}
-          onConfirm={(dataUrl) => { setMissionImage(dataUrl); setMissionCropSrc(null); }}
-          onCancel={() => setMissionCropSrc(null)}
-        />
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={async (e) => {
-      e.preventDefault();
+    <>
+      <div style={{ display: missionCropSrc ? 'block' : 'none' }}>
+        <p style={{ textAlign: 'center', marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Crop the mission photo</p>
+        {missionCropSrc && (
+          <InlineCrop
+            imageSrc={missionCropSrc}
+            onConfirm={(dataUrl) => { setMissionImage(dataUrl); setMissionCropSrc(null); }}
+            onCancel={() => setMissionCropSrc(null)}
+          />
+        )}
+      </div>
+
+      <form style={{ display: missionCropSrc ? 'none' : 'block' }} onSubmit={async (e) => {
+        e.preventDefault();
       const fd = new FormData(e.target);
       
       const newObj = {
         name: fd.get('name'),
         xp_reward: calculatedXP,
-        coin_reward: coinAmount,
+        coin_reward: parsedCoins,
         icon: fd.get('icon') || '⭐',
         image: missionImage,
         max_completions: parseInt(fd.get('max_completions')) || 1,
@@ -90,7 +90,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
           className="input" 
           min={0} max={200} 
           value={coinAmount}
-          onChange={(e) => setCoinAmount(e.target.value === '' ? 0 : parseInt(e.target.value))}
+          onChange={(e) => setCoinAmount(e.target.value)}
         />
       </div>
 
@@ -264,5 +264,6 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
         <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Create Mission'}</button>
       </div>
     </form>
+    </>
   );
 }

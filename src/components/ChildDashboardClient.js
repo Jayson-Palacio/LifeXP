@@ -108,7 +108,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     return { ...m, status: isRetry ? 'retry' : 'available', periodDone, maxPerPeriod, periodRemaining };
   };
 
-  const missionStates = missions.map(getMissionState).filter(Boolean);
+  const missionStates = missions.filter(m => m.is_active !== false).map(getMissionState).filter(Boolean);
 
   // ─── Handlers ─────────────────────────────────────────────────
   const handleSubmitMission = async (mission, e) => {

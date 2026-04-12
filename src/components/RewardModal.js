@@ -22,21 +22,20 @@ export default function RewardModal({ modal, childrenList = [], closeModal, onSu
     setAssignedTo(prev => prev.includes(childId) ? prev.filter(id => id !== childId) : [...prev, childId]);
   };
 
-  if (rewardCropSrc) {
-    return (
-      <div>
-        <p style={{ textAlign: 'center', marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Crop the reward photo</p>
-        <InlineCrop
-          imageSrc={rewardCropSrc}
-          onConfirm={(dataUrl) => { setRewardImage(dataUrl); setRewardCropSrc(null); }}
-          onCancel={() => setRewardCropSrc(null)}
-        />
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={async (e) => {
+    <>
+      <div style={{ display: rewardCropSrc ? 'block' : 'none' }}>
+        <p style={{ textAlign: 'center', marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Crop the reward photo</p>
+        {rewardCropSrc && (
+          <InlineCrop
+            imageSrc={rewardCropSrc}
+            onConfirm={(dataUrl) => { setRewardImage(dataUrl); setRewardCropSrc(null); }}
+            onCancel={() => setRewardCropSrc(null)}
+          />
+        )}
+      </div>
+
+      <form style={{ display: rewardCropSrc ? 'none' : 'block' }} onSubmit={async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
       const toIntOrNull = (key) => { const v = parseInt(fd.get(key)); return isNaN(v) || v <= 0 ? null : v; };
@@ -206,5 +205,6 @@ export default function RewardModal({ modal, childrenList = [], closeModal, onSu
         <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Create Reward'}</button>
       </div>
     </form>
+    </>
   );
 }

@@ -131,6 +131,13 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     showToast('Mission deleted.');
   };
 
+  const handleToggleActiveMission = async (m) => {
+    const newStatus = m.is_active === false ? true : false;
+    await supabase.from('missions').update({ is_active: newStatus }).eq('id', m.id);
+    setMissions(prev => prev.map(mission => mission.id === m.id ? { ...mission, is_active: newStatus } : mission));
+    showToast(newStatus ? 'Mission activated!' : 'Mission saved for later.');
+  };
+
   const handleDeleteReward = async (id) => {
     if (!confirm('Delete this reward?')) return;
     await supabase.from('rewards').delete().eq('id', id);
@@ -288,31 +295,49 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         <div>
           <button className="btn btn-primary btn-block btn-lg" style={{ marginBottom: 'var(--space-2xl)' }} onClick={() => setModal({ type: 'mission', data: null })}>+ Add Mission</button>
           
-          {missions.length === 0 ? (
-            <div className="empty-state">
-               <p className="empty-state-text">No missions added yet.</p>
-            </div>
-          ) : missions.map(m => (
-            <div key={m.id} className="mission-card" style={{ padding: 'var(--space-lg)' }}>
-              <div className="mission-icon" style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '1.8rem' }}>
-                {m.image
-                  ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : m.icon
-                }
-              </div>
-              <div className="mission-info" style={{ marginLeft: 8 }}>
-                <div className="mission-name" style={{ fontSize: '1.2rem' }}>{m.name}</div>
-                <div className="mission-rewards" style={{ marginTop: 8 }}>
-                  <span className="badge badge-gold">⭐ {m.xp_reward}</span>
-                  <span className="badge badge-amber">🪙 {m.coin_reward}</span>
+          {(() => {
+            if (missions.length === 0) return <div className="empty-state"><p className="empty-state-text">No missions added yet.</p></div>;
+            const activeMissions = missions.filter(m => m.is_active !== false);
+            const inactiveMissions = missions.filter(m => m.is_active === false);
+            
+            const renderMission = (m, isInactive) => (
+              <div key={m.id} className="mission-card" style={{ padding: 'var(--space-lg)', opacity: isInactive ? 0.6 : 1, marginBottom: 12 }}>
+                <div className="mission-icon" style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '1.8rem' }}>
+                  {m.image
+                    ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : m.icon
+                  }
+                </div>
+                <div className="mission-info" style={{ marginLeft: 8 }}>
+                  <div className="mission-name" style={{ fontSize: '1.2rem' }}>{m.name}</div>
+                  <div className="mission-rewards" style={{ marginTop: 8 }}>
+                    <span className="badge badge-gold">⭐ {m.xp_reward}</span>
+                    <span className="badge badge-amber">🪙 {m.coin_reward}</span>
+                  </div>
+                </div>
+                <div className="mission-actions" style={{ marginLeft: 'auto' }}>
+                  <button className="btn btn-ghost btn-icon" title={isInactive ? 'Activate' : 'Save for later'} onClick={() => handleToggleActiveMission(m)}>
+                    {isInactive ? '▶️' : '⏸️'}
+                  </button>
+                  <button className="btn btn-ghost btn-icon" onClick={() => setModal({ type: 'mission', data: m })}>✎</button>
+                  <button className="btn btn-ghost btn-icon" style={{ color: 'var(--red)' }} onClick={() => handleDeleteMission(m.id)}>🗑</button>
                 </div>
               </div>
-              <div className="mission-actions" style={{ marginLeft: 'auto' }}>
-                <button className="btn btn-ghost btn-icon" onClick={() => setModal({ type: 'mission', data: m })}>✎</button>
-                <button className="btn btn-ghost btn-icon" style={{ color: 'var(--red)' }} onClick={() => handleDeleteMission(m.id)}>🗑</button>
-              </div>
-            </div>
-          ))}
+            );
+
+            return (
+              <>
+                {activeMissions.map(m => renderMission(m, false))}
+                
+                {inactiveMissions.length > 0 && (
+                  <div style={{ marginTop: 'var(--space-2xl)' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 'var(--space-lg)' }}>Saved for Later</h3>
+                    {inactiveMissions.map(m => renderMission(m, true))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       ) : (
         <div>
@@ -324,7 +349,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                  <p className="empty-state-text">No rewards added yet.</p>
               </div>
             ) : rewards.map(r => (
-              <div key={r.id} className="mission-card" style={{ padding: 'var(--space-lg)' }}>
+              <div key={r.id} className="mission-card" style={{ padding: 'var(--space-lg)', marginBottom: 12 }}>
                 <div className="mission-icon" style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '1.8rem' }}>
                   {r.image
                     ? <img src={r.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -389,7 +414,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                <div style={{ marginBottom: 'var(--space-2xl)' }}>
                  <h4 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 12 }}>🎯 Active Missions</h4>
                  {(() => {
-                    const childMissions = missions.filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(child.id));
+                    const childMissions = missions.filter(m => m.is_active !== false && (!m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(child.id)));
                     if (childMissions.length === 0) return <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No active missions.</div>;
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
