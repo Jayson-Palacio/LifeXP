@@ -9,6 +9,7 @@ import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
 import AppShell from './AppShell';
 import AvatarDisplay from './AvatarDisplay';
 import SettingsTab from './SettingsTab';
+import AnalyticsTab from './AnalyticsTab';
 import MissionModal from './MissionModal';
 import RewardModal from './RewardModal';
 import ChildModal from './ChildModal';
@@ -676,9 +677,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   return (
     <>
       <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length }}>
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'manage' && renderManage()}
-        {activeTab === 'settings' && <SettingsTab initialSettings={settings} />}
+        {activeTab === 'overview'   && renderOverview()}
+        {activeTab === 'manage'     && renderManage()}
+        {activeTab === 'analytics'  && <AnalyticsTab children={children} />}
+        {activeTab === 'settings'   && <SettingsTab initialSettings={settings} />}
       </AppShell>
 
       {/* Slide-Up Drawer for Kid Inspect Mode */}
