@@ -15,6 +15,8 @@ export default async function RoleSelectPage() {
   }
 
   const { data: children } = await supabase.from('children').select('*').order('name');
+  const { data: missions } = await supabase.from('missions').select('*').eq('is_active', true);
+  const { data: completions } = await supabase.from('completions').select('*');
 
-  return <RoleSelectClient childrenData={children} />;
+  return <RoleSelectClient childrenData={children} missions={missions} completions={completions} />;
 }

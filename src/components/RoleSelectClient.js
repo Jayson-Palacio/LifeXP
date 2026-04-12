@@ -6,12 +6,51 @@ import { verifyParentPin } from '../app/actions/auth';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function RoleSelectClient({ childrenData }) {
+export default function RoleSelectClient({ childrenData, missions, completions }) {
   const router = useRouter();
   const [view, setView] = useState('select'); // 'select' | 'pin'
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
+
+  const getDailyMissionStats = (childId) => {
+     if (!missions || !completions) return null;
+     
+     const now = new Date();
+     const today = new Date(now); today.setHours(0,0,0,0);
+     
+     const childMissions = missions.filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(childId));
+     
+     let total = 0;
+     let done = 0;
+     
+     for (const m of childMissions) {
+        if (m.frequency === 'weekly' && m.specific_days && m.specific_days.length > 0) {
+           if (!m.specific_days.includes(now.getDay())) continue;
+        }
+        if (m.frequency === 'date_range' && m.start_date && m.end_date) {
+           const todayStr = now.toISOString().split('T')[0];
+           if (todayStr < m.start_date || todayStr > m.end_date) continue;
+        }
+        
+        const childComps = completions.filter(c => c.child_id === childId && c.mission_id === m.id && c.status !== 'rejected');
+        const maxPerPeriod = m.max_completions_per_period || 1;
+        
+        let periodStart = today;
+        if (m.frequency === 'weekly') {
+           periodStart = new Date(now); periodStart.setDate(now.getDate() - now.getDay()); periodStart.setHours(0,0,0,0);
+        } else if (m.frequency === 'monthly') {
+           periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        }
+        
+        const periodDoneCount = childComps.filter(c => new Date(c.submitted_at || c.created_at) >= periodStart).length;
+        
+        total += maxPerPeriod;
+        done += Math.min(periodDoneCount, maxPerPeriod);
+     }
+     
+     return { done, total };
+  };
 
   const handleParentClick = () => {
     setView('pin');
@@ -83,6 +122,8 @@ export default function RoleSelectClient({ childrenData }) {
               const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
               const activeTheme = child.theme ? child.theme : tierColor;
 
+              const stats = getDailyMissionStats(child.id);
+
               return (
                 <button 
                   key={child.id} 
@@ -98,9 +139,20 @@ export default function RoleSelectClient({ childrenData }) {
                   onClick={() => router.push(`/kid/${child.id}`)}
                 >
                   <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3.2rem', flexShrink: 0 }} />
-                  <div style={{ flex: 1, textAlign: 'left', marginLeft: 16, zIndex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>{child.name}</div>
-                    <div style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Lv {level}</div>
+                  <div style={{ flex: 1, textAlign: 'left', marginLeft: 16, zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>{child.name}</div>
+                      <div style={{ fontSize: '1.05rem', color: 'var(--amber)', fontWeight: 800 }}>🪙 {child.coins}</div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4 }}>
+                      <div style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lv {level}</div>
+                      {stats && (
+                        <div style={{ fontSize: '0.85rem', color: stats.done >= stats.total && stats.total > 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: 700 }}>
+                          🎯 {stats.done}/{stats.total}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Glowing Progress Bar at the bottom edge */}
