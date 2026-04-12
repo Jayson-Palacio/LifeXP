@@ -340,32 +340,11 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       {/* ── HERO BANNER ── */}
       <div className="hero-banner" style={{ paddingBottom: 0 }}>
         {/* Avatar ring with spinning conic border */}
-        <div className="hero-avatar-ring" style={{ position: 'relative', display: 'inline-flex' }}>
+        <div className="hero-avatar-ring">
           <div className="hero-avatar-img">
             <AvatarDisplay avatarString={child.avatar} />
           </div>
 
-          {/* Streak Bubble attached to top right of ring */}
-          <div style={{
-            position: 'absolute',
-            top: -6,
-            right: -14,
-            background: 'var(--bg-deep)',
-            border: '2px solid var(--cyan)',
-            borderRadius: 'var(--radius-full)',
-            padding: '4px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            fontWeight: 900,
-            fontSize: '0.9rem',
-            color: 'var(--cyan)',
-            boxShadow: '0 0 15px rgba(6, 182, 212, 0.4), inset 0 0 8px rgba(6, 182, 212, 0.2)',
-            zIndex: 10,
-            transform: 'rotate(5deg)'
-          }}>
-             🔥 {child.streak || 0}
-          </div>
           {/* Tier badge pill sitting at bottom of ring */}
           <div className="hero-tier-badge">
             <div className="hero-tier-badge-icon">
@@ -380,6 +359,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
         <div className="hero-stats" style={{ marginBottom: 20 }}>
           <div className="stat-item"><span className="stat-icon">🪙</span><span className="stat-value-amber">{child.coins}</span></div>
+          <div className="stat-item"><span className="stat-icon">🔥</span><span className="stat-value-cyan">{child.streak || 0}</span></div>
         </div>
 
         {/* XP bar - full width, right below the banner */}
