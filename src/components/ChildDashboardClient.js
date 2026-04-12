@@ -250,8 +250,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--bg-glass-border)',
       }}>
-        {/* Theme Circle Button */}
-        <div ref={themePickerRef} style={{ position: 'relative' }}>
+        {/* Left Side: Theme Circle Button */}
+        <div ref={themePickerRef} style={{ position: 'relative', flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
           <button
             onClick={() => setShowThemePicker(v => !v)}
             title="Change Theme"
@@ -268,7 +268,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           {/* Theme Picker Dropdown */}
           {showThemePicker && (
             <div style={{
-              position: 'absolute', top: 44, left: 0, /* Swapped to left alignment */
+              position: 'absolute', top: 44, left: 0,
               background: 'var(--bg-surface)',
               border: '1px solid var(--bg-glass-border)',
               borderRadius: 'var(--radius-lg)',
@@ -305,16 +305,20 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           )}
         </div>
 
-        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>
+        {/* Center: Title */}
+        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)', flex: '0 1 auto', textAlign: 'center', whiteSpace: 'nowrap' }}>
           {tierName} · Lv {level}
         </div>
 
-        <button
-          className="cool-home-btn"
-          onClick={() => router.push('/')}
-        >
-          🏠 <span>Home</span>
-        </button>
+        {/* Right Side: Home Button */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            className="cool-home-btn"
+            onClick={() => router.push('/')}
+          >
+            🏠 <span>Home</span>
+          </button>
+        </div>
       </div>
 
       {/* ── HERO BANNER ── */}
