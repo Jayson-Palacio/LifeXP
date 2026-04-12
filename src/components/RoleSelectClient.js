@@ -71,22 +71,13 @@ export default function RoleSelectClient({ childrenData }) {
       {/* Ambient energetic cosmic background for Kaeluma */}
       <div className="kaeluma-bg" />
 
-      {/* Sleek Parent Lock inside the page but at absolute corner */}
-      <button 
-        className="sleek-parent-btn"
-        onClick={handleParentClick}
-        title="Parent Mode"
-      >
-        🔒 <span className="sleek-parent-btn-text">Parent Mode</span>
-      </button>
-
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', maxWidth: 800, margin: '0 auto', zIndex: 1 }}>
         <div className="kaeluma-logo-spin">☀</div>
         <h1 className="kaeluma-title">Kaeluma</h1>
         <p className="role-select-subtitle">Who's checking in?</p>
 
         {childrenData && childrenData.length > 0 ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-lg)', justifyContent: 'center', marginTop: 'var(--space-2xl)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', alignItems: 'center', marginTop: 'var(--space-xl)' }}>
             {childrenData.map((child, index) => {
               const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
               const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
@@ -96,18 +87,25 @@ export default function RoleSelectClient({ childrenData }) {
                 <button 
                   key={child.id} 
                   className={`theme-${activeTheme} kaeluma-card`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                  style={{ 
+                    animationDelay: `${index * 0.1}s`,
+                    flexDirection: 'row',
+                    width: '100%',
+                    maxWidth: 360,
+                    padding: '16px 24px',
+                    position: 'relative'
+                  }}
                   onClick={() => router.push(`/kid/${child.id}`)}
                 >
-                  <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3.5rem' }} />
-                  <div style={{ textAlign: 'center', width: '100%', zIndex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-bright)', letterSpacing: '-0.02em', marginBottom: '2px' }}>{child.name}</div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lv {level}</div>
+                  <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3.2rem', flexShrink: 0 }} />
+                  <div style={{ flex: 1, textAlign: 'left', marginLeft: 16, zIndex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>{child.name}</div>
+                    <div style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Lv {level}</div>
                   </div>
                   
-                  {/* Glowing Progress Bar */}
-                  <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '3px', overflow: 'hidden', zIndex: 1 }}>
-                    <div style={{ height: '100%', width: `${progressFraction * 100}%`, background: 'var(--primary)', borderRadius: '3px', boxShadow: '0 0 10px var(--primary)' }} />
+                  {/* Glowing Progress Bar at the bottom edge */}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', background: 'rgba(0,0,0,0.3)', zIndex: 1, borderBottomLeftRadius: 'var(--radius-xl)', borderBottomRightRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${progressFraction * 100}%`, background: 'var(--primary)', boxShadow: '0 0 10px var(--primary)' }} />
                   </div>
                 </button>
               );
@@ -117,6 +115,15 @@ export default function RoleSelectClient({ childrenData }) {
           <p style={{ color: 'var(--text-muted)' }}>No players found. Please add a kid in Parent Mode.</p>
         )}
       </div>
+
+      {/* Sleek Parent Lock pushed to the bottom */}
+      <button 
+        className="sleek-parent-btn"
+        onClick={handleParentClick}
+        title="Parent Mode"
+      >
+        🔒 <span className="sleek-parent-btn-text">Parent Mode</span>
+      </button>
 
     </div>
   );
