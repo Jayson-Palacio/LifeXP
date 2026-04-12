@@ -305,10 +305,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           )}
         </div>
 
-        {/* Center: Title */}
-        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary)', flex: '0 1 auto', textAlign: 'center', whiteSpace: 'nowrap' }}>
-          {tierName} · Lv {level}
-        </div>
+        {/* Center: Title (Removed as requested to reduce clutter since it's under the profile picture) */}
+        <div style={{ flex: '0 1 auto' }}></div>
 
         {/* Right Side: Home Button */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
