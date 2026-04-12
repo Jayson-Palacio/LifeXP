@@ -14,6 +14,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
   const [missionFrequency, setMissionFrequency] = useState(defaultFrequency);
   const [missionCropSrc, setMissionCropSrc] = useState(null);
   const [missionImage, setMissionImage] = useState(isEdit ? modal.data?.image || null : null);
+  const [specificDays, setSpecificDays] = useState(isEdit ? modal.data?.specific_days || [] : []);
   
   // Track coins for dynamic XP calculation
   const [coinAmount, setCoinAmount] = useState(modal.data?.coin_reward ?? 5);
@@ -55,6 +56,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
         max_completions: parseInt(fd.get('max_completions')) || 1,
         max_completions_per_period: parseInt(fd.get('max_completions_per_period')) || 1,
         frequency: missionFrequency,
+        specific_days: missionFrequency === 'weekly' ? specificDays : null,
         start_date: missionFrequency === 'date_range' ? fd.get('start_date') || null : null,
         end_date: missionFrequency === 'date_range' ? fd.get('end_date') || null : null,
         assigned_to: assignAll || assignedTo.length === 0 ? null : assignedTo
@@ -149,6 +151,37 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
           <option value="date_range">📌 Date Range</option>
         </select>
       </div>
+
+      {missionFrequency === 'weekly' && (
+        <div className="input-group" style={{ marginBottom: 14 }}>
+          <label>Specific Days</label>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 8 }}>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+              <label key={idx} style={{ 
+                 display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                 width: 32, height: 32, 
+                 borderRadius: '50%', 
+                 background: specificDays.includes(idx) ? 'var(--primary)' : 'var(--bg-glass)',
+                 color: specificDays.includes(idx) ? '#fff' : 'inherit',
+                 cursor: 'pointer', fontWeight: 'bold',
+                 border: '1px solid var(--primary-dim)'
+              }}>
+                <input 
+                  type="checkbox" 
+                  checked={specificDays.includes(idx)} 
+                  onChange={(e) => {
+                     if (e.target.checked) setSpecificDays([...specificDays, idx]);
+                     else setSpecificDays(specificDays.filter(d => d !== idx));
+                  }} 
+                  style={{ display: 'none' }}
+                />
+                {day}
+              </label>
+            ))}
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>Leave empty to allow any day.</p>
+        </div>
+      )}
 
       {/* PER-PERIOD COMPLETION COUNT */}
       <div className="input-group" style={{ marginBottom: 14 }}>

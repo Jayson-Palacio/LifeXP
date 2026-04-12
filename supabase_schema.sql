@@ -45,6 +45,7 @@ create table if not exists missions (
   is_recurring boolean default true,
   max_completions integer default 1,
   frequency text default 'daily',  -- 'daily' | 'weekly' | 'monthly' | 'date_range'
+  specific_days integer[], -- [0=Sun, 1=Mon, ...] for weekly missions
   start_date date,
   end_date date,
   assigned_to uuid[] -- null means all children

@@ -96,6 +96,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       if (today < m.start_date || today > m.end_date) return null;
     }
 
+    if (m.frequency === 'weekly' && m.specific_days && m.specific_days.length > 0) {
+      if (!m.specific_days.includes(now.getDay())) return null;
+    }
+
     if (periodRemaining <= 0) {
       if (hasPending) return { ...m, status: 'pending', periodDone, maxPerPeriod, periodRemaining };
       return { ...m, status: 'done', periodDone, maxPerPeriod, periodRemaining };
