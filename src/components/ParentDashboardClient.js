@@ -65,14 +65,28 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     const newXp = currentXp + mission.xp_reward;
     const newCoins = child.coins + mission.coin_reward;
     const newLevelInfo = getLevelForXP(newXp);
+    // Streak logic
+    let newStreak = child.streak || 0;
+    const now = new Date();
+    const today = now.toDateString();
+    const lastCompDate = child.last_completion_date ? new Date(child.last_completion_date) : null;
+    
+    if (!lastCompDate || lastCompDate.toDateString() !== today) {
+       // if more than 48 hours passed since last completion, reset
+       if (lastCompDate && now.getTime() - lastCompDate.getTime() > 86400000 * 2) {
+           newStreak = 1;
+       } else {
+           newStreak += 1;
+       }
+    }
     
     // Update DB
-    await supabase.from('completions').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', comp.id);
-    await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins }).eq('id', child.id);
+    await supabase.from('completions').update({ status: 'approved', reviewed_at: now.toISOString() }).eq('id', comp.id);
+    await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
 
     // Update local state
     setPending(prev => prev.filter(p => p.id !== comp.id));
-    setChildren(prev => prev.map(c => c.id === child.id ? { ...c, xp: newXp, total_xp_earned: newXp, coins: newCoins } : c));
+    setChildren(prev => prev.map(c => c.id === child.id ? { ...c, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() } : c));
 
     // Wait 200 ms to do UI actions
     setTimeout(async () => {
@@ -461,10 +475,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                       <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: 8 }}>{child.coins} Coins</div>
 
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
-                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -100, e)}>-100</button>
                         <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -10, e)}>-10</button>
                         <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 10, e)}>+10</button>
-                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 100, e)}>+100</button>
                       </div>
                    </div>
                    <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>

@@ -124,6 +124,20 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       const newXp = currentXp + mission.xp_reward;
       const newCoins = child.coins + mission.coin_reward;
 
+      // Streak logic
+      let newStreak = child.streak || 0;
+      const now = new Date();
+      const today = now.toDateString();
+      const lastCompDate = child.last_completion_date ? new Date(child.last_completion_date) : null;
+      
+      if (!lastCompDate || lastCompDate.toDateString() !== today) {
+         if (lastCompDate && now.getTime() - lastCompDate.getTime() > 86400000 * 2) {
+             newStreak = 1;
+         } else {
+             newStreak += 1;
+         }
+      }
+
       const { data } = await supabase.from('completions').insert([{
         mission_id: mission.id,
         child_id: child.id,
@@ -131,8 +145,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       }]).select().single();
 
       if (data) {
-        await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins }).eq('id', child.id);
-        setChild(prev => ({ ...prev, xp: newXp, total_xp_earned: newXp, coins: newCoins }));
+        await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
+        setChild(prev => ({ ...prev, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }));
         setCompletions(prev => [...prev, data]);
 
         const { getLevelForXP: getLvl } = await import('../lib/levels');
