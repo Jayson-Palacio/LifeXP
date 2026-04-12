@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { verifyParentPin } from '../app/actions/auth';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
@@ -12,6 +12,14 @@ export default function RoleSelectClient({ childrenData, missions, completions }
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
+
+  // Pre-warm all kid pages and parent page so navigation feels instant
+  useEffect(() => {
+    if (childrenData) {
+      childrenData.forEach(child => router.prefetch(`/kid/${child.id}`));
+    }
+    router.prefetch('/parent');
+  }, [childrenData, router]);
 
   const getDailyMissionStats = (childId) => {
      if (!missions || !completions) return null;

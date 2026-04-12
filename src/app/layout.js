@@ -6,6 +6,7 @@ import "../styles/components.css";
 import "../styles/animations.css";
 import "../styles/pages.css";
 import IdleProvider from "../components/IdleProvider";
+import NavProgress from "../components/NavProgress";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={outfit.variable}>
       <body style={{ fontFamily: 'var(--font-outfit, Outfit, system-ui, sans-serif)' }}>
+        <NavProgress />
         <IdleProvider>
           {children}
         </IdleProvider>
