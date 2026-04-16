@@ -112,24 +112,24 @@
   padding-bottom: 80px;
 }
 
-/* Tablet ~540px+: wider cards, still 2 cols */
+/* Tablet ~540px+: var-driven columns */
 @media (min-width: 540px) {
   .kaeluma-grid {
-    grid-template-columns: repeat(2, minmax(180px, 260px));
+    grid-template-columns: repeat(var(--grid-cols, 2), minmax(180px, 260px));
     justify-content: center;
     gap: 24px;
-    max-width: 580px;
+    max-width: 900px;
     margin: 24px auto 0;
   }
 }
 
-/* Desktop 860px+: auto-fill cols, centered */
+/* Desktop 860px+: same var, bigger cards */
 @media (min-width: 860px) {
   .kaeluma-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 260px));
+    grid-template-columns: repeat(var(--grid-cols, 2), minmax(200px, 280px));
     justify-content: center;
     gap: 28px;
-    max-width: 960px;
+    max-width: 1000px;
     margin: 32px auto 0;
   }
 }

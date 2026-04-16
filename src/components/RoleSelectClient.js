@@ -124,8 +124,13 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
         <h1 className="kaeluma-title">Kaeluma</h1>
         <p className="role-select-subtitle">Who's checking in?</p>
 
-        {childrenData && childrenData.length > 0 ? (
-          <div className="kaeluma-grid">
+        {childrenData && childrenData.length > 0 ? (() => {
+          const n = childrenData.length;
+          // Ideal column count: 1→1, 2→2, 3→3, 4→2 (2×2), 5→3, 6+→3
+          const cols = n === 1 ? 1 : n === 4 ? 2 : n <= 3 ? n : 3;
+
+          return (
+          <div className="kaeluma-grid" style={{ '--grid-cols': cols }}>
             {childrenData.map((child, index) => {
               const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
               const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
@@ -170,7 +175,8 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
               );
             })}
           </div>
-        ) : (
+          );
+        })() : (
           <p style={{ color: 'var(--text-muted)' }}>No players found. Please add a kid in Parent Mode.</p>
         )}
       </div>
