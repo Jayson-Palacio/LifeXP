@@ -10,8 +10,10 @@ import InlineCrop from './CropOverlay';
 export default function MissionModal({ modal, childrenList = [], closeModal, onSuccess }) {
   const isEdit = !!modal.data;
   const defaultFrequency = modal.data?.frequency || 'daily';
+  const defaultCategory = modal.data?.category || 'General';
   
   const [missionFrequency, setMissionFrequency] = useState(defaultFrequency);
+  const [missionCategory, setMissionCategory] = useState(defaultCategory);
   const [missionCropSrc, setMissionCropSrc] = useState(null);
   const [missionImage, setMissionImage] = useState(isEdit ? modal.data?.image || null : null);
   const [specificDays, setSpecificDays] = useState(isEdit ? modal.data?.specific_days || [] : []);
@@ -49,6 +51,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
       
       const newObj = {
         name: fd.get('name'),
+        category: missionCategory,
         xp_reward: calculatedXP,
         coin_reward: parsedCoins,
         icon: fd.get('icon') || '⭐',
@@ -71,6 +74,22 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
       }
       closeModal();
     }}>
+      <div className="input-group" style={{ marginBottom: 14 }}>
+        <label>Category</label>
+        <select 
+          className="input" 
+          value={missionCategory} 
+          onChange={(e) => setMissionCategory(e.target.value)}
+        >
+          <option value="General">🏷️ General</option>
+          <option value="Chores">🧹 Chores</option>
+          <option value="Health & Hygiene">🧼 Health & Hygiene</option>
+          <option value="School & Learning">📚 School & Learning</option>
+          <option value="Activities">⚽ Activities</option>
+          <option value="Behavior">🤝 Behavior</option>
+        </select>
+      </div>
+
       <div className="input-group" style={{ marginBottom: 14 }}>
         <label>Mission Name</label>
         <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="e.g. Make your bed" />

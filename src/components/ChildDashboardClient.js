@@ -403,66 +403,83 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             <div className="empty-state-emoji">🌟</div>
             <p className="empty-state-text">All done — you're amazing!</p>
           </div>
-        ) : missionStates.map(m => {
-          const hasProgress = m.maxPerPeriod > 1;
-          return (
-            <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: '14px 16px', marginBottom: 10 }}>
-              {/* Mission icon: photo or emoji */}
-              <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
-                {m.image
-                  ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : m.icon
-                }
-              </div>
+        ) : (() => {
+          const groupedMissions = missionStates.reduce((acc, m) => {
+            const cat = m.category || 'General';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(m);
+            return acc;
+          }, {});
+          const sortedCategories = Object.keys(groupedMissions).sort();
 
-              <div className="mission-info" style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
-                <div className="mission-name" style={{ fontSize: '1.05rem', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
-                <div className="mission-rewards">
-                  <span className="badge badge-gold" style={{ fontSize: '0.82rem' }}>⭐ {m.xp_reward} XP</span>
-                  <span className="badge badge-amber" style={{ fontSize: '0.82rem' }}>🪙 {m.coin_reward}</span>
-                </div>
-              </div>
+          return sortedCategories.map(cat => (
+            <div key={cat} style={{ marginBottom: 24 }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {cat === 'General' ? '🏷️ General' : cat}
+              </h4>
+              {groupedMissions[cat].map(m => {
+                const hasProgress = m.maxPerPeriod > 1;
+                return (
+                  <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: '14px 16px', marginBottom: 10 }}>
+                    {/* Mission icon: photo or emoji */}
+                    <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
+                      {m.image
+                        ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : m.icon
+                      }
+                    </div>
 
-              <div className="mission-actions" style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                {(m.status === 'available' || m.status === 'retry') ? (
-                  <button
-                    className="btn btn-primary"
-                    style={{ padding: '12px 18px', fontSize: '1.05rem', minWidth: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}
-                    onClick={(e) => handleSubmitMission(m, e)}
-                    disabled={loadingMissions[m.id]}
-                  >
-                    {loadingMissions[m.id] ? (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
-                    ) : (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span>{m.status === 'retry' ? 'Retry ↻' : 'Done! ✓'}</span>
+                    <div className="mission-info" style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
+                      <div className="mission-name" style={{ fontSize: '1.05rem', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
+                      <div className="mission-rewards">
+                        <span className="badge badge-gold" style={{ fontSize: '0.82rem' }}>⭐ {m.xp_reward} XP</span>
+                        <span className="badge badge-amber" style={{ fontSize: '0.82rem' }}>🪙 {m.coin_reward}</span>
+                      </div>
+                    </div>
+
+                    <div className="mission-actions" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                      {(m.status === 'available' || m.status === 'retry') ? (
+                        <button
+                          className="btn btn-primary"
+                          style={{ padding: '12px 18px', fontSize: '1.05rem', minWidth: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}
+                          onClick={(e) => handleSubmitMission(m, e)}
+                          disabled={loadingMissions[m.id]}
+                        >
+                          {loadingMissions[m.id] ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                          ) : (
+                            <>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span>{m.status === 'retry' ? 'Retry ↻' : 'Done! ✓'}</span>
+                              </div>
+                              {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
+                            </>
+                          )}
+                        </button>
+                      ) : m.status === 'pending' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 16px', borderRadius: 'var(--radius-full)', background: 'var(--bg-glass)', border: '1px solid var(--amber-dim)', color: 'var(--amber)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.95rem' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>Waiting</span>
+                          </div>
+                          {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
                         </div>
-                        {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
-                      </>
-                    )}
-                  </button>
-                ) : m.status === 'pending' ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 16px', borderRadius: 'var(--radius-full)', background: 'var(--bg-glass)', border: '1px solid var(--amber-dim)', color: 'var(--amber)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.95rem' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                      <span>Waiting</span>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 16px', borderRadius: 'var(--radius-full)', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.25)', color: 'var(--green)', animation: 'scaleIn 0.3s ease-out', boxShadow: '0 0 12px rgba(34, 197, 94, 0.1)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: '0.95rem' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span>Done</span>
+                          </div>
+                          {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
+                        </div>
+                      )}
                     </div>
-                    {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 16px', borderRadius: 'var(--radius-full)', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.25)', color: 'var(--green)', animation: 'scaleIn 0.3s ease-out', boxShadow: '0 0 12px rgba(34, 197, 94, 0.1)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: '0.95rem' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      <span>Done</span>
-                    </div>
-                    {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
-                  </div>
-                )}
-              </div>
+                );
+              })}
             </div>
-          );
-        })}
+          ));
+        })()}
       </div>
 
       {/* ── PENDING DELIVERIES ── */}

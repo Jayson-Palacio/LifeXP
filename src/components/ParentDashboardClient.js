@@ -398,6 +398,15 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             const activeMissions = missions.filter(m => m.is_active !== false);
             const inactiveMissions = missions.filter(m => m.is_active === false);
             
+            // Group active missions by category
+            const groupedActive = activeMissions.reduce((acc, m) => {
+              const cat = m.category || 'General';
+              if (!acc[cat]) acc[cat] = [];
+              acc[cat].push(m);
+              return acc;
+            }, {});
+            const sortedCategories = Object.keys(groupedActive).sort();
+            
             const renderMission = (m, isInactive) => (
               <div key={m.id} className="mission-card" style={{ padding: '16px', opacity: isInactive ? 0.6 : 1, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div className="mission-icon" style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
@@ -414,7 +423,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                   </div>
                 </div>
                 <div className="mission-actions" style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button className="btn btn-ghost btn-icon" title={isInactive ? 'Activate' : 'Pause'} onClick={() => handleToggleActiveMission(m)} style={{ background: 'var(--bg-glass)' }}>
+                  <button className="btn btn-ghost btn-icon" title={isInactive ? 'Unarchive' : 'Archive'} onClick={() => handleToggleActiveMission(m)} style={{ background: 'var(--bg-glass)' }}>
                     {isInactive 
                       ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                       : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>}
@@ -431,11 +440,16 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
             return (
               <>
-                {activeMissions.map(m => renderMission(m, false))}
+                {sortedCategories.map(cat => (
+                  <div key={cat} style={{ marginBottom: 24 }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', marginBottom: 16 }}>{cat === 'General' ? '🏷️ General' : cat}</h3>
+                    {groupedActive[cat].map(m => renderMission(m, false))}
+                  </div>
+                ))}
                 
                 {inactiveMissions.length > 0 && (
                   <div style={{ marginTop: 'var(--space-2xl)' }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 'var(--space-lg)' }}>Saved for Later</h3>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 'var(--space-lg)' }}>🗄️ Archived Missions</h3>
                     {inactiveMissions.map(m => renderMission(m, true))}
                   </div>
                 )}
