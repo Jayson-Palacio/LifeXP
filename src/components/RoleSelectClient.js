@@ -126,13 +126,14 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
 
         {childrenData && childrenData.length > 0 ? (
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-            gap: '16px', 
+            display: 'flex', 
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: '20px', 
             width: '100%', 
-            maxWidth: 600, 
-            padding: '0 16px', 
-            marginTop: '32px', 
+            maxWidth: 800, 
+            padding: '0 20px', 
+            margin: '32px auto 0',
             paddingBottom: '80px' 
           }}>
             {childrenData.map((child, index) => {
@@ -149,9 +150,10 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                   style={{ 
                     animationDelay: `${index * 0.05}s`,
                     flexDirection: 'column',
+                    flex: '1 1 140px',
+                    maxWidth: 180,
                     width: '100%',
-                    minWidth: '0', 
-                    padding: '20px 12px',
+                    padding: '24px 12px',
                     position: 'relative'
                   }}
                   onClick={() => router.push(`/kid/${child.id}`)}
