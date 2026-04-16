@@ -16,6 +16,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const [completions, setCompletions] = useState(initialCompletions);
   const [allRedemptions, setAllRedemptions] = useState(initialRedemptions || []);
   const pendingRedemptions = allRedemptions.filter(r => r.status === 'pending');
+
+  // Sync state with props when data is refreshed (e.g. on window focus)
+  useEffect(() => { setChild(initialChild); }, [initialChild]);
+  useEffect(() => { setCompletions(initialCompletions); }, [initialCompletions]);
+  useEffect(() => { setAllRedemptions(initialRedemptions || []); }, [initialRedemptions]);
+  
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [loadingMissions, setLoadingMissions] = useState({});
   const themePickerRef = useRef(null);

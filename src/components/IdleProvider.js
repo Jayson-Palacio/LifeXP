@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 
-const IDLE_5_MIN = 5 * 60 * 1000;
+const IDLE_2_5_MIN = 2.5 * 60 * 1000;
 const IDLE_48_HOURS = 48 * 60 * 60 * 1000;
 
 export default function IdleProvider({ children }) {
@@ -35,9 +35,9 @@ export default function IdleProvider({ children }) {
          return;
       }
       
-      // Return to dashboard after 5 mins of inactivity on protected routes (parent or kid)
+      // Return to dashboard after 2.5 mins of inactivity on protected routes (parent or kid)
       const isProtectedPage = pathname.startsWith('/parent') || pathname.startsWith('/kid');
-      if (isProtectedPage && idleTime > IDLE_5_MIN) {
+      if (isProtectedPage && idleTime > IDLE_2_5_MIN) {
          router.push('/dashboard');
       }
     };
@@ -60,6 +60,17 @@ export default function IdleProvider({ children }) {
     window.addEventListener('touchstart', handleUserActivity, { passive: true });
     window.addEventListener('click', handleUserActivity, { passive: true });
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Refresh server data when user returns to tab
+        router.refresh();
+        // Also fire an activity event to reset the timer when they return
+        handleUserActivity();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
     return () => {
       clearInterval(timerRef.current);
       window.removeEventListener('scroll', handleUserActivity);
@@ -67,6 +78,8 @@ export default function IdleProvider({ children }) {
       window.removeEventListener('keydown', handleUserActivity);
       window.removeEventListener('touchstart', handleUserActivity);
       window.removeEventListener('click', handleUserActivity);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
     };
   }, [pathname, router]);
 

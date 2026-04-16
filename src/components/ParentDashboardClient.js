@@ -28,6 +28,14 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const [pending, setPending] = useState(initialPending || []);
   const [pendingRedemptions, setPendingRedemptions] = useState(initialPendingRedemptions || []);
   const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
+
+  // Sync state with props when data is refreshed (e.g. on window focus)
+  useEffect(() => { setChildren(initialChildren || []); }, [initialChildren]);
+  useEffect(() => { setMissions(initialMissions || []); }, [initialMissions]);
+  useEffect(() => { setRewards(initialRewards || []); }, [initialRewards]);
+  useEffect(() => { setPending(initialPending || []); }, [initialPending]);
+  useEffect(() => { setPendingRedemptions(initialPendingRedemptions || []); }, [initialPendingRedemptions]);
+  useEffect(() => { setSettings(initialSettings || { require_approval: true, family_name: 'Our Family' }); }, [initialSettings]);
   
   // Modals specific
   const [modal, setModal] = useState(null);
