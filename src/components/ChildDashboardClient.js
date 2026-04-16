@@ -353,7 +353,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         {/* Avatar ring with spinning conic border */}
         <div className="hero-avatar-ring">
           <div className="hero-avatar-img">
-            <AvatarDisplay avatarString={child.avatar} />
+            <AvatarDisplay avatarString={child.avatar} size="100%" />
           </div>
 
           {/* Tier badge pill sitting at bottom of ring */}
