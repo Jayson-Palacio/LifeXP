@@ -126,15 +126,16 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
 
         {childrenData && childrenData.length > 0 ? (
           <div style={{ 
-            display: 'flex', 
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: '20px', 
+            display: 'grid',
+            gridTemplateColumns: childrenData.length === 1
+              ? 'minmax(0, 220px)'
+              : 'repeat(2, 1fr)',
+            gap: '16px', 
             width: '100%', 
-            maxWidth: 800, 
-            padding: '0 20px', 
-            margin: '32px auto 0',
-            paddingBottom: '80px' 
+            maxWidth: childrenData.length <= 2 ? 480 : 800, 
+            padding: '0 4px', 
+            margin: '16px auto 0',
+            paddingBottom: '80px'
           }}>
             {childrenData.map((child, index) => {
               const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
@@ -150,28 +151,26 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                   style={{ 
                     animationDelay: `${index * 0.05}s`,
                     flexDirection: 'column',
-                    flex: '1 1 140px',
-                    maxWidth: 180,
                     width: '100%',
-                    padding: '24px 12px',
+                    padding: undefined,
                     position: 'relative'
                   }}
                   onClick={() => router.push(`/kid/${child.id}`)}
                 >
-                  <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3rem', flexShrink: 0, marginBottom: '12px' }} />
+                  <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '2.2rem', flexShrink: 0, marginBottom: '8px' }} />
                   
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-bright)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-bright)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                       {child.name}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>
                       Lv {level}
                     </div>
                     
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: 10, width: '100%' }}>
-                      <div style={{ fontSize: '0.9rem', color: 'var(--amber)', fontWeight: 800 }}>🪙 {child.coins}</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: 8, width: '100%', flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--amber)', fontWeight: 800 }}>🪙 {child.coins}</div>
                       {stats && (
-                        <div style={{ fontSize: '0.85rem', color: stats.done >= stats.total && stats.total > 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: 700 }}>
+                        <div style={{ fontSize: '0.78rem', color: stats.done >= stats.total && stats.total > 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: 700 }}>
                           🎯 {stats.done}/{stats.total}
                         </div>
                       )}
