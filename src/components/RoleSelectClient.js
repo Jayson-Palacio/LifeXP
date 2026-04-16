@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
+import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import AvatarDisplay from './AvatarDisplay';
 
 export default function RoleSelectClient({ childrenData, missions, completions, parentPin }) {
@@ -24,7 +25,8 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
      if (!missions || !completions) return null;
      
      const now = new Date();
-     const today = new Date(now); today.setHours(0,0,0,0);
+     const tz = getStoredTzOffset();
+     const today = getStartOfDay(tz);
      
      const childMissions = missions.filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(childId));
      
@@ -45,9 +47,9 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
         
         let periodStart = today;
         if (m.frequency === 'weekly') {
-           periodStart = new Date(now); periodStart.setDate(now.getDate() - now.getDay()); periodStart.setHours(0,0,0,0);
+           periodStart = getStartOfWeek(tz);
         } else if (m.frequency === 'monthly') {
-           periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+           periodStart = getStartOfMonth(tz);
         }
         
         const periodDoneCount = childComps.filter(c => new Date(c.submitted_at || c.created_at) >= periodStart).length;
@@ -123,7 +125,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
         <p className="role-select-subtitle">Who's checking in?</p>
 
         {childrenData && childrenData.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', alignItems: 'center', marginTop: 'var(--space-xl)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', alignItems: 'center', marginTop: 'var(--space-xl)', paddingBottom: '80px', width: '100%' }}>
             {childrenData.map((child, index) => {
               const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
               const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);

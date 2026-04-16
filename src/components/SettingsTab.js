@@ -14,6 +14,24 @@ export default function SettingsTab({ initialSettings }) {
   const [storedNewPin, setStoredNewPin] = useState('');
   const [pinError, setPinError] = useState('');
 
+  // Read and write tz from localStorage (client only)
+  const [tzOffset, setTzOffset] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      const v = localStorage.getItem('kaeluma_tz_offset');
+      return v !== null ? v : '';
+    }
+    return '';
+  });
+
+  const handleSaveTz = () => {
+    if (tzOffset === '' || tzOffset === null) {
+      localStorage.removeItem('kaeluma_tz_offset');
+    } else {
+      localStorage.setItem('kaeluma_tz_offset', tzOffset);
+    }
+    showToast('⏰ Timezone saved!');
+  };
+
   const handlePinKey = async (val) => {
     if (val === 'del') { setInputPin(p => p.slice(0, -1)); return; }
     if (inputPin.length >= 4) return;
@@ -128,6 +146,51 @@ export default function SettingsTab({ initialSettings }) {
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Save Name</button>
         </form>
+      </div>
+
+      {/* TIMEZONE */}
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
+        <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>🕐 Daily Reset Timezone</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+          Missions reset at midnight in this timezone. Leave blank to use your device's timezone.
+        </div>
+        <select
+          className="input"
+          value={tzOffset}
+          onChange={e => setTzOffset(e.target.value)}
+          style={{ marginBottom: 12 }}
+        >
+          <option value="">📱 Use device timezone (default)</option>
+          <option value="-12">UTC-12 — Baker Island</option>
+          <option value="-11">UTC-11 — American Samoa</option>
+          <option value="-10">UTC-10 — Hawaii</option>
+          <option value="-9">UTC-9 — Alaska</option>
+          <option value="-8">UTC-8 — Pacific Time (US &amp; Canada)</option>
+          <option value="-7">UTC-7 — Mountain Time (US &amp; Canada)</option>
+          <option value="-6">UTC-6 — Central Time (US &amp; Canada)</option>
+          <option value="-5">UTC-5 — Eastern Time (US &amp; Canada)</option>
+          <option value="-4">UTC-4 — Atlantic Time / Venezuela</option>
+          <option value="-3">UTC-3 — Brazil / Argentina</option>
+          <option value="-2">UTC-2 — South Georgia</option>
+          <option value="-1">UTC-1 — Azores</option>
+          <option value="0">UTC+0 — London / Dublin / Lisbon</option>
+          <option value="1">UTC+1 — Paris / Berlin / Rome / Madrid</option>
+          <option value="2">UTC+2 — Athens / Cairo / Johannesburg</option>
+          <option value="3">UTC+3 — Moscow / Nairobi / Riyadh</option>
+          <option value="4">UTC+4 — Dubai / Baku</option>
+          <option value="4.5">UTC+4:30 — Kabul</option>
+          <option value="5">UTC+5 — Pakistan</option>
+          <option value="5.5">UTC+5:30 — India (IST)</option>
+          <option value="6">UTC+6 — Bangladesh / Almaty</option>
+          <option value="7">UTC+7 — Bangkok / Jakarta</option>
+          <option value="8">UTC+8 — Singapore / Hong Kong / Perth</option>
+          <option value="9">UTC+9 — Tokyo / Seoul</option>
+          <option value="9.5">UTC+9:30 — Adelaide</option>
+          <option value="10">UTC+10 — Sydney / Melbourne</option>
+          <option value="11">UTC+11 — Solomon Islands</option>
+          <option value="12">UTC+12 — Auckland / Fiji</option>
+        </select>
+        <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleSaveTz}>Save Timezone</button>
       </div>
 
       {/* PIN CHANGE */}

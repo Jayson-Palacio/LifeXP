@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '../lib/levels';
+import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound } from '../lib/sounds';
 import TierCrest from './TierCrest';
@@ -78,15 +79,16 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
     // Count completions within the current period
     const now = new Date();
+    const tz = getStoredTzOffset();
     const periodStart = (() => {
       if (m.frequency === 'weekly') {
-        const d = new Date(now); d.setDate(now.getDate() - now.getDay()); d.setHours(0,0,0,0); return d;
+        return getStartOfWeek(tz);
       }
       if (m.frequency === 'monthly') {
-        return new Date(now.getFullYear(), now.getMonth(), 1);
+        return getStartOfMonth(tz);
       }
       // daily or date_range: just today
-      const d = new Date(now); d.setHours(0,0,0,0); return d;
+      return getStartOfDay(tz);
     })();
 
     const periodDone = valid.filter(c => new Date(c.submitted_at) >= periodStart).length;
@@ -206,9 +208,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       const existing = (rawExisting || []).filter(x => x.status !== 'refunded');
       
       const now = new Date();
-      const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
-      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const tz = getStoredTzOffset();
+      const startOfDay   = getStartOfDay(tz);
+      const startOfWeek  = getStartOfWeek(tz);
+      const startOfMonth = getStartOfMonth(tz);
       const countSince = (since) => existing.filter(x => new Date(x.redeemed_at) >= since).length;
 
       if (r.max_total_redemptions && existing.length >= r.max_total_redemptions) {
@@ -506,9 +509,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             <div className="reward-grid">
               {childRewards.map(r => {
                 const now = new Date();
-                const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
-                const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const tz = getStoredTzOffset();
+                const startOfDay   = getStartOfDay(tz);
+                const startOfWeek  = getStartOfWeek(tz);
+                const startOfMonth = getStartOfMonth(tz);
 
                 const validRedemptions = allRedemptions.filter(x => x.reward_id === r.id && x.status !== 'refunded');
                 const countSince = (since) => validRedemptions.filter(x => new Date(x.redeemed_at) >= since).length;
