@@ -91,8 +91,116 @@
   animation: dropFadeIn 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 540px) {
   .role-select-subtitle { margin-bottom: var(--space-2xl); font-size: 1.1rem; }
+}
+
+/* ============================================
+   PROFILE GRID — fluid at every breakpoint
+   ============================================ */
+
+/* Phone: 2 tight columns */
+.kaeluma-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 4px;
+  margin: 14px auto 0;
+  padding-bottom: 80px;
+}
+
+/* Tablet ~540px+: wider cards, still 2 cols unless >3 */
+@media (min-width: 540px) {
+  .kaeluma-grid {
+    grid-template-columns: repeat(2, minmax(180px, 260px));
+    gap: 24px;
+    max-width: 580px;
+    margin: 24px auto 0;
+  }
+}
+
+/* Desktop 860px+: auto-fill as many cols as fit, nice big cards */
+@media (min-width: 860px) {
+  .kaeluma-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 260px));
+    gap: 28px;
+    max-width: 960px;
+    margin: 32px auto 0;
+  }
+}
+
+/* Avatar inside card — scales with screen */
+.kaeluma-card-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+@media (min-width: 540px) {
+  .kaeluma-card-avatar { width: 90px; height: 90px; font-size: 3.4rem; margin-bottom: 12px; }
+}
+
+@media (min-width: 860px) {
+  .kaeluma-card-avatar { width: 110px; height: 110px; font-size: 4.2rem; margin-bottom: 16px; }
+}
+
+/* Card name text */
+.kaeluma-card-name {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text-bright);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+@media (min-width: 540px) {
+  .kaeluma-card-name { font-size: 1.2rem; }
+}
+
+@media (min-width: 860px) {
+  .kaeluma-card-name { font-size: 1.4rem; }
+}
+
+/* Card level badge */
+.kaeluma-card-level {
+  font-size: 0.75rem;
+  color: var(--primary);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+@media (min-width: 860px) {
+  .kaeluma-card-level { font-size: 0.9rem; }
+}
+
+/* Card stats row */
+.kaeluma-card-stats {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+@media (min-width: 860px) {
+  .kaeluma-card-stats { font-size: 0.92rem; gap: 14px; margin-top: 12px; }
 }
 
 /* Glassmorphism Profile Cards */
@@ -116,8 +224,12 @@
   overflow: hidden;
 }
 
-@media (min-width: 480px) {
-  .kaeluma-card { padding: var(--space-xl) var(--space-lg); min-width: 170px; gap: 16px; }
+@media (min-width: 540px) {
+  .kaeluma-card { padding: var(--space-xl) var(--space-lg); gap: 12px; }
+}
+
+@media (min-width: 860px) {
+  .kaeluma-card { padding: 32px 24px; gap: 16px; }
 }
 
 .kaeluma-card::before {
