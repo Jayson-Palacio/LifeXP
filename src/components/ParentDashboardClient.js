@@ -711,7 +711,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
       {/* Global Modals for Editing */}
       {modal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target.className === 'modal-overlay') closeModal(); }}>
+        <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="modal-content">
             <h3 className="modal-title" style={{ textAlign: 'center', fontSize: '1.5rem' }}>
               {modal.type === 'mission' ? (modal.data ? 'Edit Mission' : 'New Mission') :
