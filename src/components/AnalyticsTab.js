@@ -176,8 +176,8 @@ export default function AnalyticsTab({ children }) {
   const maxLast7 = stats ? Math.max(...stats.last7, 1) : 1;
 
   return (
-    <div style={{ padding: 'var(--space-lg)', paddingBottom: 100 }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 4 }}>📊 Family Analytics</h2>
+    <div style={{ padding: '0', paddingBottom: 100 }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 4 }}>📊 Analytics</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--space-xl)' }}>
         Behavioural insights for each child
       </p>

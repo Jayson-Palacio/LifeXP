@@ -370,6 +370,11 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           <span style={{ color: 'var(--text-muted)', fontWeight: 600, marginTop: 8 }}>Add Kid</span>
         </div>
       </div>
+
+      {/* ── Inline Analytics ── */}
+      <div style={{ marginTop: 'var(--space-2xl)', borderTop: '1px solid var(--bg-glass-border)', paddingTop: 'var(--space-xl)' }}>
+        <AnalyticsTab children={children} />
+      </div>
     </div>
     );
   };
@@ -702,7 +707,6 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length }}>
         {activeTab === 'overview'   && renderOverview()}
         {activeTab === 'manage'     && renderManage()}
-        {activeTab === 'analytics'  && <AnalyticsTab children={children} />}
         {activeTab === 'settings'   && <SettingsTab initialSettings={settings} />}
       </AppShell>
 
