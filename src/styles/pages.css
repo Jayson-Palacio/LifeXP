@@ -103,6 +103,7 @@
 .kaeluma-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  justify-content: center;
   gap: 14px;
   width: 100%;
   max-width: 480px;
@@ -111,20 +112,22 @@
   padding-bottom: 80px;
 }
 
-/* Tablet ~540px+: wider cards, still 2 cols unless >3 */
+/* Tablet ~540px+: wider cards, still 2 cols */
 @media (min-width: 540px) {
   .kaeluma-grid {
     grid-template-columns: repeat(2, minmax(180px, 260px));
+    justify-content: center;
     gap: 24px;
     max-width: 580px;
     margin: 24px auto 0;
   }
 }
 
-/* Desktop 860px+: auto-fill as many cols as fit, nice big cards */
+/* Desktop 860px+: auto-fill cols, centered */
 @media (min-width: 860px) {
   .kaeluma-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 260px));
+    justify-content: center;
     gap: 28px;
     max-width: 960px;
     margin: 32px auto 0;

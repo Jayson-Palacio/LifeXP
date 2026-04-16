@@ -119,7 +119,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
       {/* Ambient energetic cosmic background for Kaeluma */}
       <div className="kaeluma-bg" />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', maxWidth: 800, margin: '0 auto', zIndex: 1 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: 1000, margin: '0 auto', zIndex: 1 }}>
         <div className="kaeluma-logo-spin">☀</div>
         <h1 className="kaeluma-title">Kaeluma</h1>
         <p className="role-select-subtitle">Who's checking in?</p>
