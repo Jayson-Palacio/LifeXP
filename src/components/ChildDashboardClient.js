@@ -266,7 +266,9 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
   // ─── Render ───────────────────────────────────────────────────
   return (
-    <div className={`theme-${activeTheme}`} style={{ minHeight: '100dvh', overflowY: 'auto', paddingBottom: 40 }}>
+    <div className={`theme-${activeTheme}`} style={{ minHeight: '100dvh', overflowY: 'auto', paddingBottom: 40, position: 'relative' }}>
+      <div className="kaeluma-bg" style={{ opacity: 0.12, position: 'fixed', zIndex: 0 }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
 
       {/* ── TOP NAV ── */}
       <div style={{
@@ -570,6 +572,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             </div>
           );
         })()}
+      </div>
       </div>
     </div>
   );

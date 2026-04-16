@@ -230,3 +230,13 @@
   100% { transform: scale(1.5); opacity: 0; }
 }
 .crest-expand-ring { animation: crestExpandRing 3s ease-out infinite; transform-origin: center; position: absolute; }
+
+/* ============================================
+   EMPTY STATE ANIMATION
+   ============================================ */
+@keyframes emptyStateWobble {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+  25% { transform: translateY(-8px) rotate(-4deg); opacity: 1; }
+  50% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+  75% { transform: translateY(-5px) rotate(3deg); opacity: 1; }
+}

@@ -125,7 +125,16 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
         <p className="role-select-subtitle">Who's checking in?</p>
 
         {childrenData && childrenData.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', alignItems: 'center', marginTop: 'var(--space-xl)', paddingBottom: '80px', width: '100%' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
+            gap: '16px', 
+            width: '100%', 
+            maxWidth: 600, 
+            padding: '0 16px', 
+            marginTop: '32px', 
+            paddingBottom: '80px' 
+          }}>
             {childrenData.map((child, index) => {
               const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
               const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
@@ -138,24 +147,27 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                   key={child.id} 
                   className={`theme-${activeTheme} kaeluma-card`}
                   style={{ 
-                    animationDelay: `${index * 0.1}s`,
-                    flexDirection: 'row',
+                    animationDelay: `${index * 0.05}s`,
+                    flexDirection: 'column',
                     width: '100%',
-                    maxWidth: 360,
-                    padding: '16px 24px',
+                    minWidth: '0', 
+                    padding: '20px 12px',
                     position: 'relative'
                   }}
                   onClick={() => router.push(`/kid/${child.id}`)}
                 >
-                  <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3.2rem', flexShrink: 0 }} />
-                  <div style={{ flex: 1, textAlign: 'left', marginLeft: 16, zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>{child.name}</div>
-                      <div style={{ fontSize: '1.05rem', color: 'var(--amber)', fontWeight: 800 }}>🪙 {child.coins}</div>
+                  <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3rem', flexShrink: 0, marginBottom: '12px' }} />
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-bright)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                      {child.name}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>
+                      Lv {level}
                     </div>
                     
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4 }}>
-                      <div style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lv {level}</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: 10, width: '100%' }}>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--amber)', fontWeight: 800 }}>🪙 {child.coins}</div>
                       {stats && (
                         <div style={{ fontSize: '0.85rem', color: stats.done >= stats.total && stats.total > 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: 700 }}>
                           🎯 {stats.done}/{stats.total}

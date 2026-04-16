@@ -383,9 +383,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         </button>
       </div>
       
-      <div style={{ display: 'flex', background: 'var(--bg-glass)', borderRadius: 'var(--radius-full)', padding: 4, marginBottom: 'var(--space-xl)', border: '1px solid var(--bg-glass-border)' }}>
-        <button className={`btn ${manageTab === 'missions' ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={() => setManageTab('missions')}>🎯 Missions</button>
-        <button className={`btn ${manageTab === 'rewards' ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={() => setManageTab('rewards')}>🎁 Rewards</button>
+      <div className="segment-control">
+        <div className={`segment-control-indicator ${manageTab === 'missions' ? 'pos-0' : 'pos-1'}`} />
+        <button className={`segment-control-btn ${manageTab === 'missions' ? 'active' : ''}`} onClick={() => setManageTab('missions')}>🎯 Missions</button>
+        <button className={`segment-control-btn ${manageTab === 'rewards' ? 'active' : ''}`} onClick={() => setManageTab('rewards')}>🎁 Rewards</button>
       </div>
 
       {manageTab === 'missions' ? (

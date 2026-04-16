@@ -28,8 +28,9 @@ export default function AppShell({
   const tabs = role === 'parent' ? parentTabs : kidTabs;
 
   return (
-    <div className="app-shell">
-      <div className="app-shell-content">
+    <div className="app-shell" style={{ position: 'relative' }}>
+      <div className="kaeluma-bg" style={{ opacity: 0.12, position: 'fixed', zIndex: 0 }} />
+      <div className="app-shell-content" style={{ position: 'relative', zIndex: 1 }}>
         {children}
       </div>
 
