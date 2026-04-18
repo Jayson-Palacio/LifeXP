@@ -1526,67 +1526,77 @@ const Guardian = () => (
 );
 
 const Jesus = () => (
+const Jesus = () => (
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <radialGradient id="js-skin" cx="40%" cy="35%"><stop offset="0%" stopColor="#FDDBA8"/><stop offset="100%" stopColor="#C8925A"/></radialGradient>
       <radialGradient id="js-robe" cx="40%" cy="20%"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#E2E8F0"/></radialGradient>
     </defs>
+    
     <ellipse cx="50" cy="96" rx="28" ry="5" fill="rgba(0,0,0,0.2)"/>
-    
-    {/* Back hair flowing down (drawn BEHIND the body and head) */}
-    <path d="M28 30 Q16 50 20 72" stroke="#78350F" strokeWidth="10" strokeLinecap="round" fill="none" />
-    <path d="M34 30 Q22 52 26 68" stroke="#5C260A" strokeWidth="6" strokeLinecap="round" fill="none" />
-    <path d="M72 30 Q84 50 80 72" stroke="#78350F" strokeWidth="10" strokeLinecap="round" fill="none" />
-    <path d="M66 30 Q78 52 74 68" stroke="#5C260A" strokeWidth="6" strokeLinecap="round" fill="none" />
-
-    {/* White robe */}
-    <path d="M26 54 L16 96 L84 96 L74 54 Z" fill="url(#js-robe)"/>
-    {/* Blue mantle */}
-    <path d="M26 54 L22 96 L50 96 L50 60 Z" fill="#BFDBFE"/>
-    {/* Sash */}
-    <path d="M30 64 Q50 74 70 64 Q66 80 50 82 Q34 80 30 64 Z" fill="#FEE2E2" opacity="0.7"/>
-    {/* Shepherd staff */}
-    <path d="M76 96 Q78 68 72 30 Q70 22 64 22 Q58 22 58 30 Q58 36 64 34" stroke="#78350F" strokeWidth="5" strokeLinecap="round" fill="none"/>
-    
-    {/* Little lamb cradled */}
-    <ellipse cx="20" cy="64" rx="13" ry="9" fill="#F8FAFC"/>
-    <circle cx="14" cy="57" r="8" fill="#FFFFFF"/>
-    <circle cx="24" cy="57" r="6" fill="#F1F5F9"/>
-    <ellipse cx="12" cy="51" rx="3" ry="5" fill="#E2E8F0" transform="rotate(-20 12 51)"/>
-    <circle cx="10" cy="56" r="2.5" fill="#1E293B"/>
-    <circle cx="9.5" cy="55.5" r="0.8" fill="white"/>
-    {/* Arm cradling lamb */}
-    <path d="M34 58 Q26 52 22 60" stroke="#C8925A" strokeWidth="8" strokeLinecap="round" fill="none"/>
 
     {/* Halo */}
-    <circle cx="50" cy="28" r="30" fill="none" stroke="#FDE047" strokeWidth="5" opacity="0.7"/>
-    <circle cx="50" cy="28" r="26" fill="none" stroke="#FBBF24" strokeWidth="2" opacity="0.3"/>
+    <circle cx="50" cy="35" r="26" fill="rgba(253,224,71,0.15)" stroke="#FDE047" strokeWidth="3" />
+    <circle cx="50" cy="35" r="22" fill="none" stroke="#FBBF24" strokeWidth="2" opacity="0.4" />
 
-    {/* Head shape */}
-    <circle cx="50" cy="30" r="24" fill="url(#js-skin)"/>
+    {/* Back Hair */}
+    <path d="M30 35 Q15 65 20 80 Q30 75 30 60 Z" fill="#5C260A" />
+    <path d="M70 35 Q85 65 80 80 Q70 75 70 60 Z" fill="#5C260A" />
 
-    {/* Hair top / Bangs */}
-    <path d="M26 30 C26 5 74 5 74 30 Q65 15 50 18 Q35 15 26 30 Z" fill="#78350F"/>
+    {/* Body / Robe */}
+    <path d="M28 50 L15 96 L85 96 L72 50 Z" fill="url(#js-robe)"/>
+    <path d="M28 50 L22 96 L50 96 L50 55 Z" fill="#BFDBFE"/>
+    
+    {/* Red Sash draped across */}
+    <path d="M30 60 Q 50 75 70 60 L 66 68 Q 50 82 34 68 Z" fill="#FCA5A5" opacity="0.8"/>
+
+    {/* Right Arm holding staff (viewer's left side) */}
+    <path d="M70 60 Q 78 60 82 65" stroke="#C8925A" strokeWidth="7" strokeLinecap="round" fill="none"/>
+    <circle cx="82" cy="65" r="1.5" fill="#DC2626" opacity="0.8" /> {/* Stigmata */}
+
+    {/* Staff */}
+    <path d="M85 96 L 79 35" stroke="#78350F" strokeWidth="5" strokeLinecap="round" />
+    <path d="M79 35 C 79 22, 64 22, 64 30" fill="none" stroke="#78350F" strokeWidth="5" strokeLinecap="round" />
+
+    {/* Lamb in left arm */}
+    <ellipse cx="22" cy="65" rx="14" ry="10" fill="#F8FAFC"/>
+    <circle cx="15" cy="56" r="8" fill="#FFFFFF"/>
+    <circle cx="23" cy="56" r="6" fill="#F1F5F9"/>
+    <ellipse cx="11" cy="50" rx="3.5" ry="6" fill="#E2E8F0" transform="rotate(-25 11 50)"/>
+    <circle cx="11" cy="55" r="2.5" fill="#1E293B"/>
+    <circle cx="10.5" cy="54.5" r="1" fill="#FFFFFF"/>
+
+    {/* Left Arm cradling lamb */}
+    <path d="M35 60 Q 25 50 20 65" stroke="#C8925A" strokeWidth="8" strokeLinecap="round" fill="none"/>
+    <circle cx="20" cy="65" r="1.5" fill="#DC2626" opacity="0.8" /> {/* Stigmata */}
+
+    {/* Head Base */}
+    <circle cx="50" cy="35" r="22" fill="url(#js-skin)"/>
+
+    {/* Front Hair - Unified framing shape */}
+    <path d="M50 13 C 25 13, 20 35, 23 60 C 26 62, 28 50, 29 42 Q 35 25, 50 28 Q 65 25, 71 42 C 72 50, 74 62, 77 60 C 80 35, 75 13, 50 13 Z" fill="#78350F" />
 
     {/* Beard shape */}
-    <path d="M26.5 35 Q30 56 50 58 Q70 56 73.5 35 Q65 46 50 46 Q35 46 26.5 35 Z" fill="#78350F"/>
+    <path d="M29 42 Q 30 65, 50 68 Q 70 65, 71 42 Q 62 55, 50 55 Q 38 55, 29 42 Z" fill="#78350F" />
+
+    {/* Mustache */}
+    <path d="M42 46 Q 50 42 58 46 Q 50 45 42 46 Z" fill="#78350F" />
 
     {/* Eyes */}
-    <Eye cx={41} cy={28} r={5.5} iris="#451A03"/>
-    <Eye cx={59} cy={28} r={5.5} iris="#451A03"/>
+    <Eye cx={42} cy={34} r={5} iris="#451A03"/>
+    <Eye cx={58} cy={34} r={5} iris="#451A03"/>
 
-    {/* Gentle smile */}
-    <path d="M43 38 Q50 43 57 38" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
+    {/* Smile gently glowing */}
+    <path d="M45 49 Q 50 53 55 49" fill="none" stroke="#92400E" strokeWidth="2" strokeLinecap="round"/>
 
     {/* Eyebrows */}
-    <path d="M36 23 Q41 21 46 23" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-    <path d="M54 23 Q59 21 64 23" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+    <path d="M37 28 Q 42 26 47 28" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+    <path d="M53 28 Q 58 26 63 28" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
 
-    {/* Soft highlight */}
-    <ellipse cx="44" cy="20" rx="10" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-10 44 20)"/>
+    {/* Forehead highlight */}
+    <ellipse cx="44" cy="24" rx="10" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-10 44 24)"/>
   </svg>
 );
-// MAP ALL 40 ──────────────────────────────────────────────────────────────
 const PET_MAP = {
   pup:Pup, kitty:Kitty, bunny:Bunny, fox:Fox, bear:Bear,
   wolf:Wolf, lion:Lion, eagle:Eagle, panther:Panther, panda:Panda,
