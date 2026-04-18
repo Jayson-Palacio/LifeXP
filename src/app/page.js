@@ -189,7 +189,7 @@ export default function LandingPage() {
               <div style={{ display:'flex', alignItems:'center', gap:16 }}>
                 <div style={{ display:'flex' }}>
                   {['🧒','👦','👧','🧒‍♀️','👦🏽'].map((e,i) => (
-                    <div key={i} style={{ width:32, height:32, borderRadius:'50%', background:hsl(,40%,25%), border:'2px solid var(--bg-deep)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.9rem', marginLeft: i===0?0:-10, zIndex:5-i }}>
+                    <div key={i} style={{ width:32, height:32, borderRadius:'50%', background:`hsl(${i*60},40%,25%)`, border:'2px solid var(--bg-deep)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.9rem', marginLeft: i===0?0:-10, zIndex:5-i }}>
                       {e}
                     </div>
                   ))}
