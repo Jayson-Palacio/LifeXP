@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { PETS } from '../lib/character';
 
 const BEHAVIOR_CLASS = {
@@ -1528,81 +1528,63 @@ const Guardian = () => (
 const Jesus = () => (
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      {/* Natural warm skin tone */}
-      <radialGradient id="js-skin" cx="45%" cy="35%"><stop offset="0%" stopColor="#FDE3B8"/><stop offset="100%" stopColor="#C8925A"/></radialGradient>
-      {/* Robe shading */}
-      <radialGradient id="js-robe" cx="40%" cy="20%"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#E2E8F0"/></radialGradient>
-      {/* Soft celestial glow */}
-      <radialGradient id="js-halo" cx="50%" cy="50%"><stop offset="0%" stopColor="rgba(253, 224, 71, 0.4)"/><stop offset="100%" stopColor="rgba(253, 224, 71, 0)"/></radialGradient>
+      <radialGradient id="js-skin" cx="40%" cy="35%"><stop offset="0%" stopColor="#FDE68A"/><stop offset="100%" stopColor="#D97706"/></radialGradient>
+      <radialGradient id="js-halo" cx="50%" cy="50%"><stop offset="0%" stopColor="rgba(253,224,71,0.6)"/><stop offset="50%" stopColor="rgba(251,191,36,0.2)"/><stop offset="100%" stopColor="rgba(0,0,0,0)"/></radialGradient>
     </defs>
-    
-    {/* Ground shadow */}
-    <ellipse cx="50" cy="94" rx="28" ry="4" fill="rgba(0,0,0,0.2)"/>
-
-    {/* Radiant Halo (Behind everything) */}
-    <circle cx="50" cy="32" r="32" fill="url(#js-halo)"/>
-    <circle cx="50" cy="32" r="28" fill="none" stroke="#FDE047" strokeWidth="2" opacity="0.6"/>
-    <circle cx="50" cy="32" r="25" fill="none" stroke="#FBBF24" strokeWidth="1" opacity="0.8"/>
-
-    {/* Back Hair (Flowing behind shoulders) */}
-    <path d="M25 35 Q 15 65 25 80 Q 30 70 30 60 Z" fill="#5C260A" />
-    <path d="M75 35 Q 85 65 75 80 Q 70 70 70 60 Z" fill="#5C260A" />
-
-    {/* White Robe Base */}
-    <path d="M26 50 L16 94 L84 94 L74 50 Z" fill="url(#js-robe)"/>
-    
-    {/* Blue Mantle (left side draped) */}
-    <path d="M26 50 L18 94 L50 94 L50 60 Z" fill="#DBEAFE"/>
-    
-    {/* Red Sash (flowing across chest) */}
-    <path d="M30 65 Q 50 82 70 65 L 66 75 Q 50 92 34 75 Z" fill="#FEE2E2" opacity="0.9"/>
-
-    {/* Shepherd's Staff (Right Hand) */}
-    <path d="M80 94 L 75 35" stroke="#92400E" strokeWidth="5" strokeLinecap="round"/>
-    <path d="M75 35 C 75 20 60 20 60 30" fill="none" stroke="#92400E" strokeWidth="5" strokeLinecap="round"/>
-
-    {/* Tiny Lamb (Cradled in Left Arm) */}
-    <ellipse cx="22" cy="65" rx="14" ry="10" fill="#FFFFFF"/>
-    <circle cx="16" cy="58" r="6" fill="#F8FAFC"/>
-    <circle cx="26" cy="59" r="6" fill="#F1F5F9"/>
-    <circle cx="12" cy="64" r="7" fill="#FFFFFF"/>
-    <ellipse cx="8" cy="60" rx="2" ry="5" fill="#E2E8F0" transform="rotate(-30 8 60)"/>
-    <circle cx="10" cy="63" r="1.5" fill="#1E293B"/> {/* Lamb Eye */}
-
-    {/* Arms overlapping the robe */}
-    <path d="M36 58 Q 25 50 18 66" stroke="#C8925A" strokeWidth="7" strokeLinecap="round" fill="none"/> {/* Left arm */}
-    <path d="M64 58 Q 75 58 78 68" stroke="#C8925A" strokeWidth="7" strokeLinecap="round" fill="none"/> {/* Right arm */}
-
-    {/* Stigmata on hands */}
-    <circle cx="18" cy="66" r="1.5" fill="#DC2626" opacity="0.8"/>
-    <circle cx="78" cy="68" r="1.5" fill="#DC2626" opacity="0.8"/>
-
-    {/* Head Base (Cute chibi oval shape) */}
-    <ellipse cx="50" cy="35" rx="22" ry="20" fill="url(#js-skin)"/>
-
-    {/* Rosy Cheeks */}
-    <ellipse cx="36" cy="42" rx="4" ry="2.5" fill="#EF4444" opacity="0.25"/>
-    <ellipse cx="64" cy="42" rx="4" ry="2.5" fill="#EF4444" opacity="0.25"/>
-
-    {/* Full Wavy Beard */}
-    <path d="M28.5 38 Q 30 58 50 60 Q 70 58 71.5 38 Q 63 50 50 50 Q 37 50 28.5 38 Z" fill="#78350F"/>
-
-    {/* Top Hair with Middle Part */}
-    <path d="M50 15 C 25 15 22 35 25 55 C 27 50 30 40 33 35 Q 40 25 50 27 Q 60 25 67 35 C 70 40 73 50 75 55 C 78 35 75 15 50 15 Z" fill="#78350F"/>
-
-    {/* Signature Shiny Anime Eyes */}
-    <Eye cx={41} cy={34} r={6} iris="#451A03"/>
-    <Eye cx={59} cy={34} r={6} iris="#451A03"/>
-
-    {/* Expression: Eyebrows and Smile */}
-    <path d="M36 27 Q 41 24 46 27" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.85"/>
-    <path d="M54 27 Q 59 24 64 27" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.85"/>
-    <path d="M45 46 Q 50 50 55 46" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
-
-    {/* Specular highlight on forehead to match 3D feel */}
-    <ellipse cx="44" cy="22" rx="8" ry="4" fill="rgba(255,255,255,0.3)" transform="rotate(-10 44 22)"/>
+    <ellipse cx="50" cy="96" rx="28" ry="5" fill="rgba(0,0,0,0.2)"/>
+    {/* Divine radiance — multiple layers of soft golden light */}
+    <circle cx="50" cy="30" r="48" fill="url(#js-halo)"/>
+    <circle cx="50" cy="30" r="34" fill="rgba(253,224,71,0.12)"/>
+    {/* Outer halo ring — classic gold ring */}
+    <circle cx="50" cy="26" r="32" fill="none" stroke="#FDE047" strokeWidth="3" opacity="0.7"/>
+    <circle cx="50" cy="26" r="28" fill="none" stroke="#FBBF24" strokeWidth="1.5" opacity="0.4"/>
+    {/* White robe — pure and flowing */}
+    <path d="M26 54 L16 96 L84 96 L74 54 Z" fill="#FFFFFF"/>
+    {/* Blue mantle draped over shoulder */}
+    <path d="M26 54 L22 96 L50 96 L50 62 Z" fill="#DBEAFE"/>
+    {/* Red sash — the distinction */}
+    <path d="M28 62 Q50 74 72 62 Q68 80 50 82 Q32 80 28 62 Z" fill="#FEE2E2"/>
+    {/* Little lamb cradled — the Good Shepherd identifier */}
+    <ellipse cx="22" cy="62" rx="13" ry="10" fill="#F8FAFC"/>
+    <circle cx="16" cy="56" r="8" fill="#FFFFFF"/>
+    <circle cx="26" cy="56" r="6" fill="#FFFFFF"/>
+    {/* Lamb ear */}
+    <ellipse cx="14" cy="50" rx="3.5" ry="5" fill="#E2E8F0" transform="rotate(-20 14 50)"/>
+    {/* Lamb sweet face */}
+    <circle cx="12" cy="54" r="2.5" fill="#1E293B"/>
+    <circle cx="11.5" cy="53.5" r="0.8" fill="white"/>
+    {/* Arm cradling lamb */}
+    <path d="M34 56 Q28 50 24 58" stroke="#D97706" strokeWidth="9" strokeLinecap="round" fill="none"/>
+    {/* Shepherd's staff */}
+    <path d="M76 96 Q78 64 72 26 Q70 20 66 22 Q62 24 64 30" stroke="#78350F" strokeWidth="6" strokeLinecap="round" fill="none"/>
+    {/* Staff crook */}
+    <path d="M66 30 Q60 22 66 16 Q72 10 78 16" stroke="#78350F" strokeWidth="6" strokeLinecap="round" fill="none"/>
+    {/* Head — serene, compassionate face */}
+    <circle cx="50" cy="30" r="26" fill="url(#js-skin)"/>
+    {/* Crown of warm light at top */}
+    <circle cx="50" cy="30" r="26" fill="none" stroke="rgba(253,224,71,0.4)" strokeWidth="4"/>
+    {/* Brown hair, middle-parted, flowing shoulder-length */}
+    <path d="M24 30 C24 8 76 8 76 30 Q64 16 50 18 Q36 16 24 30 Z" fill="#78350F"/>
+    {/* Hair falling on sides */}
+    <path d="M24 36 Q20 52 22 66" stroke="#78350F" strokeWidth="8" strokeLinecap="round" fill="none"/>
+    <path d="M76 36 Q80 52 78 66" stroke="#78350F" strokeWidth="8" strokeLinecap="round" fill="none"/>
+    <circle cx="50" cy="30" r="22" fill="url(#js-skin)"/>
+    {/* Eyes — warm brown, compassionate, full of love */}
+    <Eye cx={41} cy={28} r={6.5} iris="#451A03"/>
+    <Eye cx={59} cy={28} r={6.5} iris="#451A03"/>
+    {/* Gentle warm smile */}
+    <path d="M42 38 Q50 44 58 38" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
+    {/* Beard — warm and full */}
+    <path d="M28 36 Q30 56 50 60 Q70 56 72 36" fill="#78350F"/>
+    <circle cx="50" cy="36" r="19" fill="url(#js-skin)"/>
+    {/* Soft forehead highlight */}
+    <ellipse cx="44" cy="18" rx="10" ry="6" fill="rgba(255,255,255,0.25)" transform="rotate(-10 44 18)"/>
+    {/* Stigmata on visible hand — subtle */}
+    <circle cx="68" cy="58" r="3" fill="#EF4444" opacity="0.7"/>
   </svg>
 );
+
+// ─── MAP ALL 40 ──────────────────────────────────────────────────────────────
 const PET_MAP = {
   pup:Pup, kitty:Kitty, bunny:Bunny, fox:Fox, bear:Bear,
   wolf:Wolf, lion:Lion, eagle:Eagle, panther:Panther, panda:Panda,
