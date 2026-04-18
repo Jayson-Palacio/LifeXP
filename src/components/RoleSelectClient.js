@@ -150,8 +150,12 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                   }}
                   onClick={() => router.push(`/kid/${child.id}`)}
                 >
-                  <div className="kaeluma-card-avatar">
-                    <AvatarDisplay avatarString={child.avatar} size="100%" style={{ width: '100%', height: '100%', display: 'block' }} />
+                  <div className="kaeluma-card-avatar" style={{ border: 'none', background: 'transparent', boxShadow: 'none', overflow: 'visible' }}>
+                    <div className={`hero-avatar-ring ring-${child.ring_style || 'solid'}`} style={{ width: '100%', height: '100%', margin: 0 }}>
+                      <div className="hero-avatar-img">
+                        <AvatarDisplay avatarString={child.avatar} size="100%" style={{ width: '100%', height: '100%', display: 'block' }} />
+                      </div>
+                    </div>
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 1 }}>
