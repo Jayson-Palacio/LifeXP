@@ -272,8 +272,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     await supabase.from('children').update({ character: json }).eq('id', child.id);
     setCharacterData(newCharData);
     setChild(prev => ({ ...prev, character: json }));
-    if (!characterData) showToast('🎮 Hero created! Welcome to the adventure!');
-    else showToast('✅ Hero updated!');
+    if (!characterData?.petId) showToast('🐾 Your pet companion has arrived!');
+    else showToast('✅ Pet updated!');
   };
 
   const activeColor = unlockedColors.find(c => c.id === activeTheme);
@@ -429,13 +429,13 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             </div>
           </div>
 
-          {/* RIGHT: Pixel character */}
+          {/* RIGHT: Pet companion */}
           <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4 }}>
-            {characterData ? (
+            {characterData?.petId ? (
               <div
                 onClick={() => setShowCharacterEditor(true)}
                 style={{ cursor: 'pointer', position: 'relative' }}
-                title="Edit hero"
+                title="Change pet"
               >
                 <CharacterDisplay characterData={characterData} size={90} animated />
                 <div style={{
@@ -450,7 +450,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
               <button
                 onClick={() => setShowCharacterEditor(true)}
                 style={{
-                  width: 80, height: 100,
+                  width: 80, height: 90,
                   border: '2px dashed rgba(255,255,255,0.2)',
                   borderRadius: 'var(--radius-lg)',
                   background: 'rgba(255,255,255,0.03)',
@@ -459,8 +459,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                   gap: 4, color: 'var(--text-muted)', fontSize: '0.68rem', fontWeight: 700,
                 }}
               >
-                <span style={{ fontSize: '1.8rem' }}>🎮</span>
-                Build Hero
+                <span style={{ fontSize: '1.8rem' }}>🐾</span>
+                Add Pet
               </button>
             )}
           </div>

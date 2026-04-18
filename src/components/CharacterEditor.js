@@ -1,188 +1,151 @@
 'use client';
 
 import { useState } from 'react';
-import { BASE_CHARACTERS, HATS, FACE_ITEMS, AURAS, PETS, RARITY_COLORS } from '../lib/character';
+import { PETS, RARITY_COLORS } from '../lib/character';
 import CharacterDisplay from './CharacterDisplay';
 
-const TABS = [
-  { id: 'base',  label: 'Hero',   icon: '🐾' },
-  { id: 'hat',   label: 'Hat',    icon: '🎩' },
-  { id: 'face',  label: 'Face',   icon: '😎' },
-  { id: 'aura',  label: 'Aura',   icon: '✨' },
-  { id: 'pet',   label: 'Pet',    icon: '🐣' },
-];
-
-const SLOT_ITEMS = { base: BASE_CHARACTERS, hat: HATS, face: FACE_ITEMS, aura: AURAS, pet: PETS };
-
-const ITEM_ICONS = {
-  // hats
-  'top-hat': '🎩', cap: '🧢', crown: '👑', wizard: '🪄', 'diamond-crown': '💎', 'rainbow-hat': '🌈',
-  // face
-  shades: '🕶️', scuba: '🤿', 'star-eyes': '⭐',
-  // pets
-  chick: '🐣', butterfly: '🦋', dragon: '🐲', unicorn: '🦄',
-};
-
-function hexToRgb(hex) {
-  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return r ? `${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}` : '148,163,184';
-}
-
 export default function CharacterEditor({ characterData, onSave, onClose, level = 1 }) {
-  const [draft, setDraft] = useState({ base: 'cat', ...characterData });
-  const [activeTab, setActiveTab] = useState('base');
+  const [selected, setSelected] = useState(characterData?.petId || null);
 
-  const handleSelect = (slot, id) => {
-    setDraft(prev => ({
-      ...prev,
-      [slot]: (slot !== 'base' && prev[slot] === id) ? null : id,
-    }));
+  const handleSave = () => {
+    if (selected) onSave({ petId: selected });
+    onClose();
   };
-
-  const items = SLOT_ITEMS[activeTab] || [];
 
   return (
     <>
       {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 3000 }}
-      />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 3000 }}/>
 
       {/* Bottom Sheet */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 3001,
         background: 'var(--bg-deep)',
-        borderTop: '1px solid rgba(255,255,255,0.12)',
+        borderTop: '1px solid rgba(255,255,255,0.1)',
         borderTopLeftRadius: 28, borderTopRightRadius: 28,
-        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+        maxHeight: '88vh', display: 'flex', flexDirection: 'column',
         animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)',
       }}>
 
         {/* Drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
           <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }}/>
         </div>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 12px' }}>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, margin: 0, background: 'linear-gradient(90deg, var(--primary), #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            My Hero
-          </h2>
-          <button
-            onClick={() => { onSave(draft); onClose(); }}
-            style={{
-              background: 'var(--primary)', color: '#fff', border: 'none',
-              borderRadius: 'var(--radius-full)', padding: '10px 24px',
-              fontWeight: 800, fontSize: '1rem', cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-            }}
-          >Save ✓</button>
-        </div>
-
-        {/* Live preview */}
-        <div style={{
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          padding: '16px 0', gap: 20,
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-        }}>
-          <CharacterDisplay characterData={draft} size={96} animated />
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Equipped</div>
-            {['hat','face','aura','pet'].map(slot => draft[slot] && (
-              <div key={slot} style={{ fontSize: '0.8rem', color: 'var(--text-bright)', fontWeight: 600, marginBottom: 2 }}>
-                {ITEM_ICONS[draft[slot]] || '✦'} {[...HATS,...FACE_ITEMS,...AURAS,...PETS].find(i=>i.id===draft[slot])?.name}
-              </div>
-            ))}
-            {!draft.hat && !draft.face && !draft.aura && !draft.pet && (
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>Nothing equipped yet</div>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px 0' }}>
+          <div>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, background: 'linear-gradient(90deg, var(--primary), #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Choose Your Pet
+            </h2>
+            <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Level up to unlock rarer companions
+            </p>
           </div>
+          <button
+            onClick={handleSave}
+            disabled={!selected}
+            style={{
+              background: selected ? 'var(--primary)' : 'rgba(255,255,255,0.08)',
+              color: selected ? '#fff' : 'var(--text-dim)',
+              border: 'none', borderRadius: 'var(--radius-full)',
+              padding: '10px 22px', fontWeight: 800, fontSize: '0.95rem',
+              cursor: selected ? 'pointer' : 'not-allowed',
+              transition: 'all 0.2s',
+              boxShadow: selected ? '0 4px 14px rgba(0,0,0,0.3)' : 'none',
+            }}
+          >
+            {selected ? 'Choose ✓' : 'Pick one'}
+          </button>
         </div>
 
-        {/* Category tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                flex: 1, padding: '10px 8px', border: 'none', background: 'transparent',
-                color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight: activeTab === tab.id ? 800 : 600,
-                fontSize: '0.77rem', cursor: 'pointer',
-                borderBottom: `2px solid ${activeTab === tab.id ? 'var(--primary)' : 'transparent'}`,
-                transition: 'all 0.15s',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                whiteSpace: 'nowrap', minWidth: 56,
-              }}
-            >
-              <span style={{ fontSize: '1.15rem' }}>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Live preview of selected pet */}
+        {selected && (() => {
+          const def = PETS.find(p => p.id === selected);
+          const rar = RARITY_COLORS[def?.rarity || 'common'];
+          return (
+            <div style={{
+              margin: '12px 16px 0',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-lg)',
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid ${rar.color}44`,
+              display: 'flex', alignItems: 'center', gap: 14,
+            }}>
+              <CharacterDisplay characterData={{ petId: selected }} size={56} animated />
+              <div>
+                <div style={{ fontWeight: 900, fontSize: '1.05rem', color: 'var(--text-bright)' }}>{def?.name}</div>
+                <div style={{ fontSize: '0.75rem', color: rar.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{rar.label}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{def?.tag}</div>
+              </div>
+            </div>
+          );
+        })()}
 
-        {/* Item grid */}
-        <div style={{ overflowY: 'auto', padding: '14px 12px 32px', flex: 1 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: 10 }}>
-
-            {/* "None" option for non-base slots */}
-            {activeTab !== 'base' && (
-              <button
-                onClick={() => handleSelect(activeTab, null)}
-                style={itemStyle(!draft[activeTab], null)}
-              >
-                <div style={{ fontSize: '1.6rem', marginBottom: 6, opacity: 0.35 }}>✕</div>
-                <div style={{ fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)' }}>None</div>
-              </button>
-            )}
-
-            {items.map(item => {
-              const unlocked = level >= item.levelUnlock;
-              const rarity   = RARITY_COLORS[item.rarity || 'common'];
-              const selected  = activeTab === 'base' ? draft.base === item.id : draft[activeTab] === item.id;
+        {/* Pet grid */}
+        <div style={{ overflowY: 'auto', padding: '14px 12px 36px', flex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {PETS.map(pet => {
+              const unlocked = level >= pet.levelUnlock;
+              const isSelected = selected === pet.id;
+              const rar = RARITY_COLORS[pet.rarity];
 
               return (
                 <button
-                  key={item.id}
-                  onClick={() => unlocked && handleSelect(activeTab, item.id)}
-                  style={itemStyle(selected, rarity, !unlocked)}
-                  title={unlocked ? item.name : `Unlocks at Level ${item.levelUnlock}`}
+                  key={pet.id}
+                  onClick={() => unlocked && setSelected(pet.id)}
+                  style={{
+                    padding: '12px 8px 10px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: `2px solid ${isSelected ? rar.color : 'rgba(255,255,255,0.08)'}`,
+                    background: isSelected
+                      ? `rgba(${hexToRgb(rar.color)},0.12)`
+                      : 'rgba(255,255,255,0.03)',
+                    boxShadow: isSelected ? `0 0 16px ${rar.color}44` : 'none',
+                    cursor: unlocked ? 'pointer' : 'not-allowed',
+                    opacity: unlocked ? 1 : 0.38,
+                    transition: 'all 0.15s',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    position: 'relative',
+                  }}
                 >
-                  {/* Preview */}
-                  {activeTab === 'base' ? (
-                    <div style={{ marginBottom: 4 }}>
-                      <CharacterDisplay characterData={{ base: item.id }} size={52} animated={false}/>
-                    </div>
-                  ) : activeTab === 'aura' ? (
-                    <div style={{
-                      width: 38, height: 38, borderRadius: '50%', margin: '0 auto 6px',
-                      background: item.color === 'rainbow'
-                        ? 'conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff, #ff0000)'
-                        : item.color,
-                      boxShadow: `0 0 14px ${item.color === 'rainbow' ? '#fff' : item.color}77`,
-                      animation: unlocked ? 'aura-pulse 2.5s ease-in-out infinite' : 'none',
-                    }}/>
+                  {/* Pet preview */}
+                  {unlocked ? (
+                    <CharacterDisplay characterData={{ petId: pet.id }} size={60} animated={isSelected} />
                   ) : (
-                    <div style={{ fontSize: '2rem', marginBottom: 6 }}>{ITEM_ICONS[item.id]}</div>
+                    <div style={{
+                      width: 60, height: 70, display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center', gap: 4,
+                    }}>
+                      <span style={{ fontSize: '1.8rem', filter: 'grayscale(1)', opacity: 0.4 }}>{pet.emoji}</span>
+                    </div>
                   )}
 
-                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: selected ? '#fff' : 'var(--text-bright)', lineHeight: 1.2 }}>
-                    {item.name}
+                  {/* Name */}
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: isSelected ? rar.color : 'var(--text-bright)', marginTop: 4, textAlign: 'center' }}>
+                    {pet.name}
                   </div>
 
-                  {!unlocked && (
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: 3, fontWeight: 700 }}>
-                      🔒 Lv {item.levelUnlock}
+                  {/* Lock or rarity */}
+                  {!unlocked ? (
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: 2, fontWeight: 700 }}>
+                      🔒 Lv {pet.levelUnlock}
                     </div>
-                  )}
-                  {unlocked && item.rarity && item.rarity !== 'common' && (
-                    <div style={{ fontSize: '0.6rem', fontWeight: 800, color: rarity.color, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {rarity.label}
+                  ) : pet.rarity !== 'common' ? (
+                    <div style={{ fontSize: '0.6rem', fontWeight: 800, color: rar.color, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {rar.label}
                     </div>
+                  ) : null}
+
+                  {/* Selected checkmark */}
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute', top: 6, right: 6,
+                      width: 18, height: 18, borderRadius: '50%',
+                      background: rar.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.6rem', color: '#fff', fontWeight: 900,
+                    }}>✓</div>
                   )}
                 </button>
               );
@@ -194,20 +157,7 @@ export default function CharacterEditor({ characterData, onSave, onClose, level 
   );
 }
 
-function itemStyle(selected, rarity, locked) {
-  const col = rarity?.color || '#94a3b8';
-  return {
-    padding: '10px 6px',
-    borderRadius: 'var(--radius-md)',
-    border: `2px solid ${selected ? col : 'rgba(255,255,255,0.08)'}`,
-    background: selected ? `rgba(${hexToRgb(col)},0.15)` : 'rgba(255,255,255,0.03)',
-    boxShadow: selected ? `0 0 14px ${col}44` : 'none',
-    cursor: locked ? 'not-allowed' : 'pointer',
-    opacity: locked ? 0.38 : 1,
-    transition: 'all 0.15s',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    width: '100%', textAlign: 'center',
-  };
+function hexToRgb(hex) {
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r ? `${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}` : '148,163,184';
 }
-
-

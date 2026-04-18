@@ -1,77 +1,77 @@
-// ─── Character System ────────────────────────────────────────────────────────
-// Completely separate from the child's avatar photo/emoji.
-// Stored as JSON in the `character` column of the `children` table.
-// Shape: { base, hat, face, aura, pet }
-
-export const BASE_CHARACTERS = [
-  { id: 'cat',   name: 'Cat',   levelUnlock: 1,  rarity: 'common',    description: 'A brave little explorer' },
-  { id: 'frog',  name: 'Frog',  levelUnlock: 1,  rarity: 'common',    description: 'Quick and clever' },
-  { id: 'bear',  name: 'Bear',  levelUnlock: 1,  rarity: 'common',    description: 'Strong and loyal' },
-  { id: 'panda', name: 'Panda', levelUnlock: 1,  rarity: 'common',    description: 'Rare and wise' },
-  { id: 'fox',   name: 'Fox',   levelUnlock: 7,  rarity: 'rare',      description: 'Sly and cunning' },
-  { id: 'wolf',  name: 'Wolf',  levelUnlock: 20, rarity: 'epic',      description: 'Commander of the pack' },
-  { id: 'lion',  name: 'Lion',  levelUnlock: 40, rarity: 'legendary', description: 'King of the realm' },
-];
-
-export const HATS = [
-  { id: 'top-hat',       name: 'Top Hat',       levelUnlock: 3,  rarity: 'common' },
-  { id: 'cap',           name: 'Cap',           levelUnlock: 8,  rarity: 'common' },
-  { id: 'crown',         name: 'Crown',         levelUnlock: 15, rarity: 'rare' },
-  { id: 'wizard',        name: 'Wizard Hat',    levelUnlock: 30, rarity: 'rare' },
-  { id: 'diamond-crown', name: 'Diamond Crown', levelUnlock: 50, rarity: 'epic' },
-  { id: 'rainbow-hat',   name: 'Rainbow Hat',   levelUnlock: 75, rarity: 'legendary' },
-];
-
-export const FACE_ITEMS = [
-  { id: 'shades',    name: 'Shades',     levelUnlock: 5,  rarity: 'common' },
-  { id: 'scuba',     name: 'Scuba Mask', levelUnlock: 18, rarity: 'rare' },
-  { id: 'star-eyes', name: 'Star Eyes',  levelUnlock: 35, rarity: 'epic' },
-];
-
-export const AURAS = [
-  { id: 'star',      name: 'Star Aura',      color: '#facc15', levelUnlock: 10,  rarity: 'common' },
-  { id: 'wave',      name: 'Wave Aura',      color: '#38bdf8', levelUnlock: 20,  rarity: 'common' },
-  { id: 'fire',      name: 'Fire Aura',      color: '#f97316', levelUnlock: 30,  rarity: 'rare' },
-  { id: 'lightning', name: 'Lightning Aura', color: '#a855f7', levelUnlock: 50,  rarity: 'epic' },
-  { id: 'rainbow',   name: 'Rainbow Aura',   color: 'rainbow', levelUnlock: 75,  rarity: 'legendary' },
-  { id: 'max',       name: 'Max Aura',       color: '#ffffff', levelUnlock: 100, rarity: 'legendary' },
-];
+// ─── Pet Companion System ─────────────────────────────────────────────────────
+// Completely replaces the old multi-layer avatar builder.
+// Everything is now a simple { petId } stored in the `character` column.
 
 export const PETS = [
-  { id: 'chick',     name: 'Baby Chick',  levelUnlock: 12, rarity: 'common' },
-  { id: 'butterfly', name: 'Butterfly',   levelUnlock: 25, rarity: 'rare' },
-  { id: 'dragon',    name: 'Baby Dragon', levelUnlock: 40, rarity: 'epic' },
-  { id: 'unicorn',   name: 'Unicorn',     levelUnlock: 75, rarity: 'legendary' },
+  {
+    id: 'dog',     name: 'Pup',       levelUnlock: 1,  rarity: 'common',
+    emoji: '🐶',   behavior: 'bounce', tag: 'Your loyal first friend',
+  },
+  {
+    id: 'cat',     name: 'Kitty',     levelUnlock: 1,  rarity: 'common',
+    emoji: '🐱',   behavior: 'sway',   tag: 'Cool and a little mysterious',
+  },
+  {
+    id: 'bunny',   name: 'Bunny',     levelUnlock: 5,  rarity: 'common',
+    emoji: '🐰',   behavior: 'hop',    tag: 'Bouncy and full of energy',
+  },
+  {
+    id: 'hamster', name: 'Hamster',   levelUnlock: 9,  rarity: 'common',
+    emoji: '🐹',   behavior: 'wobble', tag: 'Chubby-cheeked little buddy',
+  },
+  {
+    id: 'fox',     name: 'Fox',       levelUnlock: 14, rarity: 'rare',
+    emoji: '🦊',   behavior: 'strut',  tag: 'Clever, quick, and stylish',
+  },
+  {
+    id: 'frog',    name: 'Froggy',    levelUnlock: 19, rarity: 'rare',
+    emoji: '🐸',   behavior: 'jump',   tag: 'Always ready to leap',
+  },
+  {
+    id: 'penguin', name: 'Penguin',   levelUnlock: 25, rarity: 'rare',
+    emoji: '🐧',   behavior: 'waddle', tag: 'Cool as ice',
+  },
+  {
+    id: 'panda',   name: 'Panda',     levelUnlock: 32, rarity: 'rare',
+    emoji: '🐼',   behavior: 'wave',   tag: 'Rare, calm, and wise',
+  },
+  {
+    id: 'wolf',    name: 'Wolf',      levelUnlock: 42, rarity: 'epic',
+    emoji: '🐺',   behavior: 'howl',   tag: 'Leader of the pack',
+  },
+  {
+    id: 'dragon',  name: 'Dragon',    levelUnlock: 55, rarity: 'epic',
+    emoji: '🐲',   behavior: 'flap',   tag: 'Ancient fire and power',
+  },
+  {
+    id: 'unicorn', name: 'Unicorn',   levelUnlock: 75, rarity: 'legendary',
+    emoji: '🦄',   behavior: 'float',  tag: 'Pure magic, pure you',
+  },
+  {
+    id: 'phoenix', name: 'Phoenix',   levelUnlock: 100,rarity: 'legendary',
+    emoji: '🔥',   behavior: 'blaze',  tag: 'Born from the flames of triumph',
+  },
 ];
 
 export const RARITY_COLORS = {
-  common:    { color: '#94a3b8', glow: 'rgba(148,163,184,0.3)',  label: 'Common' },
-  rare:      { color: '#38bdf8', glow: 'rgba(56,189,248,0.3)',   label: 'Rare' },
-  epic:      { color: '#a855f7', glow: 'rgba(168,85,247,0.3)',   label: 'Epic' },
-  legendary: { color: '#facc15', glow: 'rgba(250,204,21,0.3)',   label: 'Legendary' },
+  common:    { color: '#94a3b8', glow: 'rgba(148,163,184,0.25)', label: 'Common' },
+  rare:      { color: '#38bdf8', glow: 'rgba(56,189,248,0.35)',  label: 'Rare' },
+  epic:      { color: '#a855f7', glow: 'rgba(168,85,247,0.35)',  label: 'Epic' },
+  legendary: { color: '#facc15', glow: 'rgba(250,204,21,0.4)',   label: 'Legendary' },
 };
 
-export function getAllCharacterItems() {
-  return [...BASE_CHARACTERS, ...HATS, ...FACE_ITEMS, ...AURAS, ...PETS];
+export function getUnlockedPets(level) {
+  return PETS.filter(p => level >= p.levelUnlock);
 }
 
-export function getUnlockedCharacterItems(level) {
-  return {
-    bases: BASE_CHARACTERS.filter(i => level >= i.levelUnlock),
-    hats:  HATS.filter(i => level >= i.levelUnlock),
-    face:  FACE_ITEMS.filter(i => level >= i.levelUnlock),
-    auras: AURAS.filter(i => level >= i.levelUnlock),
-    pets:  PETS.filter(i => level >= i.levelUnlock),
-  };
+export function checkPetUnlocks(oldLevel, newLevel) {
+  return PETS.filter(p => p.levelUnlock > oldLevel && p.levelUnlock <= newLevel);
 }
 
-export function checkCharacterUnlocks(oldLevel, newLevel) {
-  return getAllCharacterItems().filter(
-    item => item.levelUnlock > oldLevel && item.levelUnlock <= newLevel
-  );
+export function parseCharacter(str) {
+  if (!str) return null;
+  try { return JSON.parse(str); } catch { return null; }
 }
 
-export function parseCharacter(characterStr) {
-  if (!characterStr) return null;
-  try { return JSON.parse(characterStr); } catch { return null; }
-}
+// Re-export for backwards compat with any existing imports
+export { checkPetUnlocks as checkCharacterUnlocks };
