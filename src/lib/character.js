@@ -79,7 +79,7 @@ export const RARITY_COLORS = {
 };
 
 // Check for recent pet unlocks based on oldLevel vs newLevel
-export function checkPetUnlocks(oldLevel, newLevel) {
+export function checkCharacterUnlocks(oldLevel, newLevel) {
   if (newLevel <= oldLevel) return [];
   const newlyUnlocked = PETS.filter(p => p.levelUnlock > oldLevel && p.levelUnlock <= newLevel);
   return newlyUnlocked;
