@@ -390,23 +390,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           
           {/* LEFT: Condensed Player Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {/* Avatar & Fused Crest Emblem */}
+            {/* Avatar (clean, no emblem overlay) */}
             <div style={{ position: 'relative' }}>
               <div className="hero-avatar-ring" style={{ width: 84, height: 84, margin: 0 }}>
                 <div className="hero-avatar-img">
                   <AvatarDisplay avatarString={child.avatar} size="100%" />
                 </div>
-              </div>
-              
-              {/* Emblem fused onto the bottom-right rim of the ring */}
-              <div style={{
-                position: 'absolute', bottom: -2, right: -6,
-                width: 32, height: 32,
-                background: 'var(--bg-deep)', border: '2px solid var(--primary)',
-                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.5)', zIndex: 10
-              }}>
-                <TierCrest tierName={tierName} glowColor="var(--primary)" size={20} />
               </div>
             </div>
 
