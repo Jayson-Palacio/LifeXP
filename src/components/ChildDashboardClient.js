@@ -403,23 +403,11 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             <div className="empty-state-emoji">🌟</div>
             <p className="empty-state-text">All done — you're amazing!</p>
           </div>
-        ) : (() => {
-          const groupedMissions = missionStates.reduce((acc, m) => {
-            const cat = m.category || 'General';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(m);
-            return acc;
-          }, {});
-          const sortedCategories = Object.keys(groupedMissions).sort();
-
-          return sortedCategories.map(cat => (
-            <div key={cat} style={{ marginBottom: 24 }}>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {cat === 'General' ? '🏷️ General' : cat}
-              </h4>
-              {groupedMissions[cat].map(m => {
-                const hasProgress = m.maxPerPeriod > 1;
-                return (
+        ) : (
+          <div style={{ marginBottom: 24 }}>
+            {missionStates.map(m => {
+              const hasProgress = m.maxPerPeriod > 1;
+              return (
                   <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: '14px 16px', marginBottom: 10 }}>
                     {/* Mission icon: photo or emoji */}
                     <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
@@ -476,10 +464,9 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          ));
-        })()}
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── PENDING DELIVERIES ── */}

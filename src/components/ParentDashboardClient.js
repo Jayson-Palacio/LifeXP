@@ -43,6 +43,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyData, setHistoryData] = useState(null); // null = not loaded yet
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [collapsedCategories, setCollapsedCategories] = useState({});
 
   // Reset history state when opening drawer for a new kid
   useEffect(() => {
@@ -442,8 +443,19 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
               <>
                 {sortedCategories.map(cat => (
                   <div key={cat} style={{ marginBottom: 24 }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', marginBottom: 16 }}>{cat === 'General' ? '🏷️ General' : cat}</h3>
-                    {groupedActive[cat].map(m => renderMission(m, false))}
+                    <div 
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: 16 }}
+                      onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
+                    >
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', margin: 0 }}>
+                        {cat === 'General' ? '🏷️ General' : cat}
+                        <span style={{ marginLeft: 8, fontSize: '0.9rem', color: 'var(--text-muted)' }}>({groupedActive[cat].length})</span>
+                      </h3>
+                      <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)', transform: collapsedCategories[cat] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                        ▼
+                      </span>
+                    </div>
+                    {!collapsedCategories[cat] && groupedActive[cat].map(m => renderMission(m, false))}
                   </div>
                 ))}
                 
