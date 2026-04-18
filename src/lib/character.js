@@ -1,55 +1,58 @@
 // ─── Pet Companion System ─────────────────────────────────────────────────────
-// Completely replaces the old multi-layer avatar builder.
-// Everything is now a simple { petId } stored in the `character` column.
+// Clean, modern vector companions — mixing cute and cool/warrior options.
 
 export const PETS = [
   {
-    id: 'dog',     name: 'Pup',       levelUnlock: 1,  rarity: 'common',
+    id: 'pup',     name: 'Pup',       levelUnlock: 1,  rarity: 'common',
     emoji: '🐶',   behavior: 'bounce', tag: 'Your loyal first friend',
   },
   {
-    id: 'cat',     name: 'Kitty',     levelUnlock: 1,  rarity: 'common',
+    id: 'kitty',   name: 'Kitty',     levelUnlock: 1,  rarity: 'common',
     emoji: '🐱',   behavior: 'sway',   tag: 'Cool and a little mysterious',
   },
   {
-    id: 'bunny',   name: 'Bunny',     levelUnlock: 5,  rarity: 'common',
-    emoji: '🐰',   behavior: 'hop',    tag: 'Bouncy and full of energy',
+    id: 'bot',     name: 'Sparkbot',  levelUnlock: 2,  rarity: 'common',
+    emoji: '🤖',   behavior: 'float',  tag: 'Compact hovering helper',
   },
   {
-    id: 'hamster', name: 'Hamster',   levelUnlock: 9,  rarity: 'common',
-    emoji: '🐹',   behavior: 'wobble', tag: 'Chubby-cheeked little buddy',
+    id: 'ninja',   name: 'Shadow',    levelUnlock: 4,  rarity: 'common',
+    emoji: '🥷',   behavior: 'flip',   tag: 'Silent and quick',
   },
   {
-    id: 'fox',     name: 'Fox',       levelUnlock: 14, rarity: 'rare',
-    emoji: '🦊',   behavior: 'strut',  tag: 'Clever, quick, and stylish',
+    id: 'fox',     name: 'Fox',       levelUnlock: 8,  rarity: 'rare',
+    emoji: '🦊',   behavior: 'strut',  tag: 'Clever and stylish',
   },
   {
-    id: 'frog',    name: 'Froggy',    levelUnlock: 19, rarity: 'rare',
-    emoji: '🐸',   behavior: 'jump',   tag: 'Always ready to leap',
+    id: 'trex',    name: 'Rex',       levelUnlock: 12, rarity: 'rare',
+    emoji: '🦖',   behavior: 'stomp',  tag: 'Tiny arms, huge attitude',
   },
   {
-    id: 'penguin', name: 'Penguin',   levelUnlock: 25, rarity: 'rare',
-    emoji: '🐧',   behavior: 'waddle', tag: 'Cool as ice',
+    id: 'penguin', name: 'Penguin',   levelUnlock: 18, rarity: 'rare',
+    emoji: '🐧',   behavior: 'waddle', tag: 'Cool as absolute zero',
   },
   {
-    id: 'panda',   name: 'Panda',     levelUnlock: 32, rarity: 'rare',
-    emoji: '🐼',   behavior: 'wave',   tag: 'Rare, calm, and wise',
+    id: 'knight',  name: 'Paladin',   levelUnlock: 24, rarity: 'rare',
+    emoji: '🛡️',   behavior: 'guard',  tag: 'Brave protector of the realm',
   },
   {
-    id: 'wolf',    name: 'Wolf',      levelUnlock: 42, rarity: 'epic',
-    emoji: '🐺',   behavior: 'howl',   tag: 'Leader of the pack',
+    id: 'wolf',    name: 'Wolf',      levelUnlock: 35, rarity: 'epic',
+    emoji: '🐺',   behavior: 'howl',   tag: 'Fierce leader of the pack',
   },
   {
-    id: 'dragon',  name: 'Dragon',    levelUnlock: 55, rarity: 'epic',
-    emoji: '🐲',   behavior: 'flap',   tag: 'Ancient fire and power',
+    id: 'mech',    name: 'Mechatron', levelUnlock: 50, rarity: 'epic',
+    emoji: '🦾',   behavior: 'pulse',  tag: 'Heavy armored warrior',
   },
   {
-    id: 'unicorn', name: 'Unicorn',   levelUnlock: 75, rarity: 'legendary',
-    emoji: '🦄',   behavior: 'float',  tag: 'Pure magic, pure you',
+    id: 'dragon',  name: 'Dragon',    levelUnlock: 70, rarity: 'epic',
+    emoji: '🐲',   behavior: 'flap',   tag: 'Ancient scaled beast',
+  },
+  {
+    id: 'unicorn', name: 'Unicorn',   levelUnlock: 90, rarity: 'legendary',
+    emoji: '🦄',   behavior: 'float',  tag: 'Pure radiant magic',
   },
   {
     id: 'phoenix', name: 'Phoenix',   levelUnlock: 100,rarity: 'legendary',
-    emoji: '🔥',   behavior: 'blaze',  tag: 'Born from the flames of triumph',
+    emoji: '🔥',   behavior: 'blaze',  tag: 'Reborn from fire and victory',
   },
 ];
 
@@ -73,5 +76,4 @@ export function parseCharacter(str) {
   try { return JSON.parse(str); } catch { return null; }
 }
 
-// Re-export for backwards compat with any existing imports
 export { checkPetUnlocks as checkCharacterUnlocks };

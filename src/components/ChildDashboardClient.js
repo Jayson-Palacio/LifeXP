@@ -372,102 +372,99 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       </div>
 
       {/* ── UNIFIED HERO PANEL ── */}
-      <div className="hero-banner" style={{ paddingBottom: 0 }}>
+      <div className="hero-banner" style={{ paddingBottom: 0, marginTop: -10 }}>
         {/* Ambient glow handled by ::before in CSS */}
 
         <div style={{
           display: 'flex',
-          alignItems: 'flex-end',
+          alignItems: 'center',
           justifyContent: 'space-between',
           gap: 12,
-          padding: '0 4px',
+          padding: '14px 18px',
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: 'var(--radius-2xl)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          backdropFilter: 'blur(12px)',
         }}>
-
-          {/* LEFT: Avatar + name + tier */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 auto', minWidth: 80 }}>
-            {/* Avatar ring */}
-            <div className="hero-avatar-ring" style={{ width: 80, height: 80, marginBottom: 8 }}>
+          
+          {/* LEFT: Avatar + Name info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 0' }}>
+            <div className="hero-avatar-ring" style={{ width: 56, height: 56 }}>
               <div className="hero-avatar-img">
                 <AvatarDisplay avatarString={child.avatar} size="100%" />
               </div>
-              <div className="hero-tier-badge" style={{ fontSize: '0.6rem', padding: '2px 8px', bottom: -8 }}>
-                <div className="hero-tier-badge-icon"><TierCrest tierName={tierName} glowColor="var(--primary)" /></div>
-                <span>{tierName}</span>
-              </div>
             </div>
-            <h2 className="hero-name" style={{ fontSize: '1.2rem', marginTop: 14, marginBottom: 2 }}>{child.name}</h2>
-            <div style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 700, opacity: 0.85 }}>Level {level}</div>
-          </div>
-
-          {/* CENTER: RPG stat pills */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 4 }}>
-            {/* Coins */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)',
-              border: '1px solid rgba(245,158,11,0.25)',
-              borderRadius: 'var(--radius-full)', padding: '6px 14px',
-            }}>
-              <span style={{ fontSize: '1rem' }}>🪙</span>
-              <div>
-                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>{child.coins}</div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600, lineHeight: 1, marginTop: 2 }}>Coins</div>
-              </div>
-            </div>
-            {/* Streak */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(249,115,22,0.05) 100%)',
-              border: '1px solid rgba(249,115,22,0.25)',
-              borderRadius: 'var(--radius-full)', padding: '6px 14px',
-            }}>
-              <span style={{ fontSize: '1rem' }}>🔥</span>
-              <div>
-                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fb923c', lineHeight: 1 }}>{child.streak || 0}</div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600, lineHeight: 1, marginTop: 2 }}>Day Streak</div>
+            <div>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, color: '#fff' }}>{child.name}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 800 }}>Lv {level}</div>
+                <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <TierCrest tierName={tierName} glowColor="var(--primary)" size={12} />
+                  {tierName}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT: Pet companion */}
-          <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4 }}>
+          {/* CENTER: Compact Stats */}
+          <div style={{ display: 'flex', gap: 10, flex: '0 0 auto' }}>
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+              borderRadius: 'var(--radius-lg)', padding: '6px 12px', minWidth: 60,
+            }}>
+              <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>🪙</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>{child.coins}</span>
+            </div>
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)',
+              borderRadius: 'var(--radius-lg)', padding: '6px 12px', minWidth: 60,
+            }}>
+              <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>🔥</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fb923c', lineHeight: 1 }}>{child.streak || 0}</span>
+            </div>
+          </div>
+
+          {/* RIGHT: Pet Companion */}
+          <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-end' }}>
             {characterData?.petId ? (
               <div
                 onClick={() => setShowCharacterEditor(true)}
                 style={{ cursor: 'pointer', position: 'relative' }}
-                title="Change pet"
+                title="Change companion"
               >
-                <CharacterDisplay characterData={characterData} size={90} animated />
+                <CharacterDisplay characterData={characterData} size={70} animated />
                 <div style={{
-                  position: 'absolute', bottom: -4, right: -4,
-                  width: 20, height: 20, borderRadius: '50%',
+                  position: 'absolute', bottom: 0, right: 0,
+                  width: 18, height: 18, borderRadius: '50%',
                   background: 'var(--primary)', border: '2px solid var(--bg-deep)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.6rem',
+                  fontSize: '0.55rem',
                 }}>✏️</div>
               </div>
             ) : (
               <button
                 onClick={() => setShowCharacterEditor(true)}
                 style={{
-                  width: 80, height: 90,
-                  border: '2px dashed rgba(255,255,255,0.2)',
-                  borderRadius: 'var(--radius-lg)',
-                  background: 'rgba(255,255,255,0.03)',
-                  cursor: 'pointer',
+                  width: 60, height: 60,
+                  border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 'var(--radius-lg)',
+                  background: 'rgba(255,255,255,0.03)', cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 4, color: 'var(--text-muted)', fontSize: '0.68rem', fontWeight: 700,
+                  color: 'var(--text-dim)', fontSize: '0.6rem', fontWeight: 700, gap: 4
                 }}
               >
-                <span style={{ fontSize: '1.8rem' }}>🐾</span>
+                <span style={{ fontSize: '1.2rem' }}>🐾</span>
                 Add Pet
               </button>
             )}
           </div>
         </div>
 
-        {/* XP bar — full width below the split panel */}
-        <div style={{ padding: '20px 4px 24px' }}>
+        {/* XP bar — sleek full width below */}
+        <div style={{ padding: '20px 4px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
             <span style={{ fontWeight: 700 }}>Next: Lv {level + 1}</span>
             <span>{xpDisplay}</span>
