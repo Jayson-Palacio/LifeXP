@@ -1532,31 +1532,57 @@ const Jesus = () => (
       <radialGradient id="js-robe" cx="40%" cy="20%"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#E2E8F0"/></radialGradient>
     </defs>
     <ellipse cx="50" cy="96" rx="28" ry="5" fill="rgba(0,0,0,0.2)"/>
+    
+    {/* Back hair flowing down (drawn BEHIND the body and head) */}
+    <path d="M28 30 Q16 50 20 72" stroke="#78350F" strokeWidth="10" strokeLinecap="round" fill="none" />
+    <path d="M34 30 Q22 52 26 68" stroke="#5C260A" strokeWidth="6" strokeLinecap="round" fill="none" />
+    <path d="M72 30 Q84 50 80 72" stroke="#78350F" strokeWidth="10" strokeLinecap="round" fill="none" />
+    <path d="M66 30 Q78 52 74 68" stroke="#5C260A" strokeWidth="6" strokeLinecap="round" fill="none" />
+
+    {/* White robe */}
     <path d="M26 54 L16 96 L84 96 L74 54 Z" fill="url(#js-robe)"/>
+    {/* Blue mantle */}
     <path d="M26 54 L22 96 L50 96 L50 60 Z" fill="#BFDBFE"/>
+    {/* Sash */}
     <path d="M30 64 Q50 74 70 64 Q66 80 50 82 Q34 80 30 64 Z" fill="#FEE2E2" opacity="0.7"/>
+    {/* Shepherd staff */}
     <path d="M76 96 Q78 68 72 30 Q70 22 64 22 Q58 22 58 30 Q58 36 64 34" stroke="#78350F" strokeWidth="5" strokeLinecap="round" fill="none"/>
+    
+    {/* Little lamb cradled */}
     <ellipse cx="20" cy="64" rx="13" ry="9" fill="#F8FAFC"/>
     <circle cx="14" cy="57" r="8" fill="#FFFFFF"/>
     <circle cx="24" cy="57" r="6" fill="#F1F5F9"/>
     <ellipse cx="12" cy="51" rx="3" ry="5" fill="#E2E8F0" transform="rotate(-20 12 51)"/>
     <circle cx="10" cy="56" r="2.5" fill="#1E293B"/>
     <circle cx="9.5" cy="55.5" r="0.8" fill="white"/>
+    {/* Arm cradling lamb */}
     <path d="M34 58 Q26 52 22 60" stroke="#C8925A" strokeWidth="8" strokeLinecap="round" fill="none"/>
+
+    {/* Halo */}
     <circle cx="50" cy="28" r="30" fill="none" stroke="#FDE047" strokeWidth="5" opacity="0.7"/>
     <circle cx="50" cy="28" r="26" fill="none" stroke="#FBBF24" strokeWidth="2" opacity="0.3"/>
+
+    {/* Head shape */}
     <circle cx="50" cy="30" r="24" fill="url(#js-skin)"/>
-    <path d="M26 30 C26 8 74 8 74 30 Q64 16 50 18 Q36 16 26 30 Z" fill="#78350F"/>
-    <path d="M26 36 Q22 52 24 66" stroke="#78350F" strokeWidth="7" strokeLinecap="round" fill="none"/>
-    <path d="M74 36 Q78 52 76 66" stroke="#78350F" strokeWidth="7" strokeLinecap="round" fill="none"/>
-    <circle cx="50" cy="30" r="20" fill="url(#js-skin)"/>
-    <path d="M30 36 Q32 56 50 60 Q68 56 70 36" fill="#78350F"/>
-    <circle cx="50" cy="36" r="17" fill="url(#js-skin)"/>
-    <Eye cx={42} cy={28} r={6} iris="#451A03"/>
-    <Eye cx={58} cy={28} r={6} iris="#451A03"/>
-    <path d="M43 38 Q50 44 57 38" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
-    <path d="M36 21 Q42 18 47 21" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-    <path d="M53 21 Q58 18 64 21" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+
+    {/* Hair top / Bangs */}
+    <path d="M26 30 C26 5 74 5 74 30 Q65 15 50 18 Q35 15 26 30 Z" fill="#78350F"/>
+
+    {/* Beard shape */}
+    <path d="M26.5 35 Q30 56 50 58 Q70 56 73.5 35 Q65 46 50 46 Q35 46 26.5 35 Z" fill="#78350F"/>
+
+    {/* Eyes */}
+    <Eye cx={41} cy={28} r={5.5} iris="#451A03"/>
+    <Eye cx={59} cy={28} r={5.5} iris="#451A03"/>
+
+    {/* Gentle smile */}
+    <path d="M43 38 Q50 43 57 38" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
+
+    {/* Eyebrows */}
+    <path d="M36 23 Q41 21 46 23" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+    <path d="M54 23 Q59 21 64 23" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+
+    {/* Soft highlight */}
     <ellipse cx="44" cy="20" rx="10" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-10 44 20)"/>
   </svg>
 );
