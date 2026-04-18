@@ -11,7 +11,8 @@ create table if not exists app_settings (
   parent_pin text,
   setup_complete boolean default false,
   require_approval boolean default true,
-  family_name text default 'Our Family'
+  family_name text default 'Our Family',
+  theme_mode text default 'dark'
 );
 
 -- ============================================

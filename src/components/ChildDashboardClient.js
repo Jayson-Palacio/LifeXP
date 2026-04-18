@@ -9,7 +9,7 @@ import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound } from '../lib/sounds';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true }) {
+export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true, themeMode = 'dark' }) {
   const router = useRouter();
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
@@ -27,6 +27,71 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const themePickerRef = useRef(null);
   const ringPickerRef  = useRef(null);
 
+  // Gamification & Polish States
+  const [snappingMissions, setSnappingMissions] = useState([]);
+  const [avatarTaps, setAvatarTaps] = useState(0);
+  const [isHyperdrive, setIsHyperdrive] = useState(false);
+  const [isShakingCoins, setIsShakingCoins] = useState(false);
+  const [tiltStyle, setTiltStyle] = useState({ transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg)' });
+
+  // Reset avatar taps if idle
+  useEffect(() => {
+    if (avatarTaps > 0 && avatarTaps < 10) {
+      const timer = setTimeout(() => setAvatarTaps(0), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [avatarTaps]);
+
+  const getStreakIcon = (streak) => {
+    if (streak >= 100) return '🌌';
+    if (streak >= 30) return '💎';
+    if (streak >= 7) return '⚡';
+    return '🔥';
+  };
+
+  const getStreakStyles = (streak) => {
+    if (streak >= 100) return { color: '#d946ef', border: '1px solid #d946ef', background: 'rgba(217, 70, 239, 0.12)', boxShadow: '0 0 10px rgba(217, 70, 239, 0.5)' };
+    if (streak >= 30) return { color: '#06b6d4', border: '1px solid #06b6d4', background: 'rgba(6, 182, 212, 0.12)', boxShadow: '0 0 10px rgba(6, 182, 212, 0.5)' };
+    if (streak >= 7) return { color: '#3b82f6', border: '1px solid #3b82f6', background: 'rgba(59, 130, 246, 0.12)', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' };
+    return { color: '#fb923c', border: '1px solid rgba(251,146,60,0.25)', background: 'rgba(251,146,60,0.12)' };
+  };
+
+  const handleAvatarTap = () => {
+    setAvatarTaps(prev => {
+      const next = prev + 1;
+      if (next === 10) {
+        setIsHyperdrive(true);
+        setTimeout(() => setIsHyperdrive(false), 5000);
+        return 0;
+      }
+      return next;
+    });
+  };
+
+  const handleCoinTap = () => {
+    setIsShakingCoins(true);
+    setTimeout(() => setIsShakingCoins(false), 500);
+  };
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -10; // Max 10 deg tilt
+    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 10;
+    setTiltStyle({
+      transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+      transition: 'transform 0.1s ease-out'
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setTiltStyle({
+      transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg)',
+      transition: 'transform 0.5s ease-out'
+    });
+  };
+
   const { level, tierName, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
   const xpProgress = getXPProgress(child.total_xp_earned || child.xp || 0);
   const xpDisplay = getXPDisplay(child.total_xp_earned || child.xp || 0);
@@ -37,9 +102,19 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
   // Apply body theme class
   useEffect(() => {
-    document.body.className = `theme-${activeTheme}`;
+    let modeClass = '';
+    if (themeMode === 'dynamic') {
+      const hour = new Date().getHours();
+      if (hour >= 6 && hour < 12) modeClass = 'bg-morning';
+      else if (hour >= 12 && hour < 18) modeClass = 'bg-afternoon';
+      else modeClass = 'bg-night';
+    } else if (themeMode === 'light') {
+      modeClass = 'bg-light';
+    }
+    
+    document.body.className = `theme-${activeTheme} ${modeClass} ${isHyperdrive ? 'hyperdrive-active' : ''}`.trim();
     return () => { document.body.className = ''; };
-  }, [activeTheme]);
+  }, [activeTheme, themeMode, isHyperdrive]);
 
   // Close theme picker when clicking outside
   useEffect(() => {
@@ -141,7 +216,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     const clientY = e.clientY;
     setLoadingMissions(prev => ({ ...prev, [mission.id]: true }));
 
-    if (!requireApproval) {
+    // Trigger snapping animation immediately
+    setSnappingMissions(prev => [...prev, mission.id]);
+    if (playRandomSuccessSound) playRandomSuccessSound();
+
+    setTimeout(async () => {
+      if (!requireApproval) {
       // Auto-approve: credit XP and coins immediately
       const currentXp = child.total_xp_earned || child.xp || 0;
       const newXp = currentXp + mission.xp_reward;
@@ -209,9 +289,11 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         setCompletions(prev => [...prev, data]);
         showToast('Done! ⏳ Waiting for parent approval');
       }
-    }
-    
-    setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
+      }
+      
+      setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
+      setSnappingMissions(prev => prev.filter(id => id !== mission.id));
+    }, 600); // Wait for snap animation to finish
   };
 
   const handleRedeem = async (r, e) => {
@@ -452,7 +534,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
       {/* ── UNIFIED HERO PANEL ── */}
       <div className="hero-banner" style={{ paddingBottom: 0, marginTop: -10 }}>
-        <div style={{
+        <div 
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -462,10 +547,11 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           borderRadius: 'var(--radius-3xl)',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
           backdropFilter: 'blur(12px)',
+          ...tiltStyle
         }}>
 
           {/* Avatar — centered */}
-          <div className={`hero-avatar-ring ring-${activeRingId}`} style={{ width: 96, height: 96, margin: '0 0 14px' }}>
+          <div className={`hero-avatar-ring ring-${activeRingId}`} style={{ width: 96, height: 96, margin: '0 0 14px', cursor: 'pointer' }} onClick={handleAvatarTap}>
             <div className="hero-avatar-img">
               <AvatarDisplay avatarString={child.avatar} size="100%" />
             </div>
@@ -481,13 +567,15 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
           {/* Stat pills — centered row */}
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(251,191,36,0.12)', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(251,191,36,0.25)' }}>
+            <div className={isShakingCoins ? 'shake-coin' : ''} onClick={handleCoinTap} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(251,191,36,0.12)', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(251,191,36,0.25)', transition: 'transform 0.1s' }}>
               <span style={{ fontSize: '0.9rem' }}>🪙</span>
               <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fbbf24' }}>{child.coins}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(251,146,60,0.12)', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(251,146,60,0.25)' }}>
-              <span style={{ fontSize: '0.9rem' }}>🔥</span>
-              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fb923c' }}>{child.streak || 0}</span>
+            
+            {/* Evolving Streak */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 'var(--radius-full)', ...getStreakStyles(child.streak || 0) }}>
+              <span style={{ fontSize: '0.9rem' }}>{getStreakIcon(child.streak || 0)}</span>
+              <span style={{ fontSize: '0.88rem', fontWeight: 800 }}>{child.streak || 0}</span>
             </div>
           </div>
 
@@ -527,7 +615,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             {missionStates.map(m => {
               const hasProgress = m.maxPerPeriod > 1;
               return (
-                  <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''}`} style={{ padding: '14px 16px', marginBottom: 10 }}>
+                  <div key={m.id} className={`mission-card ${m.status === 'pending' ? 'pending' : ''} ${snappingMissions.includes(m.id) ? 'mission-snapping' : ''}`} style={{ padding: '14px 16px', marginBottom: 10, position: 'relative' }}>
+                    
+                    {snappingMissions.includes(m.id) && (
+                      <div className="mission-done-stamp">✅ DONE!</div>
+                    )}
+
                     {/* Mission icon: photo or emoji */}
                     <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
                       {m.image

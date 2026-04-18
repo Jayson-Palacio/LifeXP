@@ -148,6 +148,29 @@ export default function SettingsTab({ initialSettings }) {
         </form>
       </div>
 
+      {/* THEME MODE */}
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
+        <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>🎨 App Theme Mode</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+          Choose how the background looks for the kids. Dynamic changes based on the time of day.
+        </div>
+        <select
+          className="input"
+          value={settings.theme_mode || 'dark'}
+          onChange={async (e) => {
+            const nextMode = e.target.value;
+            await updateAppSettings({ theme_mode: nextMode });
+            setSettings(s => ({ ...s, theme_mode: nextMode }));
+            showToast('Theme mode updated!');
+          }}
+          style={{ width: '100%', marginBottom: 12 }}
+        >
+          <option value="dark">🌙 Dark (Default Core Experience)</option>
+          <option value="dynamic">⛅ Dynamic (Time of Day)</option>
+          <option value="light">☀️ Light</option>
+        </select>
+      </div>
+
       {/* TIMEZONE */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
         <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>🕐 Daily Reset Timezone</div>

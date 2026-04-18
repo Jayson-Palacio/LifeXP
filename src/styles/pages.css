@@ -9,6 +9,33 @@
 }
 
 /* ============================================
+   DYNAMIC THEME & GAMIFICATION TWEAKS
+   ============================================ */
+
+body.bg-morning {
+  background: linear-gradient(180deg, #38bdf8 0%, #1e1b4b 100%) !important;
+}
+
+body.bg-afternoon {
+  background: linear-gradient(180deg, #fb923c 0%, #1e1b4b 100%) !important;
+}
+
+body.bg-night {
+  background: linear-gradient(180deg, #1e1b4b 0%, #000000 100%) !important;
+}
+
+body.bg-light {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+
+.mission-card.mission-snapping {
+  filter: brightness(1.2);
+  transition: filter 0.2s;
+}
+
+/* ============================================
    ROLE SELECT PAGE
    ============================================ */
 

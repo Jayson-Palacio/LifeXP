@@ -43,3 +43,8 @@ create policy "Users can manage their own redemptions" on redemptions for all us
 -- RING STYLE UNLOCK FEATURE (2026-04-18)
 -- ============================================
 alter table children add column IF NOT EXISTS ring_style text default 'solid';
+
+-- ============================================
+-- THEME MODE SETTING (2026-04-18)
+-- ============================================
+alter table app_settings add column IF NOT EXISTS theme_mode text default 'dark';
