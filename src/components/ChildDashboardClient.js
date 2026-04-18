@@ -434,12 +434,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                 <CharacterDisplay characterData={characterData} size={50} animated />
                 <div style={{
                   position: 'absolute', bottom: -2, right: -4,
-                  width: 22, height: 22, borderRadius: '50%',
+                  width: 16, height: 16, borderRadius: '50%',
                   background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
                   backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)', color: '#fff',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.5)', color: '#fff',
                 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M8 3L4 7l4 4" />
                     <path d="M4 7h16" />
                     <path d="M16 21l4-4-4-4" />
