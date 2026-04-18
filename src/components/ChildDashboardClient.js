@@ -375,16 +375,14 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
               onClick={() => { setShowRingPicker(v => !v); setShowThemePicker(false); }}
               title="Change Ring Style"
               style={{
-                width: 34, height: 34, borderRadius: '50%',
-                border: '2px solid var(--primary)',
-                background: 'var(--bg-surface)',
+                width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'transparent', padding: 0,
                 boxShadow: showRingPicker ? 'var(--glow-primary)' : 'none',
-                cursor: 'pointer', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1rem',
+                cursor: 'pointer', flexShrink: 0, overflow: 'visible'
               }}
             >
-              💍
+              <div className={`hero-avatar-ring ring-${activeRingId}`} style={{ width: '100%', height: '100%', margin: 0 }}>
+                <div className="hero-avatar-img" />
+              </div>
             </button>
 
             {showRingPicker && (
