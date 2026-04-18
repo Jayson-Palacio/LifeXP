@@ -35,8 +35,24 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   useEffect(() => { setRewards(initialRewards || []); }, [initialRewards]);
   useEffect(() => { setPending(initialPending || []); }, [initialPending]);
   useEffect(() => { setPendingRedemptions(initialPendingRedemptions || []); }, [initialPendingRedemptions]);
-  useEffect(() => { setSettings(initialSettings || { require_approval: true, family_name: 'Our Family' }); }, [initialSettings]);
+  useEffect(() => { setSettings(initialSettings || { require_approval: true, family_name: 'Our Family', theme_mode: 'dark' }); }, [initialSettings]);
   
+  // Apply body theme class globally
+  useEffect(() => {
+    let modeClass = '';
+    const themeMode = settings.theme_mode || 'dark';
+    if (themeMode === 'dynamic') {
+      const hour = new Date().getHours();
+      if (hour >= 6 && hour < 12) modeClass = 'bg-morning';
+      else if (hour >= 12 && hour < 18) modeClass = 'bg-afternoon';
+      else modeClass = 'bg-night';
+    } else if (themeMode === 'light') {
+      modeClass = 'bg-light';
+    }
+    document.body.className = modeClass;
+    return () => { document.body.className = ''; };
+  }, [settings.theme_mode]);
+
   // Modals specific
   const [modal, setModal] = useState(null);
   const [inspectChildId, setInspectChildId] = useState(null);

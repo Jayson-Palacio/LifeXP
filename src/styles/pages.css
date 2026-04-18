@@ -13,20 +13,34 @@
    ============================================ */
 
 body.bg-morning {
+  --bg-deep: #1e1b4b;
+  --bg-surface: rgba(255, 255, 255, 0.05);
   background: linear-gradient(180deg, #38bdf8 0%, #1e1b4b 100%) !important;
 }
 
 body.bg-afternoon {
-  background: linear-gradient(180deg, #fb923c 0%, #1e1b4b 100%) !important;
+  --bg-deep: #2e1065;
+  --bg-surface: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(180deg, #fb923c 0%, #2e1065 100%) !important;
 }
 
 body.bg-night {
-  background: linear-gradient(180deg, #1e1b4b 0%, #000000 100%) !important;
+  --bg-deep: #0f172a;
+  --bg-surface: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, #0f172a 0%, #000000 100%) !important;
 }
 
 body.bg-light {
-  background: #f8fafc !important;
-  color: #0f172a !important;
+  --bg-deep: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-alt: #f1f5f9;
+  --bg-glass: rgba(0,0,0,0.03);
+  --bg-glass-border: rgba(0,0,0,0.08);
+  --text-bright: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  background: var(--bg-deep) !important;
+  color: var(--text-bright) !important;
 }
 
 

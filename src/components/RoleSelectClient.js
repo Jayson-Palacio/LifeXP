@@ -6,12 +6,27 @@ import { getLevelForXP, getXPProgress } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function RoleSelectClient({ childrenData, missions, completions, parentPin }) {
+export default function RoleSelectClient({ childrenData, missions, completions, parentPin, themeMode = 'dark' }) {
   const router = useRouter();
   const [view, setView] = useState('select'); // 'select' | 'pin'
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
+
+  // Apply body theme class globally
+  useEffect(() => {
+    let modeClass = '';
+    if (themeMode === 'dynamic') {
+      const hour = new Date().getHours();
+      if (hour >= 6 && hour < 12) modeClass = 'bg-morning';
+      else if (hour >= 12 && hour < 18) modeClass = 'bg-afternoon';
+      else modeClass = 'bg-night';
+    } else if (themeMode === 'light') {
+      modeClass = 'bg-light';
+    }
+    document.body.className = modeClass;
+    return () => { document.body.className = ''; };
+  }, [themeMode]);
 
   // Pre-warm all kid pages and parent page so navigation feels instant
   useEffect(() => {
