@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { PETS } from '../lib/character';
 
 const BEHAVIOR_CLASS = {
@@ -1528,63 +1528,39 @@ const Guardian = () => (
 const Jesus = () => (
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="js-skin" cx="40%" cy="35%"><stop offset="0%" stopColor="#FDE68A"/><stop offset="100%" stopColor="#D97706"/></radialGradient>
-      <radialGradient id="js-halo" cx="50%" cy="50%"><stop offset="0%" stopColor="rgba(253,224,71,0.6)"/><stop offset="50%" stopColor="rgba(251,191,36,0.2)"/><stop offset="100%" stopColor="rgba(0,0,0,0)"/></radialGradient>
+      <radialGradient id="js-skin" cx="40%" cy="35%"><stop offset="0%" stopColor="#FDDBA8"/><stop offset="100%" stopColor="#C8925A"/></radialGradient>
+      <radialGradient id="js-robe" cx="40%" cy="20%"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#E2E8F0"/></radialGradient>
     </defs>
     <ellipse cx="50" cy="96" rx="28" ry="5" fill="rgba(0,0,0,0.2)"/>
-    {/* Divine radiance — multiple layers of soft golden light */}
-    <circle cx="50" cy="30" r="48" fill="url(#js-halo)"/>
-    <circle cx="50" cy="30" r="34" fill="rgba(253,224,71,0.12)"/>
-    {/* Outer halo ring — classic gold ring */}
-    <circle cx="50" cy="26" r="32" fill="none" stroke="#FDE047" strokeWidth="3" opacity="0.7"/>
-    <circle cx="50" cy="26" r="28" fill="none" stroke="#FBBF24" strokeWidth="1.5" opacity="0.4"/>
-    {/* White robe — pure and flowing */}
-    <path d="M26 54 L16 96 L84 96 L74 54 Z" fill="#FFFFFF"/>
-    {/* Blue mantle draped over shoulder */}
-    <path d="M26 54 L22 96 L50 96 L50 62 Z" fill="#DBEAFE"/>
-    {/* Red sash — the distinction */}
-    <path d="M28 62 Q50 74 72 62 Q68 80 50 82 Q32 80 28 62 Z" fill="#FEE2E2"/>
-    {/* Little lamb cradled — the Good Shepherd identifier */}
-    <ellipse cx="22" cy="62" rx="13" ry="10" fill="#F8FAFC"/>
-    <circle cx="16" cy="56" r="8" fill="#FFFFFF"/>
-    <circle cx="26" cy="56" r="6" fill="#FFFFFF"/>
-    {/* Lamb ear */}
-    <ellipse cx="14" cy="50" rx="3.5" ry="5" fill="#E2E8F0" transform="rotate(-20 14 50)"/>
-    {/* Lamb sweet face */}
-    <circle cx="12" cy="54" r="2.5" fill="#1E293B"/>
-    <circle cx="11.5" cy="53.5" r="0.8" fill="white"/>
-    {/* Arm cradling lamb */}
-    <path d="M34 56 Q28 50 24 58" stroke="#D97706" strokeWidth="9" strokeLinecap="round" fill="none"/>
-    {/* Shepherd's staff */}
-    <path d="M76 96 Q78 64 72 26 Q70 20 66 22 Q62 24 64 30" stroke="#78350F" strokeWidth="6" strokeLinecap="round" fill="none"/>
-    {/* Staff crook */}
-    <path d="M66 30 Q60 22 66 16 Q72 10 78 16" stroke="#78350F" strokeWidth="6" strokeLinecap="round" fill="none"/>
-    {/* Head — serene, compassionate face */}
-    <circle cx="50" cy="30" r="26" fill="url(#js-skin)"/>
-    {/* Crown of warm light at top */}
-    <circle cx="50" cy="30" r="26" fill="none" stroke="rgba(253,224,71,0.4)" strokeWidth="4"/>
-    {/* Brown hair, middle-parted, flowing shoulder-length */}
-    <path d="M24 30 C24 8 76 8 76 30 Q64 16 50 18 Q36 16 24 30 Z" fill="#78350F"/>
-    {/* Hair falling on sides */}
-    <path d="M24 36 Q20 52 22 66" stroke="#78350F" strokeWidth="8" strokeLinecap="round" fill="none"/>
-    <path d="M76 36 Q80 52 78 66" stroke="#78350F" strokeWidth="8" strokeLinecap="round" fill="none"/>
-    <circle cx="50" cy="30" r="22" fill="url(#js-skin)"/>
-    {/* Eyes — warm brown, compassionate, full of love */}
-    <Eye cx={41} cy={28} r={6.5} iris="#451A03"/>
-    <Eye cx={59} cy={28} r={6.5} iris="#451A03"/>
-    {/* Gentle warm smile */}
-    <path d="M42 38 Q50 44 58 38" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
-    {/* Beard — warm and full */}
-    <path d="M28 36 Q30 56 50 60 Q70 56 72 36" fill="#78350F"/>
-    <circle cx="50" cy="36" r="19" fill="url(#js-skin)"/>
-    {/* Soft forehead highlight */}
-    <ellipse cx="44" cy="18" rx="10" ry="6" fill="rgba(255,255,255,0.25)" transform="rotate(-10 44 18)"/>
-    {/* Stigmata on visible hand — subtle */}
-    <circle cx="68" cy="58" r="3" fill="#EF4444" opacity="0.7"/>
+    <path d="M26 54 L16 96 L84 96 L74 54 Z" fill="url(#js-robe)"/>
+    <path d="M26 54 L22 96 L50 96 L50 60 Z" fill="#BFDBFE"/>
+    <path d="M30 64 Q50 74 70 64 Q66 80 50 82 Q34 80 30 64 Z" fill="#FEE2E2" opacity="0.7"/>
+    <path d="M76 96 Q78 68 72 30 Q70 22 64 22 Q58 22 58 30 Q58 36 64 34" stroke="#78350F" strokeWidth="5" strokeLinecap="round" fill="none"/>
+    <ellipse cx="20" cy="64" rx="13" ry="9" fill="#F8FAFC"/>
+    <circle cx="14" cy="57" r="8" fill="#FFFFFF"/>
+    <circle cx="24" cy="57" r="6" fill="#F1F5F9"/>
+    <ellipse cx="12" cy="51" rx="3" ry="5" fill="#E2E8F0" transform="rotate(-20 12 51)"/>
+    <circle cx="10" cy="56" r="2.5" fill="#1E293B"/>
+    <circle cx="9.5" cy="55.5" r="0.8" fill="white"/>
+    <path d="M34 58 Q26 52 22 60" stroke="#C8925A" strokeWidth="8" strokeLinecap="round" fill="none"/>
+    <circle cx="50" cy="28" r="30" fill="none" stroke="#FDE047" strokeWidth="5" opacity="0.7"/>
+    <circle cx="50" cy="28" r="26" fill="none" stroke="#FBBF24" strokeWidth="2" opacity="0.3"/>
+    <circle cx="50" cy="30" r="24" fill="url(#js-skin)"/>
+    <path d="M26 30 C26 8 74 8 74 30 Q64 16 50 18 Q36 16 26 30 Z" fill="#78350F"/>
+    <path d="M26 36 Q22 52 24 66" stroke="#78350F" strokeWidth="7" strokeLinecap="round" fill="none"/>
+    <path d="M74 36 Q78 52 76 66" stroke="#78350F" strokeWidth="7" strokeLinecap="round" fill="none"/>
+    <circle cx="50" cy="30" r="20" fill="url(#js-skin)"/>
+    <path d="M30 36 Q32 56 50 60 Q68 56 70 36" fill="#78350F"/>
+    <circle cx="50" cy="36" r="17" fill="url(#js-skin)"/>
+    <Eye cx={42} cy={28} r={6} iris="#451A03"/>
+    <Eye cx={58} cy={28} r={6} iris="#451A03"/>
+    <path d="M43 38 Q50 44 57 38" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
+    <path d="M36 21 Q42 18 47 21" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    <path d="M53 21 Q58 18 64 21" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    <ellipse cx="44" cy="20" rx="10" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-10 44 20)"/>
   </svg>
 );
-
-// ─── MAP ALL 40 ──────────────────────────────────────────────────────────────
+MAP ALL 40 ──────────────────────────────────────────────────────────────
 const PET_MAP = {
   pup:Pup, kitty:Kitty, bunny:Bunny, fox:Fox, bear:Bear,
   wolf:Wolf, lion:Lion, eagle:Eagle, panther:Panther, panda:Panda,
