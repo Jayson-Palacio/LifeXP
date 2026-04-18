@@ -556,92 +556,109 @@ function StarEyes() {
   );
 }
 
-// ─── AURA SVG (behind character on same SVG) ──────────────────────────────────
+// ─── AURA SVG (behind character on same SVG) ─────────────────────────────────
+// Kept intentionally minimal — just a ground halo + tight glow ring so it
+// doesn't drown out the character sprite.
 function AuraSVG({ type }) {
-  const auras = {
-    star:      { stroke: '#facc15', fill: '#facc1522' },
-    wave:      { stroke: '#38bdf8', fill: '#38bdf822' },
-    fire:      { stroke: '#f97316', fill: '#f9731622' },
-    lightning: { stroke: '#a855f7', fill: '#a855f722' },
-    rainbow:   { stroke: '#fff',    fill: null         },
-    max:       { stroke: '#fff',    fill: '#ffffff22'  },
+  const cfgs = {
+    star:      { stroke: '#facc15', dash: '0' },
+    wave:      { stroke: '#38bdf8', dash: '3 2' },
+    fire:      { stroke: '#f97316', dash: '0' },
+    lightning: { stroke: '#a855f7', dash: '4 2' },
+    rainbow:   { stroke: 'url(#rgGrad)', dash: '0' },
+    max:       { stroke: '#ffffff', dash: '2 1' },
   };
-  const cfg = auras[type];
+  const cfg = cfgs[type];
   if (!cfg) return null;
   return (
-    <g opacity="0.75">
-      <ellipse cx="19" cy="51" rx="14" ry="4"  fill={cfg.fill || '#ffffff11'}/>
-      <ellipse cx="19" cy="28" rx="22" ry="24" fill="none" stroke={cfg.stroke} strokeWidth="2" opacity="0.6"/>
+    <g opacity="0.6">
       {type === 'rainbow' && (
-        <>
-          <ellipse cx="19" cy="28" rx="22" ry="24" fill="none" stroke="#ff0000" strokeWidth="1.5" strokeDasharray="8 4" opacity="0.5"/>
-          <ellipse cx="19" cy="28" rx="20" ry="22" fill="none" stroke="#00ff88" strokeWidth="1.5" strokeDasharray="8 4" strokeDashoffset="6" opacity="0.5"/>
-        </>
+        <defs>
+          <linearGradient id="rgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stopColor="#ff0000"/>
+            <stop offset="33%"  stopColor="#ffff00"/>
+            <stop offset="66%"  stopColor="#00ff88"/>
+            <stop offset="100%" stopColor="#a855f7"/>
+          </linearGradient>
+        </defs>
       )}
+      {/* Tight halo ring just outside the character silhouette */}
+      <ellipse cx="19" cy="28" rx="16" ry="18"
+        fill="none" stroke={cfg.stroke} strokeWidth="1.5"
+        strokeDasharray={cfg.dash} opacity="0.7"/>
+      {/* Small ground glow */}
+      <ellipse cx="19" cy="51" rx="10" ry="2.5"
+        fill={cfg.stroke} opacity="0.25"/>
     </g>
   );
 }
 
 // ─── PET COMPANIONS ────────────────────────────────────────────────────────────
+// Positioned with overflow:visible on the SVG. Pets stay within ±14 units
+// of the 0-38 canvas so they're visible but not cut off.
 function ChickPet() {
+  // Sits on the ground to the right of the character
   return (
-    <g transform="translate(32, 30)">
-      <rect x="0" y="3" width="7" height="6" fill="#FBBF24"/>
-      <rect x="1" y="1" width="5" height="4" fill="#FBBF24"/>
-      <rect x="2" y="2" width="2" height="2" fill="#0a0a1a"/>
-      <rect x="2" y="2" width="1" height="1" fill="#fff"/>
-      <rect x="5" y="3" width="2" height="1" fill="#F59E0B"/>
-      <rect x="1" y="8" width="1" height="2" fill="#F59E0B"/>
-      <rect x="3" y="8" width="1" height="2" fill="#F59E0B"/>
-      <rect x="5" y="8" width="1" height="2" fill="#F59E0B"/>
+    <g transform="translate(29, 38)">
+      <rect x="0" y="1" width="7" height="6" fill="#FBBF24"/>
+      <rect x="1" y="0" width="5" height="3" fill="#FBBF24"/>
+      <rect x="2" y="1" width="2" height="2" fill="#0a0a1a"/>
+      <rect x="2" y="1" width="1" height="1" fill="#fff"/>
+      <rect x="5" y="2" width="2" height="1" fill="#F59E0B"/>
+      <rect x="1" y="6" width="1" height="2" fill="#F59E0B"/>
+      <rect x="3" y="6" width="1" height="2" fill="#F59E0B"/>
+      <rect x="5" y="6" width="1" height="2" fill="#F59E0B"/>
     </g>
   );
 }
 function ButterflyPet() {
+  // Floats above-right of the character's shoulder
   return (
-    <g transform="translate(30, 12)">
-      <rect x="0" y="2" width="5" height="7" fill="#A855F7" opacity="0.85"/>
-      <rect x="6" y="2" width="5" height="7" fill="#EC4899" opacity="0.85"/>
-      <rect x="1" y="4" width="3" height="3" fill="#C084FC" opacity="0.5"/>
-      <rect x="7" y="4" width="3" height="3" fill="#F472B6" opacity="0.5"/>
-      <rect x="5" y="1" width="1" height="9" fill="#0a0a1a"/>
+    <g transform="translate(27, 6)">
+      <rect x="0" y="2" width="5" height="6" fill="#A855F7" opacity="0.85"/>
+      <rect x="6" y="2" width="5" height="6" fill="#EC4899" opacity="0.85"/>
+      <rect x="1" y="3" width="3" height="3" fill="#C084FC" opacity="0.5"/>
+      <rect x="7" y="3" width="3" height="3" fill="#F472B6" opacity="0.5"/>
+      <rect x="5" y="1" width="1" height="8" fill="#0a0a1a"/>
       <rect x="4" y="0" width="1" height="2" fill="#0a0a1a"/>
       <rect x="6" y="0" width="1" height="2" fill="#0a0a1a"/>
     </g>
   );
 }
 function DragonPet() {
+  // Hovers to the left of the body
   return (
-    <g transform="translate(-10, 28)">
-      <rect x="1"  y="3"  width="7" height="7" fill="#16A34A"/>
-      <rect x="2"  y="1"  width="5" height="4" fill="#22C55E"/>
-      <rect x="6"  y="2"  width="3" height="2" fill="#22C55E"/>
-      <rect x="3"  y="2"  width="2" height="2" fill="#FBBF24"/>
-      <rect x="3"  y="2"  width="1" height="1" fill="#0a0a1a"/>
-      <rect x="-2" y="4"  width="4" height="5" fill="#15803D" opacity="0.8"/>
-      <rect x="8"  y="2"  width="2" height="1" fill="#F97316"/>
-      <rect x="9"  y="3"  width="2" height="1" fill="#FBBF24"/>
-      <rect x="1"  y="9"  width="2" height="4" fill="#22C55E"/>
-      <rect x="5"  y="9"  width="2" height="4" fill="#22C55E"/>
+    <g transform="translate(-12, 26)">
+      <rect x="2"  y="3"  width="7" height="6" fill="#16A34A"/>
+      <rect x="3"  y="1"  width="5" height="4" fill="#22C55E"/>
+      <rect x="7"  y="2"  width="3" height="2" fill="#22C55E"/>
+      <rect x="4"  y="2"  width="2" height="2" fill="#FBBF24"/>
+      <rect x="4"  y="2"  width="1" height="1" fill="#0a0a1a"/>
+      <rect x="0"  y="4"  width="3" height="4" fill="#15803D" opacity="0.8"/>
+      <rect x="9"  y="2"  width="2" height="1" fill="#F97316"/>
+      <rect x="10" y="3"  width="2" height="1" fill="#FBBF24"/>
+      <rect x="2"  y="8"  width="2" height="4" fill="#22C55E"/>
+      <rect x="6"  y="8"  width="2" height="4" fill="#22C55E"/>
     </g>
   );
 }
 function UnicornPet() {
+  // Stands to the left at body level
   return (
-    <g transform="translate(-11, 18)">
-      <rect x="1"  y="5"  width="10" height="8" fill="#F9E8FF"/>
-      <rect x="7"  y="1"  width="6"  height="6" fill="#F9E8FF"/>
-      <rect x="11" y="0"  width="2"  height="3" fill="#FBBF24"/>
-      <rect x="12" y="-1" width="1"  height="2" fill="#FBBF24"/>
-      <rect x="8"  y="2"  width="2"  height="2" fill="#0a0a1a"/>
-      <rect x="8"  y="2"  width="1"  height="1" fill="#fff"/>
-      <rect x="7"  y="1"  width="2"  height="4" fill="#C084FC"/>
-      <rect x="8"  y="0"  width="2"  height="3" fill="#F472B6"/>
-      <rect x="1"  y="12" width="2"  height="5" fill="#F9E8FF"/>
-      <rect x="4"  y="12" width="2"  height="5" fill="#F9E8FF"/>
-      <rect x="7"  y="12" width="2"  height="5" fill="#F9E8FF"/>
-      <rect x="0"  y="6"  width="2"  height="4" fill="#A855F7"/>
-      <rect x="-1" y="7"  width="2"  height="3" fill="#EC4899"/>
+    <g transform="translate(-13, 22)">
+      <rect x="2"  y="5"  width="10" height="7" fill="#F9E8FF"/>
+      <rect x="8"  y="1"  width="6"  height="6" fill="#F9E8FF"/>
+      <rect x="12" y="0"  width="2"  height="3" fill="#FBBF24"/>
+      <rect x="13" y="-1" width="1"  height="2" fill="#FBBF24"/>
+      <rect x="9"  y="2"  width="2"  height="2" fill="#0a0a1a"/>
+      <rect x="9"  y="2"  width="1"  height="1" fill="#fff"/>
+      <rect x="8"  y="1"  width="2"  height="4" fill="#C084FC"/>
+      <rect x="9"  y="0"  width="2"  height="3" fill="#F472B6"/>
+      <rect x="2"  y="11" width="2"  height="4" fill="#F9E8FF"/>
+      <rect x="5"  y="11" width="2"  height="4" fill="#F9E8FF"/>
+      <rect x="8"  y="11" width="2"  height="4" fill="#F9E8FF"/>
+      <rect x="1"  y="6"  width="2"  height="3" fill="#A855F7"/>
+      <rect x="0"  y="7"  width="2"  height="2" fill="#EC4899"/>
     </g>
   );
 }
@@ -653,14 +670,15 @@ const FACE_MAP  = { shades: Shades, scuba: ScubaMask, 'star-eyes': StarEyes };
 const PET_MAP   = { chick: ChickPet, butterfly: ButterflyPet, dragon: DragonPet, unicorn: UnicornPet };
 
 // ─── AURA BACKGROUND (CSS behind SVG) ────────────────────────────────────────
+// Intentionally more muted than before — the SVG aura ring is the focal effect.
 function getAuraBg(type) {
   return {
-    star:      'radial-gradient(circle, rgba(250,204,21,0.35) 0%, transparent 70%)',
-    wave:      'radial-gradient(circle, rgba(56,189,248,0.35) 0%, transparent 70%)',
-    fire:      'radial-gradient(circle, rgba(249,115,22,0.45) 0%, rgba(239,68,68,0.2) 55%, transparent 70%)',
-    lightning: 'radial-gradient(circle, rgba(168,85,247,0.45) 0%, transparent 70%)',
-    rainbow:   'conic-gradient(from 0deg, rgba(255,0,0,0.2), rgba(255,165,0,0.2), rgba(255,255,0,0.2), rgba(0,255,0,0.2), rgba(0,0,255,0.2), rgba(255,0,255,0.2), rgba(255,0,0,0.2))',
-    max:       'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.1) 50%, transparent 70%)',
+    star:      'radial-gradient(circle, rgba(250,204,21,0.18) 0%, transparent 65%)',
+    wave:      'radial-gradient(circle, rgba(56,189,248,0.18) 0%, transparent 65%)',
+    fire:      'radial-gradient(circle, rgba(249,115,22,0.22) 0%, rgba(239,68,68,0.08) 50%, transparent 65%)',
+    lightning: 'radial-gradient(circle, rgba(168,85,247,0.22) 0%, transparent 65%)',
+    rainbow:   'conic-gradient(from 0deg, rgba(255,0,0,0.1), rgba(255,165,0,0.1), rgba(255,255,0,0.1), rgba(0,255,0,0.1), rgba(0,0,255,0.1), rgba(255,0,255,0.1), rgba(255,0,0,0.1))',
+    max:       'radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.05) 50%, transparent 65%)',
   }[type] || 'transparent';
 }
 
@@ -673,39 +691,56 @@ export default function CharacterDisplay({ characterData, size = 120, animated =
   const FaceComp = face ? FACE_MAP[face]  : null;
   const PetComp  = pet  ? PET_MAP[pet]    : null;
 
+  // Character-specific offsets so accessories sit correctly
+  // Frog has eyes on top of head (y=4-11) — shift hat/face up to avoid covering them
+  const hatOffset  = base === 'frog' ? -4 : 0;
+  const faceOffset = base === 'frog' ? -3 : 0;
+
   const w = size;
   const h = Math.round(size * (54 / 38));
 
   return (
     <div style={{ position: 'relative', width: w, height: h, display: 'inline-block' }}>
-      {/* CSS aura glow behind SVG */}
+      {/* CSS aura glow — kept subtle, sits behind SVG */}
       {aura && (
         <div style={{
-          position: 'absolute', inset: '-25%', borderRadius: '50%',
+          position: 'absolute', inset: '-10%', borderRadius: '50%',
           background: getAuraBg(aura),
-          animation: animated ? 'aura-pulse 2.5s ease-in-out infinite' : 'none',
+          animation: animated ? 'aura-pulse 3s ease-in-out infinite' : 'none',
           zIndex: 0, pointerEvents: 'none',
         }}/>
       )}
       <svg
         viewBox="0 0 38 54"
         width={w} height={h}
-        style={{ position: 'relative', zIndex: 1, imageRendering: 'pixelated', display: 'block' }}
+        style={{
+          position: 'relative', zIndex: 1,
+          imageRendering: 'pixelated', display: 'block',
+          overflow: 'visible',          /* lets pets extend slightly outside */
+        }}
         xmlns="http://www.w3.org/2000/svg"
         shapeRendering="crispEdges"
       >
         {/* Ground shadow */}
-        <ellipse cx="19" cy="52" rx="11" ry="2" fill="rgba(0,0,0,0.25)"/>
-        {/* Aura rings (inside SVG) */}
+        <ellipse cx="19" cy="52" rx="10" ry="1.5" fill="rgba(0,0,0,0.2)"/>
+        {/* Aura rings (inside SVG, drawn first so they sit behind everything) */}
         {aura && <AuraSVG type={aura}/>}
         {/* Pet companion */}
         {PetComp && <PetComp/>}
         {/* Base character */}
         <BaseComp/>
-        {/* Face accessory */}
-        {FaceComp && <FaceComp/>}
-        {/* Hat on top */}
-        {HatComp && <HatComp/>}
+        {/* Face accessory — shifted for frog so it covers the face area, not eyes */}
+        {FaceComp && (
+          <g transform={`translate(0,${faceOffset})`}>
+            <FaceComp/>
+          </g>
+        )}
+        {/* Hat — shifted up for frog to stay above the eye-bumps */}
+        {HatComp && (
+          <g transform={`translate(0,${hatOffset})`}>
+            <HatComp/>
+          </g>
+        )}
       </svg>
     </div>
   );

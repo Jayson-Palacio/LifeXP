@@ -245,7 +245,8 @@
    AURA PULSE (character aura glow)
    ============================================ */
 @keyframes aura-pulse {
-  0%, 100% { opacity: 0.45; transform: scale(0.94); }
-  50%       { opacity: 0.85; transform: scale(1.06); }
+  0%, 100% { opacity: 0.55; transform: scale(0.97); }
+  50%       { opacity: 0.75; transform: scale(1.03); }
 }
+
 
