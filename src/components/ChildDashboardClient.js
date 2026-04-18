@@ -7,11 +7,7 @@ import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '.
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound } from '../lib/sounds';
-import { parseCharacter, checkCharacterUnlocks } from '../lib/character';
-import TierCrest from './TierCrest';
 import AvatarDisplay from './AvatarDisplay';
-import CharacterDisplay from './CharacterDisplay';
-import CharacterEditor from './CharacterEditor';
 
 export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true }) {
   const router = useRouter();
@@ -26,8 +22,6 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   useEffect(() => { setAllRedemptions(initialRedemptions || []); }, [initialRedemptions]);
   
   const [showThemePicker, setShowThemePicker] = useState(false);
-  const [showCharacterEditor, setShowCharacterEditor] = useState(false);
-  const [characterData, setCharacterData] = useState(() => parseCharacter(initialChild?.character));
   const [loadingMissions, setLoadingMissions] = useState({});
   const themePickerRef = useRef(null);
 
@@ -267,14 +261,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     showToast(`🎨 ${t.name}`);
   };
 
-  const handleSaveCharacter = async (newCharData) => {
-    const json = JSON.stringify(newCharData);
-    await supabase.from('children').update({ character: json }).eq('id', child.id);
-    setCharacterData(newCharData);
-    setChild(prev => ({ ...prev, character: json }));
-    if (!characterData?.petId) showToast('🐾 Your pet companion has arrived!');
-    else showToast('✅ Pet updated!');
-  };
+
 
   const activeColor = unlockedColors.find(c => c.id === activeTheme);
 
@@ -373,113 +360,61 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
       {/* ── UNIFIED HERO PANEL ── */}
       <div className="hero-banner" style={{ paddingBottom: 0, marginTop: -10 }}>
-        {/* Ambient glow handled by ::before in CSS */}
-
         <div style={{
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 20px',
+          padding: '24px 20px 0',
           background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: 'var(--radius-3xl)',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
           backdropFilter: 'blur(12px)',
-          overflow: 'visible', /* Allow the attached badge to overflow seamlessly if needed */
         }}>
-          
-          {/* LEFT: Condensed Player Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {/* Avatar (clean, no emblem overlay) */}
-            <div style={{ position: 'relative' }}>
-              <div className="hero-avatar-ring" style={{ width: 84, height: 84, margin: 0 }}>
-                <div className="hero-avatar-img">
-                  <AvatarDisplay avatarString={child.avatar} size="100%" />
-                </div>
-              </div>
-            </div>
 
-            {/* Name, Level, Title and Micro-Stats */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 900, margin: 0, color: '#fff', lineHeight: 1 }}>{child.name}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--primary)' }}>Lv {level}</span>
-                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#aaa' }}>{tierName}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 10, marginTop: 2 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(251,191,36,0.1)', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(251,191,36,0.2)' }}>
-                  <span style={{ fontSize: '0.8rem' }}>🪙</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fbbf24' }}>{child.coins}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(251,146,60,0.1)', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(251,146,60,0.2)' }}>
-                  <span style={{ fontSize: '0.8rem' }}>🔥</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fb923c' }}>{child.streak || 0}</span>
-                </div>
-              </div>
+          {/* Avatar — centered */}
+          <div className="hero-avatar-ring" style={{ width: 96, height: 96, margin: '0 0 14px' }}>
+            <div className="hero-avatar-img">
+              <AvatarDisplay avatarString={child.avatar} size="100%" />
             </div>
           </div>
 
-          {/* RIGHT: Pet Companion */}
-          <div style={{ flexShrink: 0, marginLeft: 8 }}>
-            {characterData?.petId ? (
-              <div
-                onClick={() => setShowCharacterEditor(true)}
-                style={{ cursor: 'pointer', position: 'relative' }}
-                title="Change companion"
-              >
-                <CharacterDisplay characterData={characterData} size={50} animated />
-                <div style={{
-                  position: 'absolute', bottom: -2, right: -4,
-                  width: 16, height: 16, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-                  backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.5)', color: '#fff',
-                }}>
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M8 3L4 7l4 4" />
-                    <path d="M4 7h16" />
-                    <path d="M16 21l4-4-4-4" />
-                    <path d="M20 17H4" />
-                  </svg>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowCharacterEditor(true)}
-                style={{
-                  width: 50, height: 50,
-                  border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 'var(--radius-lg)',
-                  background: 'rgba(255,255,255,0.03)', cursor: 'pointer',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-dim)', fontSize: '0.55rem', fontWeight: 700, gap: 2
-                }}
-              >
-                <span style={{ fontSize: '1rem' }}>🐾</span>
-                Add
-              </button>
-            )}
+          {/* Name + Level + Tier */}
+          <h2 style={{ fontSize: '1.55rem', fontWeight: 900, margin: 0, color: '#fff', lineHeight: 1, textAlign: 'center' }}>{child.name}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '0.03em' }}>Lv {level}</span>
+            <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.25)' }} />
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{tierName}</span>
           </div>
-        </div>
 
-        {/* XP bar — sleek full width below */}
-        <div style={{ padding: '20px 4px 16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-            <span style={{ fontWeight: 700 }}>Next: Lv {level + 1}</span>
-            <span>{xpDisplay}</span>
+          {/* Stat pills — centered row */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(251,191,36,0.12)', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(251,191,36,0.25)' }}>
+              <span style={{ fontSize: '0.9rem' }}>🪙</span>
+              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fbbf24' }}>{child.coins}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(251,146,60,0.12)', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(251,146,60,0.25)' }}>
+              <span style={{ fontSize: '0.9rem' }}>🔥</span>
+              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fb923c' }}>{child.streak || 0}</span>
+            </div>
           </div>
-          <div style={{ width: '100%', height: 8, background: 'var(--bg-surface)', borderRadius: 'var(--radius-full)', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}>
-            <div style={{
-              height: '100%',
-              width: `${Math.round(xpProgress * 100)}%`,
-              background: 'linear-gradient(90deg, var(--primary), var(--primary-light, var(--primary)))',
-              borderRadius: 'var(--radius-full)',
-              transition: 'width 0.8s ease-out',
-              boxShadow: '0 0 8px var(--primary)',
-            }} />
+
+          {/* XP bar — full width, below stats */}
+          <div style={{ width: '100%', padding: '18px 0 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+              <span style={{ fontWeight: 700 }}>Next: Lv {level + 1}</span>
+              <span>{xpDisplay}</span>
+            </div>
+            <div style={{ width: '100%', height: 8, background: 'var(--bg-surface)', borderRadius: 'var(--radius-full)', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}>
+              <div style={{
+                height: '100%',
+                width: `${Math.round(xpProgress * 100)}%`,
+                background: 'linear-gradient(90deg, var(--primary), var(--primary-light, var(--primary)))',
+                borderRadius: 'var(--radius-full)',
+                transition: 'width 0.8s ease-out',
+                boxShadow: '0 0 8px var(--primary)',
+              }} />
+            </div>
           </div>
         </div>
       </div>
@@ -671,15 +606,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       </div>
       </div>
 
-      {/* Character Editor Modal */}
-      {showCharacterEditor && (
-        <CharacterEditor
-          characterData={characterData}
-          onSave={handleSaveCharacter}
-          onClose={() => setShowCharacterEditor(false)}
-          level={level}
-        />
-      )}
+
     </div>
   );
 }
