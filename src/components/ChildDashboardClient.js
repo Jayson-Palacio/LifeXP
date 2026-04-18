@@ -264,6 +264,17 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
   const activeColor = unlockedColors.find(c => c.id === activeTheme);
 
+  const getThemeBackground = (hex) => {
+    if (!hex) return 'var(--primary)';
+    if (hex === 'animated') return 'linear-gradient(135deg, #facc15, #a855f7, #06b6d4)';
+    if (hex === 'gradient-sunset') return 'linear-gradient(135deg, #f97316 50%, #db2777 50%)';
+    if (hex === 'gradient-midnight') return 'linear-gradient(135deg, #1e1b4b 50%, #4338ca 50%)';
+    if (hex === 'gradient-galactic') return 'linear-gradient(135deg, #312e81, #9d174d)';
+    if (hex === 'gradient-magma') return 'linear-gradient(135deg, #b91c1c, #ea580c, #facc15)';
+    if (hex === 'gradient-rainbow') return 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)';
+    return hex;
+  };
+
   // ─── Render ───────────────────────────────────────────────────
   return (
     <div className={`theme-${activeTheme}`} style={{ minHeight: '100dvh', overflowY: 'auto', paddingBottom: 40, position: 'relative' }}>
@@ -286,9 +297,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             title="Change Theme"
             style={{
               width: 34, height: 34, borderRadius: '50%', border: '2px solid var(--primary)',
-              background: activeColor?.hex === 'animated'
-                ? 'linear-gradient(135deg, #facc15, #a855f7, #06b6d4)'
-                : (activeColor?.hex || 'var(--primary)'),
+              background: getThemeBackground(activeColor?.hex),
               boxShadow: 'var(--glow-primary)',
               cursor: 'pointer', flexShrink: 0,
             }}
@@ -318,8 +327,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                     title={c.name}
                     style={{
                       width: 32, height: 32, borderRadius: '50%', border: activeTheme === c.id ? '3px solid #fff' : '2px solid transparent',
-                      background: c.hex === 'animated' ? 'linear-gradient(135deg, #facc15, #a855f7, #06b6d4)' : c.hex,
-                      boxShadow: activeTheme === c.id ? `0 0 8px ${c.hex === 'animated' ? '#a855f7' : c.hex}` : 'none',
+                      background: getThemeBackground(c.hex),
+                      boxShadow: activeTheme === c.id ? `0 0 8px ${c.hex.startsWith('gradient-') || c.hex === 'animated' ? '#fff' : c.hex}` : 'none',
                       cursor: 'pointer', transition: 'transform 0.12s',
                     }}
                   />
