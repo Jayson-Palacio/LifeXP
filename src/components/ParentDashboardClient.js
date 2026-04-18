@@ -370,11 +370,6 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           <span style={{ color: 'var(--text-muted)', fontWeight: 600, marginTop: 8 }}>Add Kid</span>
         </div>
       </div>
-
-      {/* ── Inline Analytics ── */}
-      <div style={{ marginTop: 'var(--space-2xl)', borderTop: '1px solid var(--bg-glass-border)', paddingTop: 'var(--space-xl)' }}>
-        <AnalyticsTab children={children} />
-      </div>
     </div>
     );
   };
@@ -599,6 +594,11 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                     <div style={{ height: '100%', width: `${xpProgress * 100}%`, background: 'var(--primary)', borderRadius: '8px' }} />
                  </div>
                  <div style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>Total XP: {child.total_xp_earned || child.xp || 0}</div>
+               </div>
+
+               {/* Analytics */}
+               <div style={{ marginBottom: 'var(--space-2xl)' }}>
+                 <AnalyticsTab children={children} singleChildId={inspectChildId} />
                </div>
 
                {/* History Accordion */}

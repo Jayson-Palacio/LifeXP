@@ -74,15 +74,19 @@ function generateInsight(stats, childName) {
   return `${childName} is ${insights.join(', and ')}.`;
 }
 
-export default function AnalyticsTab({ children }) {
-  const [selectedId, setSelectedId] = useState(children?.[0]?.id || null);
+export default function AnalyticsTab({ children, singleChildId = null }) {
+  const [selectedId, setSelectedId] = useState(singleChildId || children?.[0]?.id || null);
   const [data, setData] = useState({}); // keyed by child id
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (singleChildId) setSelectedId(singleChildId);
+  }, [singleChildId]);
+
+  useEffect(() => {
     if (!selectedId || data[selectedId]) return;
     loadData(selectedId);
-  }, [selectedId]);
+  }, [selectedId, data]);
 
   const loadData = async (childId) => {
     setLoading(true);
@@ -176,44 +180,50 @@ export default function AnalyticsTab({ children }) {
   const maxLast7 = stats ? Math.max(...stats.last7, 1) : 1;
 
   return (
-    <div style={{ padding: '0', paddingBottom: 100 }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 4 }}>📊 Analytics</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--space-xl)' }}>
-        Behavioural insights for each child
-      </p>
+    <div style={{ padding: '0', paddingBottom: singleChildId ? 'var(--space-xl)' : 100 }}>
+      {!singleChildId && (
+        <>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 4 }}>📊 Analytics</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--space-xl)' }}>
+            Behavioural insights for each child
+          </p>
+        </>
+      )}
 
       {/* Child Selector */}
-      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginBottom: 'var(--space-xl)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        {(children || []).map(c => {
-          const { tierColor } = getLevelForXP(c.total_xp_earned || c.xp || 0);
-          const active = c.id === selectedId;
-          return (
-            <button
-              key={c.id}
-              onClick={() => setSelectedId(c.id)}
-              style={{
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 16px',
-                borderRadius: 'var(--radius-full)',
-                border: active ? '2px solid var(--primary)' : '2px solid var(--bg-glass-border)',
-                background: active ? 'var(--primary-dim, rgba(168,85,247,0.15))' : 'var(--bg-surface)',
-                color: 'var(--text-bright)',
-                fontWeight: 800,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: active ? '0 0 14px var(--primary)44' : 'none',
-              }}
-            >
-              <AvatarDisplay avatarString={c.avatar} style={{ fontSize: '1.6rem' }} />
-              {c.name}
-            </button>
-          );
-        })}
-      </div>
+      {!singleChildId && (
+        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginBottom: 'var(--space-xl)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {(children || []).map(c => {
+            const { tierColor } = getLevelForXP(c.total_xp_earned || c.xp || 0);
+            const active = c.id === selectedId;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelectedId(c.id)}
+                style={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-full)',
+                  border: active ? '2px solid var(--primary)' : '2px solid var(--bg-glass-border)',
+                  background: active ? 'var(--primary-dim, rgba(168,85,247,0.15))' : 'var(--bg-surface)',
+                  color: 'var(--text-bright)',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: active ? '0 0 14px var(--primary)44' : 'none',
+                }}
+              >
+                <AvatarDisplay avatarString={c.avatar} style={{ fontSize: '1.6rem' }} />
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {loading && (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
