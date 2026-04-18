@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import Link from 'next/link';
 
 // ── SVG feature icons ────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ function PhoneMockup() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ fontSize:'0.6rem', color:m.done ? '#94a3b8' : m.color, fontWeight:700 }}>{m.xp}</span>
-                  <div style={{ width:14, height:14, borderRadius:'50%', background: m.done ? '#22c55e' : 'transparent', border: m.done ? 'none' : 1.5px solid rgba(255,255,255,0.1), display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div style={{ width:14, height:14, borderRadius:'50%', background: m.done ? '#22c55e' : 'transparent', border: m.done ? 'none' : '1.5px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                     {m.done && <span style={{ fontSize:'0.45rem', color:'white' }}>✓</span>}
                   </div>
                 </div>
