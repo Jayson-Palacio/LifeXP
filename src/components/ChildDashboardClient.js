@@ -379,57 +379,59 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
-          padding: '14px 18px',
-          background: 'rgba(255, 255, 255, 0.04)',
+          padding: '16px',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 'var(--radius-2xl)',
+          borderRadius: 'var(--radius-3xl)',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
           backdropFilter: 'blur(12px)',
+          overflow: 'hidden',
         }}>
           
-          {/* LEFT: Avatar + Name info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 0' }}>
-            <div className="hero-avatar-ring" style={{ width: 56, height: 56, margin: 0 }}>
-              <div className="hero-avatar-img">
-                <AvatarDisplay avatarString={child.avatar} size="100%" />
+          {/* LEFT: Condensed Player Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Avatar & Level Badge */}
+            <div style={{ position: 'relative' }}>
+              <div className="hero-avatar-ring" style={{ width: 64, height: 64, margin: 0 }}>
+                <div className="hero-avatar-img">
+                  <AvatarDisplay avatarString={child.avatar} size="100%" />
+                </div>
+              </div>
+              <div style={{
+                position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
+                background: 'var(--primary)', color: '#fff', fontSize: '0.65rem', fontWeight: 900,
+                padding: '2px 8px', borderRadius: 10, border: '2px solid var(--bg-deep)',
+                whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              }}>
+                Lv {level}
               </div>
             </div>
-            <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, color: '#fff' }}>{child.name}</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 800 }}>Lv {level}</div>
-                <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <TierCrest tierName={tierName} glowColor="var(--primary)" size={12} />
-                  {tierName}
+
+            {/* Name, Title, and Micro-Stats */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 900, margin: 0, color: '#fff', lineHeight: 1 }}>{child.name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                  <TierCrest tierName={tierName} glowColor="var(--primary)" size={10} />
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{tierName}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(251,191,36,0.2)' }}>
+                  <span style={{ fontSize: '0.75rem' }}>🪙</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>{child.coins}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(251,146,60,0.1)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(251,146,60,0.2)' }}>
+                  <span style={{ fontSize: '0.75rem' }}>🔥</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fb923c' }}>{child.streak || 0}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* CENTER: Compact Stats */}
-          <div style={{ display: 'flex', gap: 10, flex: '0 0 auto' }}>
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
-              borderRadius: 'var(--radius-lg)', padding: '6px 12px', minWidth: 60,
-            }}>
-              <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>🪙</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>{child.coins}</span>
-            </div>
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)',
-              borderRadius: 'var(--radius-lg)', padding: '6px 12px', minWidth: 60,
-            }}>
-              <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>🔥</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fb923c', lineHeight: 1 }}>{child.streak || 0}</span>
-            </div>
-          </div>
-
           {/* RIGHT: Pet Companion */}
-          <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ flexShrink: 0, marginLeft: 8 }}>
             {characterData?.petId ? (
               <div
                 onClick={() => setShowCharacterEditor(true)}
@@ -439,10 +441,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                 <CharacterDisplay characterData={characterData} size={70} animated />
                 <div style={{
                   position: 'absolute', bottom: 0, right: 0,
-                  width: 18, height: 18, borderRadius: '50%',
+                  width: 20, height: 20, borderRadius: '50%',
                   background: 'var(--primary)', border: '2px solid var(--bg-deep)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.55rem',
+                  fontSize: '0.6rem',
                 }}>✏️</div>
               </div>
             ) : (
