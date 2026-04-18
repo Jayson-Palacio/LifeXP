@@ -520,7 +520,7 @@
   pointer-events: none;
 }
 
-/* Avatar ring: thick colored border + subtle shadow ring */
+/* ── Avatar Ring Base ── */
 .hero-avatar-ring {
   position: relative;
   width: 110px;
@@ -528,21 +528,14 @@
   margin: 0 auto 14px;
 }
 
-.hero-avatar-ring::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: conic-gradient(var(--primary), var(--primary-dim, rgba(99,102,241,0.3)), var(--primary));
-  animation: spin 6s linear infinite;
-}
-
+/* Gap layer between ring and image */
 .hero-avatar-ring::after {
   content: '';
   position: absolute;
   inset: -1px;
   border-radius: 50%;
   background: var(--bg-deep);
+  z-index: 0;
 }
 
 .hero-avatar-img {
@@ -557,6 +550,158 @@
   justify-content: center;
   overflow: hidden;
   background: var(--bg-surface);
+}
+
+/* ── Ring Style: Solid (Lv 1) ── */
+.hero-avatar-ring.ring-solid::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--primary);
+  z-index: -1;
+}
+
+/* ── Ring Style: Pulse (Lv 5) ── */
+.hero-avatar-ring.ring-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--primary);
+  z-index: -1;
+  animation: ring-pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes ring-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--primary); opacity: 1; }
+  50%       { box-shadow: 0 0 0 8px transparent; opacity: 0.7; }
+}
+
+/* ── Ring Style: Double (Lv 10) ── */
+.hero-avatar-ring.ring-double::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 0 3px var(--bg-deep), 0 0 0 5px var(--primary);
+  z-index: -1;
+}
+
+/* ── Ring Style: Neon (Lv 20) ── */
+.hero-avatar-ring.ring-neon::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--primary);
+  z-index: -1;
+  box-shadow:
+    0 0 6px 2px var(--primary),
+    0 0 14px 4px var(--primary),
+    0 0 28px 6px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+/* ── Ring Style: Spin (Lv 30) ── */
+.hero-avatar-ring.ring-spin::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--primary), transparent 60%, var(--primary));
+  z-index: -1;
+  animation: ring-spin 2s linear infinite;
+}
+
+@keyframes ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Ring Style: Shimmer (Lv 40) ── */
+.hero-avatar-ring.ring-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    var(--primary) 0%,
+    color-mix(in srgb, var(--primary) 20%, white) 25%,
+    var(--primary) 50%,
+    color-mix(in srgb, var(--primary) 20%, white) 75%,
+    var(--primary) 100%
+  );
+  z-index: -1;
+  animation: ring-spin 3s linear infinite;
+}
+
+/* ── Ring Style: Plasma (Lv 55) ── */
+.hero-avatar-ring.ring-plasma::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    #a855f7, #6366f1, #06b6d4, #10b981, #facc15, #f97316, #a855f7
+  );
+  z-index: -1;
+  animation: ring-spin 3s linear infinite;
+  filter: blur(1px);
+}
+
+/* ── Ring Style: Fire (Lv 70) ── */
+.hero-avatar-ring.ring-fire::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    #facc15, #f97316, #dc2626, #f97316, #facc15
+  );
+  z-index: -1;
+  animation: ring-fire 1.8s ease-in-out infinite;
+}
+
+@keyframes ring-fire {
+  0%, 100% { transform: rotate(0deg) scale(1);   filter: brightness(1); }
+  25%       { transform: rotate(90deg) scale(1.04); filter: brightness(1.15); }
+  50%       { transform: rotate(180deg) scale(1); filter: brightness(0.9); }
+  75%       { transform: rotate(270deg) scale(1.04); filter: brightness(1.2); }
+}
+
+/* ── Ring Style: Galaxy (Lv 85) ── */
+.hero-avatar-ring.ring-galaxy::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    #0f172a, #1e1b4b, #4338ca, #7c3aed, #0f172a, #1e40af, #0f172a
+  );
+  z-index: -1;
+  animation: ring-spin 6s linear infinite;
+  box-shadow:
+    0 0 12px 2px #4338ca,
+    0 0 24px 4px rgba(99, 102, 241, 0.4);
+}
+
+/* ── Ring Style: Legendary (Lv 100) ── */
+.hero-avatar-ring.ring-legendary::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff, #ff0000
+  );
+  z-index: -1;
+  animation: ring-spin 1.5s linear infinite;
+  box-shadow:
+    0 0 10px 3px rgba(255,255,255,0.4),
+    0 0 24px 6px rgba(168, 85, 247, 0.5),
+    0 0 40px 8px rgba(99, 102, 241, 0.3);
 }
 
 /* Badge pill sitting at the bottom of the ring */

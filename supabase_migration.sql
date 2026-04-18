@@ -38,3 +38,8 @@ create policy "Users can manage their own rewards" on rewards for all using (aut
 create policy "Users can manage their own redemptions" on redemptions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Optional: Since we require auth now, we don't need a default unauthenticated app_settings row.
+
+-- ============================================
+-- RING STYLE UNLOCK FEATURE (2026-04-18)
+-- ============================================
+alter table children add column IF NOT EXISTS ring_style text default 'solid';

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
-import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '../lib/levels';
+import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors, getUnlockedRings } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound } from '../lib/sounds';
@@ -22,14 +22,18 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   useEffect(() => { setAllRedemptions(initialRedemptions || []); }, [initialRedemptions]);
   
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showRingPicker, setShowRingPicker]   = useState(false);
   const [loadingMissions, setLoadingMissions] = useState({});
   const themePickerRef = useRef(null);
+  const ringPickerRef  = useRef(null);
 
   const { level, tierName, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
   const xpProgress = getXPProgress(child.total_xp_earned || child.xp || 0);
   const xpDisplay = getXPDisplay(child.total_xp_earned || child.xp || 0);
-  const activeTheme = child.theme || tierColor;
+  const activeTheme    = child.theme || tierColor;
+  const activeRingId   = child.ring_style || 'solid';
   const unlockedColors = getUnlockedColors(level);
+  const unlockedRings  = getUnlockedRings(level);
 
   // Apply body theme class
   useEffect(() => {
@@ -48,6 +52,18 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     document.addEventListener('pointerdown', handler);
     return () => document.removeEventListener('pointerdown', handler);
   }, [showThemePicker]);
+
+  // Close ring picker when clicking outside
+  useEffect(() => {
+    if (!showRingPicker) return;
+    const handler = (e) => {
+      if (ringPickerRef.current && !ringPickerRef.current.contains(e.target)) {
+        setShowRingPicker(false);
+      }
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [showRingPicker]);
 
   // Listen for reward fulfillments/refunds
   useEffect(() => {
@@ -261,6 +277,13 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     showToast(`🎨 ${t.name}`);
   };
 
+  const handleChangeRing = async (r) => {
+    await supabase.from('children').update({ ring_style: r.id }).eq('id', child.id);
+    setChild(prev => ({ ...prev, ring_style: r.id }));
+    setShowRingPicker(false);
+    showToast(`💍 ${r.name} ring equipped!`);
+  };
+
 
 
   const activeColor = unlockedColors.find(c => c.id === activeTheme);
@@ -291,61 +314,132 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--bg-glass-border)',
       }}>
-        {/* Left Side: Theme Circle Button */}
-        <div ref={themePickerRef} style={{ position: 'relative', flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <button
-            onClick={() => setShowThemePicker(v => !v)}
-            title="Change Theme"
-            style={{
-              width: 34, height: 34, borderRadius: '50%', border: '2px solid var(--primary)',
-              background: getThemeBackground(activeColor?.hex),
-              boxShadow: 'var(--glow-primary)',
-              cursor: 'pointer', flexShrink: 0,
-            }}
-          />
+        {/* Left Side: Theme + Ring pickers */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
 
-          {/* Theme Picker Dropdown */}
-          {showThemePicker && (
-            <div style={{
-              position: 'absolute', top: 44, left: 0,
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--bg-glass-border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 12,
-              boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-              zIndex: 200,
-              minWidth: 180,
-              animation: 'slideUp 0.15s ease-out',
-            }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-                Your Themes
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {unlockedColors.map(c => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleChangeTheme(c)}
-                    title={c.name}
-                    style={{
-                      width: 32, height: 32, borderRadius: '50%', border: activeTheme === c.id ? '3px solid #fff' : '2px solid transparent',
-                      background: getThemeBackground(c.hex),
-                      boxShadow: activeTheme === c.id ? `0 0 8px ${c.hex.startsWith('gradient-') || c.hex === 'animated' ? '#fff' : c.hex}` : 'none',
-                      cursor: 'pointer', transition: 'transform 0.12s',
-                    }}
-                  />
-                ))}
-              </div>
-              {unlockedColors.length < 8 && (
-                <div style={{ marginTop: 8, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  🔒 Level up to unlock more
+          {/* ── Theme Picker ── */}
+          <div ref={themePickerRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => { setShowThemePicker(v => !v); setShowRingPicker(false); }}
+              title="Change Theme"
+              style={{
+                width: 34, height: 34, borderRadius: '50%', border: '2px solid var(--primary)',
+                background: getThemeBackground(activeColor?.hex),
+                boxShadow: 'var(--glow-primary)',
+                cursor: 'pointer', flexShrink: 0,
+              }}
+            />
+
+            {showThemePicker && (
+              <div style={{
+                position: 'absolute', top: 44, left: 0,
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--bg-glass-border)',
+                borderRadius: 'var(--radius-lg)',
+                padding: 12,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                zIndex: 200,
+                minWidth: 180,
+                animation: 'slideUp 0.15s ease-out',
+              }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                  Your Themes
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {unlockedColors.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => handleChangeTheme(c)}
+                      title={c.name}
+                      style={{
+                        width: 32, height: 32, borderRadius: '50%', border: activeTheme === c.id ? '3px solid #fff' : '2px solid transparent',
+                        background: getThemeBackground(c.hex),
+                        boxShadow: activeTheme === c.id ? `0 0 8px ${c.hex.startsWith('gradient-') || c.hex === 'animated' ? '#fff' : c.hex}` : 'none',
+                        cursor: 'pointer', transition: 'transform 0.12s',
+                      }}
+                    />
+                  ))}
+                </div>
+                {unlockedColors.length < 8 && (
+                  <div style={{ marginTop: 8, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    🔒 Level up to unlock more
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
-        {/* Center: Title (Removed as requested to reduce clutter since it's under the profile picture) */}
-        <div style={{ flex: '0 1 auto' }}></div>
+          {/* ── Ring Style Picker ── */}
+          <div ref={ringPickerRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => { setShowRingPicker(v => !v); setShowThemePicker(false); }}
+              title="Change Ring Style"
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                border: '2px solid var(--primary)',
+                background: 'var(--bg-surface)',
+                boxShadow: showRingPicker ? 'var(--glow-primary)' : 'none',
+                cursor: 'pointer', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1rem',
+              }}
+            >
+              💍
+            </button>
+
+            {showRingPicker && (
+              <div style={{
+                position: 'absolute', top: 44, left: 0,
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--bg-glass-border)',
+                borderRadius: 'var(--radius-lg)',
+                padding: 12,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                zIndex: 200,
+                minWidth: 210,
+                animation: 'slideUp 0.15s ease-out',
+              }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                  Ring Style
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {unlockedRings.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => handleChangeRing(r)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '7px 10px',
+                        borderRadius: 'var(--radius-md)',
+                        border: activeRingId === r.id ? '1px solid var(--primary)' : '1px solid transparent',
+                        background: activeRingId === r.id ? 'rgba(var(--primary-rgb,99,102,241),0.12)' : 'transparent',
+                        cursor: 'pointer', width: '100%', textAlign: 'left',
+                        transition: 'all 0.12s',
+                      }}
+                    >
+                      {/* Mini ring preview */}
+                      <div className={`hero-avatar-ring ring-${r.id}`} style={{ width: 28, height: 28, flexShrink: 0, margin: 0 }}>
+                        <div className="hero-avatar-img" style={{ fontSize: '0.8rem' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: activeRingId === r.id ? 'var(--primary)' : 'var(--text-bright)' }}>{r.name}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.description}</div>
+                      </div>
+                      {activeRingId === r.id && (
+                        <svg style={{ marginLeft: 'auto', flexShrink: 0, color: 'var(--primary)' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {unlockedRings.length < 10 && (
+                  <div style={{ marginTop: 8, fontSize: '0.72rem', color: 'var(--text-muted)', borderTop: '1px solid var(--bg-glass-border)', paddingTop: 8 }}>
+                    🔒 {10 - unlockedRings.length} more ring{10 - unlockedRings.length !== 1 ? 's' : ''} to unlock
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Right Side: Home Button */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
@@ -373,7 +467,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         }}>
 
           {/* Avatar — centered */}
-          <div className="hero-avatar-ring" style={{ width: 96, height: 96, margin: '0 0 14px' }}>
+          <div className={`hero-avatar-ring ring-${activeRingId}`} style={{ width: 96, height: 96, margin: '0 0 14px' }}>
             <div className="hero-avatar-img">
               <AvatarDisplay avatarString={child.avatar} size="100%" />
             </div>

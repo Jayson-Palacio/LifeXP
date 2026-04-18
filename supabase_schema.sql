@@ -30,7 +30,8 @@ create table if not exists children (
   pending_level_up boolean default false,
   new_level_info jsonb,
   theme text default 'seedling',
-  unlocked_colors text[] default ARRAY['seedling']
+  unlocked_colors text[] default ARRAY['seedling'],
+  ring_style text default 'solid'
 );
 
 -- ============================================

@@ -52,6 +52,23 @@ export const COLORS = [
   { id: 'everlight',     name: 'Everlight (Max)', hex: 'animated', levelUnlock: 100 }
 ];
 
+export const RING_STYLES = [
+  { id: 'solid',      name: 'Solid',         levelUnlock: 1,  description: 'Clean solid line' },
+  { id: 'pulse',      name: 'Pulse',         levelUnlock: 5,  description: 'Soft breathing glow' },
+  { id: 'double',     name: 'Double Ring',   levelUnlock: 10, description: 'Two stacked rings' },
+  { id: 'neon',       name: 'Neon',          levelUnlock: 20, description: 'Hard neon glow' },
+  { id: 'spin',       name: 'Spin',          levelUnlock: 30, description: 'Rotating conic gradient' },
+  { id: 'shimmer',    name: 'Shimmer',       levelUnlock: 40, description: 'Sweeping light sheen' },
+  { id: 'plasma',     name: 'Plasma',        levelUnlock: 55, description: 'Multi-color animated plasma' },
+  { id: 'fire',       name: 'Fire',          levelUnlock: 70, description: 'Flickering fire aura' },
+  { id: 'galaxy',     name: 'Galaxy',        levelUnlock: 85, description: 'Deep space starfield spin' },
+  { id: 'legendary',  name: '✦ Legendary',   levelUnlock: 100, description: 'Full rainbow prismatic spin' },
+];
+
+export function getUnlockedRings(level) {
+  return RING_STYLES.filter(r => level >= r.levelUnlock);
+}
+
 // Exponential XP curve generator
 // Level 1: 0 XP
 // Level 10: ~1,500 XP
