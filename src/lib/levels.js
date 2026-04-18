@@ -118,3 +118,6 @@ export function checkColorUnlocks(oldLevel, newLevel) {
   if (newLevel <= oldLevel) return [];
   return COLORS.filter(c => c.levelUnlock > oldLevel && c.levelUnlock <= newLevel);
 }
+
+// Re-export character unlock checker so level-up flow can import from one place
+export { checkCharacterUnlocks } from './character.js';

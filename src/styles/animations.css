@@ -240,3 +240,12 @@
   50% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
   75% { transform: translateY(-5px) rotate(3deg); opacity: 1; }
 }
+
+/* ============================================
+   AURA PULSE (character aura glow)
+   ============================================ */
+@keyframes aura-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.94); }
+  50%       { opacity: 0.85; transform: scale(1.06); }
+}
+

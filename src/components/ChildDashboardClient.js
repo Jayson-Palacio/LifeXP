@@ -7,8 +7,11 @@ import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors } from '.
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound } from '../lib/sounds';
+import { parseCharacter, checkCharacterUnlocks } from '../lib/character';
 import TierCrest from './TierCrest';
 import AvatarDisplay from './AvatarDisplay';
+import CharacterDisplay from './CharacterDisplay';
+import CharacterEditor from './CharacterEditor';
 
 export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true }) {
   const router = useRouter();
@@ -23,6 +26,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   useEffect(() => { setAllRedemptions(initialRedemptions || []); }, [initialRedemptions]);
   
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showCharacterEditor, setShowCharacterEditor] = useState(false);
+  const [characterData, setCharacterData] = useState(() => parseCharacter(initialChild?.character));
   const [loadingMissions, setLoadingMissions] = useState({});
   const themePickerRef = useRef(null);
 
@@ -262,6 +267,15 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     showToast(`🎨 ${t.name}`);
   };
 
+  const handleSaveCharacter = async (newCharData) => {
+    const json = JSON.stringify(newCharData);
+    await supabase.from('children').update({ character: json }).eq('id', child.id);
+    setCharacterData(newCharData);
+    setChild(prev => ({ ...prev, character: json }));
+    if (!characterData) showToast('🎮 Hero created! Welcome to the adventure!');
+    else showToast('✅ Hero updated!');
+  };
+
   const activeColor = unlockedColors.find(c => c.id === activeTheme);
 
   const getThemeBackground = (hex) => {
@@ -399,6 +413,60 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             }} />
           </div>
         </div>
+      </div>
+
+      {/* ── MY CHARACTER ── */}
+      <div style={{ padding: '0 16px', marginBottom: 24 }}>
+        {!characterData ? (
+          // First-time prompt
+          <div style={{
+            borderRadius: 'var(--radius-lg)',
+            padding: '20px',
+            background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(var(--primary-rgb, 74,222,128),0.08) 100%)',
+            border: '1px solid rgba(168,85,247,0.3)',
+            textAlign: 'center',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎮</div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: '0 0 6px', color: 'var(--text-bright)' }}>Build Your Hero!</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 14px', lineHeight: 1.5 }}>Pick a character and customize it with accessories as you level up.</p>
+            <button
+              onClick={() => setShowCharacterEditor(true)}
+              style={{
+                background: 'linear-gradient(135deg, #a855f7, var(--primary))',
+                color: '#fff', border: 'none', borderRadius: 'var(--radius-full)',
+                padding: '12px 28px', fontWeight: 800, fontSize: '1rem', cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(168,85,247,0.4)',
+              }}
+            >
+              Create My Hero →
+            </button>
+          </div>
+        ) : (
+          // Character card
+          <div
+            onClick={() => setShowCharacterEditor(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 16,
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 'var(--radius-lg)', padding: '12px 16px',
+              cursor: 'pointer', transition: 'all 0.2s',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+            }}
+          >
+            <CharacterDisplay characterData={characterData} size={70} animated />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: 3 }}>🎮 My Hero</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                {(characterData.hat || characterData.aura || characterData.face || characterData.pet)
+                  ? '⚔️ Tap to customize'
+                  : '✨ Tap to add accessories'}
+              </div>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, padding: '8px 12px', borderRadius: 'var(--radius-full)', background: 'var(--primary-dim)' }}>Edit</div>
+          </div>
+        )}
       </div>
 
       {/* ── MISSIONS ── */}
@@ -587,6 +655,16 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         })()}
       </div>
       </div>
+
+      {/* Character Editor Modal */}
+      {showCharacterEditor && (
+        <CharacterEditor
+          characterData={characterData}
+          onSave={handleSaveCharacter}
+          onClose={() => setShowCharacterEditor(false)}
+          level={level}
+        />
+      )}
     </div>
   );
 }
