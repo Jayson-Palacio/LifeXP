@@ -1,144 +1,111 @@
-'use client';
+﻿'use client';
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
-
-// ── Floating orb canvas background ──────────────────────────────────────────
-function StarField() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    window.addEventListener('resize', handleResize);
-
-    const ORBS = Array.from({ length: 18 }, () => ({
-      x: Math.random() * w, y: Math.random() * h,
-      r: 60 + Math.random() * 120,
-      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-      hue: [270, 300, 220, 180, 240][Math.floor(Math.random() * 5)],
-      alpha: 0.04 + Math.random() * 0.06,
-    }));
-    const STARS = Array.from({ length: 120 }, () => ({
-      x: Math.random() * w, y: Math.random() * h,
-      r: 0.5 + Math.random() * 1.5, alpha: 0.2 + Math.random() * 0.6,
-    }));
-
-    let raf;
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      STARS.forEach(s => {
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${s.alpha})`; ctx.fill();
-      });
-      ORBS.forEach(o => {
-        o.x += o.vx; o.y += o.vy;
-        if (o.x < -o.r) o.x = w + o.r; if (o.x > w + o.r) o.x = -o.r;
-        if (o.y < -o.r) o.y = h + o.r; if (o.y > h + o.r) o.y = -o.r;
-        const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
-        g.addColorStop(0, `hsla(${o.hue},90%,65%,${o.alpha})`);
-        g.addColorStop(1, `hsla(${o.hue},90%,65%,0)`);
-        ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
-        ctx.fillStyle = g; ctx.fill();
-      });
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', handleResize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position:'fixed', inset:0, zIndex:0, pointerEvents:'none' }}/>;
-}
 
 // ── SVG feature icons ────────────────────────────────────────────────────────
 const IconMission = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-    <circle cx="16" cy="16" r="14" fill="rgba(168,85,247,0.2)" stroke="#a855f7" strokeWidth="1.5"/>
-    <path d="M10 16.5L14 20.5L22 12" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke="#a855f7" strokeWidth="2" strokeOpacity="0.8"/>
+    <circle cx="12" cy="12" r="4" fill="rgba(168,85,247,0.2)" stroke="#a855f7" strokeWidth="2"/>
+    <path d="M12 2L12 6M12 18L12 22M22 12L18 12M6 12L2 12M19.07 4.93L16.24 7.76M7.76 16.24L4.93 19.07M19.07 19.07L16.24 16.24M7.76 7.76L4.93 4.93" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.4"/>
   </svg>
 );
 const IconReward = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-    <rect x="8" y="14" width="16" height="12" rx="3" fill="rgba(250,204,21,0.15)" stroke="#facc15" strokeWidth="1.5"/>
-    <path d="M16 14V26" stroke="#facc15" strokeWidth="1.5"/>
-    <path d="M8 18H24" stroke="#facc15" strokeWidth="1.5"/>
-    <path d="M16 14C16 14 12 14 12 10.5C12 8.5 13.5 7 16 7C18.5 7 20 8.5 20 10.5C20 14 16 14 16 14Z" fill="rgba(250,204,21,0.15)" stroke="#facc15" strokeWidth="1.5"/>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+    <path d="M20 12V22H4V12" stroke="#facc15" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M22 7H2V12H22V7Z" fill="rgba(250,204,21,0.1)" stroke="#facc15" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M12 22V7" stroke="#facc15" strokeWidth="2"/>
+    <path d="M12 7H7.5C6.11929 7 5 5.88071 5 4.5C5 3.11929 6.11929 2 7.5 2C8.88071 2 12 7 12 7Z" stroke="#facc15" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M12 7H16.5C17.8807 7 19 5.88071 19 4.5C19 3.11929 17.8807 2 16.5 2C15.1193 2 12 7 12 7Z" stroke="#facc15" strokeWidth="2" strokeLinejoin="round"/>
   </svg>
 );
 const IconLevel = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-    <path d="M6 24L12 16L18 20L26 8" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <circle cx="26" cy="8" r="3" fill="#22c55e"/>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+    <path d="M4 20L10 14L15 17L21 6" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 6H21V11" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="21" cy="6" r="2" fill="rgba(34,197,94,0.3)"/>
+    <circle cx="15" cy="17" r="2" fill="rgba(34,197,94,0.3)"/>
+    <circle cx="10" cy="14" r="2" fill="rgba(34,197,94,0.3)"/>
+    <circle cx="4" cy="20" r="2" fill="rgba(34,197,94,0.3)"/>
   </svg>
 );
 const IconPet = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-    <ellipse cx="16" cy="19" rx="9" ry="8" fill="rgba(56,189,248,0.15)" stroke="#38bdf8" strokeWidth="1.5"/>
-    <circle cx="12" cy="16" r="2" fill="#38bdf8"/>
-    <circle cx="20" cy="16" r="2" fill="#38bdf8"/>
-    <path d="M13 21C14 22.5 18 22.5 19 21" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round"/>
-    <ellipse cx="10" cy="11" rx="3" ry="4" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" strokeWidth="1.5" transform="rotate(-15 10 11)"/>
-    <ellipse cx="22" cy="11" rx="3" ry="4" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" strokeWidth="1.5" transform="rotate(15 22 11)"/>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+    <ellipse cx="12" cy="14" rx="7" ry="6" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" strokeWidth="2"/>
+    <path d="M7 10C7 7 9 3 12 3C15 3 17 7 17 10" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M7 10C5 10 3 12 3 15C3 18 6 18 6 18" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M17 10C19 10 21 12 21 15C21 18 18 18 18 18" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="9" cy="13" r="1.5" fill="#38bdf8"/>
+    <circle cx="15" cy="13" r="1.5" fill="#38bdf8"/>
+    <path d="M10 16.5C10.5 17.5 13.5 17.5 14 16.5" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 );
 
 // ── App phone mockup ─────────────────────────────────────────────────────────
 function PhoneMockup() {
   return (
-    <div style={{ position:'relative', width:240, margin:'0 auto', flexShrink:0 }}>
-      {/* Glow behind phone */}
-      <div style={{ position:'absolute', inset:'-30%', borderRadius:'50%', background:'radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)', zIndex:0 }}/>
+    <div style={{ position:'relative', width:260, margin:'0 auto', flexShrink:0 }}>
       {/* Phone shell */}
       <div style={{
-        position:'relative', zIndex:1, background:'#0d0d14', border:'2px solid rgba(255,255,255,0.12)',
-        borderRadius:36, padding:'12px 8px 20px', boxShadow:'0 40px 80px rgba(0,0,0,0.6)',
+        position:'relative', zIndex:1, background:'#0d0d14', border:'4px solid #1e1e2d',
+        borderRadius:40, padding:'12px', boxShadow:'0 25px 60px rgba(0,0,0,0.5)',
       }}>
-        {/* notch */}
-        <div style={{ width:70, height:10, background:'#1a1a2e', borderRadius:9999, margin:'0 auto 10px', border:'1px solid rgba(255,255,255,0.07)' }}/>
         {/* screen content */}
-        <div style={{ background:'#171723', borderRadius:24, padding:14, minHeight:380 }}>
+        <div style={{ background:'#171723', borderRadius:28, minHeight:500, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {/* top bar */}
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-            <div style={{ fontSize:'0.55rem', fontWeight:800, color:'#a855f7' }}>KAELUMA</div>
-            <div style={{ fontSize:'0.5rem', color:'#94a3b8' }}>⚡ 1,240 XP</div>
+          <div style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(99,102,241,0.05))', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <div style={{ display:'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '1.2rem'}}>☀️</span>
+                <span style={{ fontSize:'0.7rem', fontWeight:800, color:'#f8fafc', letterSpacing: 1 }}>KAELUMA</span>
+              </div>
+              <div style={{ fontSize:'0.6rem', color:'#facc15', fontWeight: 700, background: 'rgba(250,204,21,0.1)', padding: '4px 8px', borderRadius: 12 }}>⚡ 1.2k XP</div>
+            </div>
+            
+            {/* player card */}
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ width:40, height:40, borderRadius:'50%', background:'linear-gradient(135deg,#38bdf8,#818cf8)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', border: '2px solid rgba(255,255,255,0.1)' }}>👦🏽</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize:'0.7rem', fontWeight:700, color:'#f8fafc', marginBottom: 4 }}>Alex</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 600 }}>Lv. 12</span>
+                  <div style={{ flex: 1, height:4, background:'rgba(255,255,255,0.1)', borderRadius:9999, overflow:'hidden' }}>
+                    <div style={{ width:'70%', height:'100%', background:'linear-gradient(90deg,#a855f7,#6366f1)', borderRadius:9999 }}/>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          {/* player card */}
-          <div style={{ background:'linear-gradient(135deg,#2d1b4e,#1a1a38)', borderRadius:14, padding:10, marginBottom:10 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#a855f7,#6366f1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1rem' }}>🌟</div>
+          
+          <div style={{ padding: '20px', flex: 1 }}>
+            {/* missions */}
+            <div style={{ fontSize:'0.6rem', fontWeight:700, color:'#94a3b8', marginBottom:12, textTransform:'uppercase', letterSpacing:'0.05em' }}>Daily Quests</div>
+            {[
+              { label:'Make Your Bed', xp:'+50', done:true, color:'#22c55e', icon: '🛏️' },
+              { label:'Read for 20 min', xp:'+80', done:true, color:'#22c55e', icon: '📚' },
+              { label:'Clean Your Room', xp:'+100', done:false, color:'#a855f7', icon: '🧹' },
+              { label:'Do Homework', xp:'+150', done:false, color:'#f59e0b', icon: '✏️' },
+            ].map((m,i) => (
+              <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius:12, padding:'10px 12px', marginBottom:8, opacity: m.done ? 0.6 : 1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <span style={{ fontSize: '0.8rem', opacity: m.done ? 0.5 : 1 }}>{m.icon}</span>
+                  <span style={{ fontSize:'0.65rem', fontWeight: m.done ? 500 : 600, color: m.done ? '#94a3b8' : '#f8fafc', textDecoration: m.done ? 'line-through' : 'none' }}>{m.label}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize:'0.6rem', color:m.done ? '#94a3b8' : m.color, fontWeight:700 }}>{m.xp}</span>
+                  <div style={{ width:14, height:14, borderRadius:'50%', background: m.done ? '#22c55e' : 'transparent', border: m.done ? 'none' : 1.5px solid rgba(255,255,255,0.1), display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {m.done && <span style={{ fontSize:'0.45rem', color:'white' }}>✓</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* companion */}
+            <div style={{ marginTop:16, background:'linear-gradient(135deg, rgba(250,204,21,0.05), transparent)', border: '1px solid rgba(250,204,21,0.15)', borderRadius:14, padding:'12px', display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ fontSize:'1.8rem', filter: 'drop-shadow(0 0 10px rgba(250,204,21,0.2))' }}>🐉</div>
               <div>
-                <div style={{ fontSize:'0.55rem', fontWeight:700, color:'#f8fafc' }}>Alex • Lv. 12</div>
-                <div style={{ width:60, height:4, background:'rgba(255,255,255,0.1)', borderRadius:9999, marginTop:3, overflow:'hidden' }}>
-                  <div style={{ width:'70%', height:'100%', background:'linear-gradient(90deg,#a855f7,#6366f1)', borderRadius:9999 }}/>
-                </div>
+                <div style={{ fontSize:'0.7rem', fontWeight:700, color:'#f8fafc', marginBottom: 2 }}>Dragon</div>
+                <div style={{ fontSize:'0.55rem', color:'#facc15', fontWeight: 600 }}>Legendary Companion</div>
               </div>
-            </div>
-          </div>
-          {/* missions */}
-          <div style={{ fontSize:'0.5rem', fontWeight:700, color:'#94a3b8', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Today's Missions</div>
-          {[
-            { label:'Make Your Bed', xp:'+50 XP', done:true, color:'#22c55e' },
-            { label:'Read for 20 min', xp:'+80 XP', done:true, color:'#22c55e' },
-            { label:'Clean Your Room', xp:'+100 XP', done:false, color:'#a855f7' },
-            { label:'Do Homework', xp:'+150 XP', done:false, color:'#f59e0b' },
-          ].map((m,i) => (
-            <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.04)', borderRadius:8, padding:'6px 8px', marginBottom:4, opacity: m.done ? 0.55 : 1 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                <div style={{ width:10, height:10, borderRadius:'50%', background: m.done ? '#22c55e' : 'rgba(255,255,255,0.1)', border: m.done ? 'none' : `1.5px solid ${m.color}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  {m.done && <span style={{ fontSize:'0.35rem', color:'white' }}>✓</span>}
-                </div>
-                <span style={{ fontSize:'0.48rem', color: m.done ? '#94a3b8' : '#f8fafc', textDecoration: m.done ? 'line-through' : 'none' }}>{m.label}</span>
-              </div>
-              <span style={{ fontSize:'0.45rem', color:m.color, fontWeight:700 }}>{m.xp}</span>
-            </div>
-          ))}
-          {/* companion */}
-          <div style={{ marginTop:10, background:'rgba(255,255,255,0.03)', borderRadius:10, padding:'8px 10px', display:'flex', alignItems:'center', gap:8 }}>
-            <div style={{ fontSize:'1.4rem' }}>🐉</div>
-            <div>
-              <div style={{ fontSize:'0.48rem', fontWeight:700, color:'#f8fafc' }}>Dragon</div>
-              <div style={{ fontSize:'0.42rem', color:'#94a3b8' }}>Companion • Legendary</div>
             </div>
           </div>
         </div>
@@ -148,32 +115,13 @@ function PhoneMockup() {
 }
 
 // ── How it works step ────────────────────────────────────────────────────────
-function Step({ num, title, desc, color }) {
+function Step({ num, title, desc }) {
   return (
-    <div style={{ display:'flex', gap:20, alignItems:'flex-start' }}>
-      <div style={{ flexShrink:0, width:44, height:44, borderRadius:'50%', background:`${color}22`, border:`2px solid ${color}`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:'1.1rem', color }}>
+    <div style={{ display:'flex', flexDirection: 'column', gap:12, flex: 1, minWidth: 250 }}>
+      <div style={{ width:40, height:40, borderRadius:'12px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:'1.1rem', color: '#f8fafc', marginBottom: 8 }}>
         {num}
       </div>
-      <div>
-        <div style={{ fontWeight:800, fontSize:'1.05rem', color:'#f8fafc', marginBottom:4 }}>{title}</div>
-        <div style={{ color:'#94a3b8', fontSize:'0.9rem', lineHeight:1.55 }}>{desc}</div>
-      </div>
-    </div>
-  );
-}
-
-// ── Feature card ─────────────────────────────────────────────────────────────
-function FeatureCard({ icon, title, desc, accent }) {
-  return (
-    <div style={{
-      background:'rgba(255,255,255,0.03)', border:`1px solid rgba(255,255,255,0.07)`,
-      borderRadius:20, padding:28, transition:'transform 0.2s, border-color 0.2s',
-    }}
-      onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.borderColor=`${accent}55`; }}
-      onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.07)'; }}
-    >
-      <div style={{ marginBottom:14 }}>{icon}</div>
-      <div style={{ fontWeight:800, fontSize:'1.1rem', color:'#f8fafc', marginBottom:8 }}>{title}</div>
+      <div style={{ fontWeight:700, fontSize:'1.1rem', color:'#f8fafc' }}>{title}</div>
       <div style={{ color:'#94a3b8', fontSize:'0.9rem', lineHeight:1.6 }}>{desc}</div>
     </div>
   );
@@ -182,24 +130,25 @@ function FeatureCard({ icon, title, desc, accent }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
-    <div style={{ minHeight:'100dvh', background:'#0d0d14', fontFamily:'var(--font-main)', color:'#f8fafc', overflowX:'hidden' }}>
-      <StarField />
+    <div style={{ minHeight:'100dvh', background:'transparent', fontFamily:'var(--font-main)', color:'#f8fafc', overflowX:'hidden', position: 'relative' }}>
+      {/* Background from original LifeXP */}
+      <div className="kaeluma-bg" />
 
       {/* ── NAV ── */}
-      <nav style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, padding:'16px 32px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(20px)', background:'rgba(13,13,20,0.7)', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:34, height:34, borderRadius:10, background:'linear-gradient(135deg,#a855f7,#6366f1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem' }}>☀️</div>
-          <span style={{ fontSize:'1.3rem', fontWeight:900, background:'linear-gradient(135deg,#a855f7,#6366f1)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Kaeluma</span>
+      <nav style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, padding:'20px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(10px)', borderBottom:'1px solid rgba(255,255,255,0.03)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:'1.4rem' }}>☀️</span>
+          <span style={{ fontSize:'1.2rem', fontWeight:800, color: '#f8fafc', letterSpacing: '0.5px' }}>Kaeluma</span>
         </div>
-        <div style={{ display:'flex', gap:12, alignItems:'center' }}>
-          <Link href="/login" style={{ color:'#94a3b8', textDecoration:'none', fontWeight:600, fontSize:'0.9rem', padding:'8px 16px', borderRadius:10, transition:'color 0.2s' }}
-            onMouseEnter={e=>e.currentTarget.style.color='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.color='#94a3b8'}>
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          <Link href="/login" style={{ color:'#f8fafc', textDecoration:'none', fontWeight:600, fontSize:'0.9rem', padding:'10px 20px', borderRadius:8, transition:'background 0.2s' }}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.05)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
             Log in
           </Link>
-          <Link href="/signup" style={{ background:'linear-gradient(135deg,#a855f7,#6366f1)', color:'white', textDecoration:'none', fontWeight:700, fontSize:'0.9rem', padding:'10px 22px', borderRadius:12, boxShadow:'0 4px 20px rgba(168,85,247,0.35)', transition:'transform 0.15s, box-shadow 0.15s' }}
-            onMouseEnter={e=>{ e.currentTarget.style.transform='scale(1.04)'; e.currentTarget.style.boxShadow='0 6px 28px rgba(168,85,247,0.5)'; }}
-            onMouseLeave={e=>{ e.currentTarget.style.transform='scale(1)'; e.currentTarget.style.boxShadow='0 4px 20px rgba(168,85,247,0.35)'; }}>
-            Sign up free
+          <Link href="/signup" style={{ background:'#f8fafc', color:'#0d0d14', textDecoration:'none', fontWeight:700, fontSize:'0.9rem', padding:'10px 24px', borderRadius:8, transition:'transform 0.15s, opacity 0.15s' }}
+            onMouseEnter={e=>{ e.currentTarget.style.transform='scale(1.02)'; e.currentTarget.style.opacity='0.9'; }}
+            onMouseLeave={e=>{ e.currentTarget.style.transform='scale(1)'; e.currentTarget.style.opacity='1'; }}>
+            Sign up
           </Link>
         </div>
       </nav>
@@ -207,119 +156,144 @@ export default function LandingPage() {
       <div style={{ position:'relative', zIndex:1 }}>
 
         {/* ── HERO ── */}
-        <section style={{ minHeight:'100dvh', display:'flex', alignItems:'center', padding:'120px 32px 80px', maxWidth:1100, margin:'0 auto' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:60, flexWrap:'wrap' }}>
+        <section style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'140px 48px 80px', maxWidth:1200, margin:'0 auto' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:80, flexWrap:'wrap', width: '100%' }}>
 
             {/* Left: copy */}
-            <div style={{ flex:'1 1 400px', minWidth:0 }}>
-              {/* Badge */}
-              <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)', borderRadius:9999, padding:'6px 14px', marginBottom:28, fontSize:'0.8rem', fontWeight:600, color:'#c084fc' }}>
-                <span style={{ width:7, height:7, borderRadius:'50%', background:'#a855f7', display:'inline-block', animation:'aura-pulse 2s ease-in-out infinite' }}/>
-                🎮 &nbsp;Gamified Family Goals
+            <div style={{ flex:'1 1 500px', minWidth:0 }}>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:9999, padding:'6px 16px', marginBottom:32, fontSize:'0.8rem', fontWeight:600, color:'#e2e8f0' }}>
+                ⭐ The gamified chore manager for modern families
               </div>
-              <h1 style={{ fontSize:'clamp(2.8rem,6vw,5rem)', fontWeight:900, lineHeight:1.05, letterSpacing:'-0.04em', marginBottom:20 }}>
-                Turn Real Life<br/>
-                <span style={{ background:'linear-gradient(135deg,#a855f7 0%,#ec4899 60%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Into a Game.</span>
+              <h1 style={{ fontSize:'clamp(3rem, 6vw, 4.5rem)', fontWeight:800, lineHeight:1.1, letterSpacing:'-0.03em', marginBottom:24, color: '#ffffff' }}>
+                Turn real life<br/>into a game.
               </h1>
-              <p style={{ fontSize:'1.1rem', color:'#94a3b8', lineHeight:1.7, marginBottom:36, maxWidth:480 }}>
-                Assign missions, earn XP, unlock pet companions, and level up as a family. The chore app kids actually <em style={{ color:'#f8fafc', fontStyle:'normal', fontWeight:600 }}>ask</em> to open.
+              <p style={{ fontSize:'1.15rem', color:'#94a3b8', lineHeight:1.6, marginBottom:48, maxWidth:500 }}>
+                Reward good habits, track missions, and let your family level up together in a magical shared universe. Chores don't have to be a battle.
               </p>
 
               {/* CTAs */}
-              <div style={{ display:'flex', gap:14, flexWrap:'wrap', marginBottom:40 }}>
-                <Link href="/signup" style={{ background:'linear-gradient(135deg,#a855f7,#6366f1)', color:'white', textDecoration:'none', fontWeight:800, fontSize:'1.05rem', padding:'15px 32px', borderRadius:14, boxShadow:'0 8px 30px rgba(168,85,247,0.4)', letterSpacing:'-0.01em', transition:'transform 0.15s,box-shadow 0.15s' }}
-                  onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.04)';e.currentTarget.style.boxShadow='0 12px 40px rgba(168,85,247,0.55)';}}
-                  onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 8px 30px rgba(168,85,247,0.4)';}}>
-                  🚀&nbsp; Start Playing Free
+              <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginBottom:48 }}>
+                <Link href="/signup" style={{ background:'#f8fafc', color:'#0d0d14', textDecoration:'none', fontWeight:700, fontSize:'1.05rem', padding:'16px 36px', borderRadius:12, transition:'transform 0.15s, opacity 0.15s' }}
+                  onMouseEnter={e=>e.currentTarget.style.transform='scale(1.02)'}
+                  onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+                  Start Playing Free
                 </Link>
-                <Link href="/login" style={{ color:'#94a3b8', textDecoration:'none', fontWeight:700, fontSize:'1.05rem', padding:'15px 28px', borderRadius:14, border:'1px solid rgba(255,255,255,0.1)', transition:'color 0.15s,border-color 0.15s', background:'rgba(255,255,255,0.03)' }}
-                  onMouseEnter={e=>{e.currentTarget.style.color='#f8fafc';e.currentTarget.style.borderColor='rgba(255,255,255,0.25)';}}
-                  onMouseLeave={e=>{e.currentTarget.style.color='#94a3b8';e.currentTarget.style.borderColor='rgba(255,255,255,0.1)';}}>
-                  Log in →
+                <Link href="#features" style={{ color:'#f8fafc', textDecoration:'none', fontWeight:600, fontSize:'1.05rem', padding:'16px 32px', borderRadius:12, border:'1px solid rgba(255,255,255,0.1)', transition:'background 0.15s', background:'rgba(255,255,255,0.02)' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.02)'}>
+                  See how it works
                 </Link>
               </div>
 
               {/* Social proof */}
-              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:16 }}>
                 <div style={{ display:'flex' }}>
                   {['🧒','👦','👧','🧒‍♀️','👦🏽'].map((e,i) => (
-                    <div key={i} style={{ width:30, height:30, borderRadius:'50%', background:`hsl(${i*60},70%,40%)`, border:'2px solid #0d0d14', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.85rem', marginLeft: i===0?0:-8, zIndex:5-i }}>
+                    <div key={i} style={{ width:32, height:32, borderRadius:'50%', background:hsl(,40%,25%), border:'2px solid var(--bg-deep)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.9rem', marginLeft: i===0?0:-10, zIndex:5-i }}>
                       {e}
                     </div>
                   ))}
                 </div>
-                <div>
-                  <div style={{ display:'flex', gap:2, marginBottom:2 }}>{'⭐⭐⭐⭐⭐'.split('').map((s,i)=><span key={i} style={{ fontSize:'0.75rem' }}>{s}</span>)}</div>
-                  <div style={{ fontSize:'0.78rem', color:'#94a3b8' }}><strong style={{ color:'#f8fafc' }}>500+ families</strong> already playing</div>
+                <div style={{ fontSize:'0.85rem', color:'#94a3b8' }}>
+                  <strong style={{ color:'#f8fafc', fontWeight: 600 }}>500+ families</strong> already playing
                 </div>
               </div>
             </div>
 
             {/* Right: phone mockup */}
-            <div style={{ flex:'0 0 260px' }}>
+            <div style={{ flex:'0 0 auto', display: 'flex', justifyContent: 'center' }}>
               <PhoneMockup/>
             </div>
           </div>
         </section>
 
-        {/* ── FEATURE STRIP ── */}
-        <section style={{ padding:'0 32px 100px', maxWidth:1100, margin:'0 auto' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))', gap:20 }}>
-            <FeatureCard accent="#a855f7" icon={<IconMission/>} title="Epic Missions" desc="Daily chores, weekly habits, one-off quests. Every task earns XP and coins, making responsibility feel like an adventure."/>
-            <FeatureCard accent="#facc15" icon={<IconReward/>} title="Real Rewards" desc="Kids cash out gold coins at the Parent Shop for screen time, treats, or big prizes. You control the catalog."/>
-            <FeatureCard accent="#22c55e" icon={<IconLevel/>} title="RPG Leveling" desc="A built-in XP system keeps kids hooked on doing good. Watch their level bar fill up and unlock new powers."/>
-            <FeatureCard accent="#38bdf8" icon={<IconPet/>} title="Pet Companions" desc="Unlock 20 unique animated companions — from Puppies to Legendary Dragons. The rarer the pet, the more bragging rights."/>
+        {/* ── LOGOS / TRUST ── */}
+        <section style={{ borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '40px 0', background: 'rgba(0,0,0,0.2)' }}>
+           <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 24 }}>Tested and loved by parents at</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 60, flexWrap: 'wrap', opacity: 0.5 }}>
+                 {/* Placeholder logos */}
+                 <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>Stripe</div>
+                 <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>Netflix</div>
+                 <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>Spotify</div>
+                 <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>Airbnb</div>
+              </div>
+           </div>
+        </section>
+
+        {/* ── FEATURES ── */}
+        <section id="features" style={{ padding:'120px 48px', maxWidth:1200, margin:'0 auto' }}>
+          <div style={{ textAlign:'left', marginBottom:60, maxWidth: 600 }}>
+            <h2 style={{ fontSize:'clamp(2rem, 4vw, 3rem)', fontWeight:800, letterSpacing:'-0.02em', marginBottom:20, color: '#f8fafc' }}>
+              Everything you need to build good habits.
+            </h2>
+            <p style={{ color:'#94a3b8', fontSize:'1.1rem', lineHeight: 1.6 }}>We took the mechanics that make video games addicting and applied them to household chores, homework, and routines.</p>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))', gap:32 }}>
+            <div style={{ padding: 32, background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+               <div style={{ marginBottom: 24 }}><IconMission/></div>
+               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 12 }}>Epic Missions</h3>
+               <p style={{ color: '#94a3b8', lineHeight: 1.6, fontSize: '0.95rem' }}>Assign daily chores, weekly habits, or one-off tasks. Kids earn XP and unlock customized rewards upon completion.</p>
+            </div>
+            <div style={{ padding: 32, background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+               <div style={{ marginBottom: 24 }}><IconReward/></div>
+               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 12 }}>Real Rewards</h3>
+               <p style={{ color: '#94a3b8', lineHeight: 1.6, fontSize: '0.95rem' }}>Let them cash out their gold coins for screen time, toys, or custom treats from the Parent Shop.</p>
+            </div>
+            <div style={{ padding: 32, background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+               <div style={{ marginBottom: 24 }}><IconLevel/></div>
+               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 12 }}>Level Up Fast</h3>
+               <p style={{ color: '#94a3b8', lineHeight: 1.6, fontSize: '0.95rem' }}>A built-in RPG leveling system ensures your kids stay addicted to being helpful and developing discipline.</p>
+            </div>
+            <div style={{ padding: 32, background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+               <div style={{ marginBottom: 24 }}><IconPet/></div>
+               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 12 }}>Unlock Companions</h3>
+               <p style={{ color: '#94a3b8', lineHeight: 1.6, fontSize: '0.95rem' }}>Kids unlock 20 unique animated pet companions as they level up, from basic puppies to legendary dragons.</p>
+            </div>
           </div>
         </section>
 
         {/* ── HOW IT WORKS ── */}
-        <section style={{ padding:'0 32px 100px', maxWidth:1100, margin:'0 auto' }}>
-          <div style={{ textAlign:'center', marginBottom:60 }}>
-            <div style={{ display:'inline-block', background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.25)', borderRadius:9999, padding:'5px 14px', fontSize:'0.78rem', fontWeight:700, color:'#22c55e', marginBottom:16 }}>
-              HOW IT WORKS
-            </div>
-            <h2 style={{ fontSize:'clamp(1.8rem,4vw,2.8rem)', fontWeight:900, letterSpacing:'-0.03em', marginBottom:12 }}>
-              Up and running in <span style={{ background:'linear-gradient(135deg,#a855f7,#ec4899)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>5 minutes</span>
-            </h2>
-            <p style={{ color:'#94a3b8', fontSize:'1rem', maxWidth:500, margin:'0 auto' }}>No complicated setup. Just sign up, add your kids, and start assigning missions right away.</p>
-          </div>
-
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:40 }}>
-            <Step num="1" color="#a855f7" title="Parent Signs Up" desc="Create your family account in seconds. Add each child with their name and avatar. No credit card required."/>
-            <Step num="2" color="#facc15" title="Assign Missions" desc="Choose from preset chore templates or create custom quests. Set XP rewards and coin payouts per task."/>
-            <Step num="3" color="#22c55e" title="Kids Level Up" desc="Children complete missions on their own dashboard, earn XP, level up, and unlock pet companions and themes."/>
+        <section style={{ padding:'60px 48px 140px', maxWidth:1200, margin:'0 auto' }}>
+          <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 32, padding: '80px 60px' }}>
+             <h2 style={{ fontSize:'clamp(1.8rem, 3vw, 2.5rem)', fontWeight:800, letterSpacing:'-0.02em', marginBottom:48, color: '#f8fafc', textAlign: 'center' }}>
+                Setup in 3 simple steps
+             </h2>
+             <div style={{ display:'flex', flexWrap: 'wrap', gap:40, justifyContent: 'space-between' }}>
+               <Step num="1" title="Parent Signs Up" desc="Create your family account in seconds. Add each child with their name and custom avatar."/>
+               <Step num="2" title="Assign Missions" desc="Choose from preset chore templates or create custom quests. Set XP rewards and payouts."/>
+               <Step num="3" title="Kids Level Up" desc="Children complete missions on their dashboard, earn XP, level up, and unlock companions."/>
+             </div>
           </div>
         </section>
 
         {/* ── CTA BANNER ── */}
-        <section style={{ padding:'0 32px 120px', maxWidth:1100, margin:'0 auto' }}>
-          <div style={{ background:'linear-gradient(135deg, rgba(168,85,247,0.15), rgba(99,102,241,0.15))', border:'1px solid rgba(168,85,247,0.2)', borderRadius:28, padding:'60px 40px', textAlign:'center', position:'relative', overflow:'hidden' }}>
-            {/* decorative blur blobs */}
-            <div style={{ position:'absolute', top:-60, left:-60, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(168,85,247,0.3), transparent 70%)', pointerEvents:'none' }}/>
-            <div style={{ position:'absolute', bottom:-60, right:-60, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(99,102,241,0.3), transparent 70%)', pointerEvents:'none' }}/>
-            <div style={{ position:'relative' }}>
-              <div style={{ fontSize:'clamp(1.8rem,4vw,2.6rem)', fontWeight:900, letterSpacing:'-0.03em', marginBottom:14 }}>
-                Ready to make chores <span style={{ background:'linear-gradient(135deg,#a855f7,#ec4899)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>actually fun?</span>
-              </div>
-              <p style={{ color:'#94a3b8', margin:'0 auto 32px', maxWidth:480, fontSize:'1rem', lineHeight:1.6 }}>
-                Join 500+ families who turned bedtime battles into XP gains. Free to start, no credit card needed.
-              </p>
-              <Link href="/signup" style={{ display:'inline-block', background:'linear-gradient(135deg,#a855f7,#6366f1)', color:'white', textDecoration:'none', fontWeight:800, fontSize:'1.1rem', padding:'16px 40px', borderRadius:14, boxShadow:'0 10px 40px rgba(168,85,247,0.45)', transition:'transform 0.15s,box-shadow 0.15s' }}
-                onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.04)';e.currentTarget.style.boxShadow='0 14px 50px rgba(168,85,247,0.6)';}}
-                onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 10px 40px rgba(168,85,247,0.45)';}}>
-                🎮&nbsp; Start Playing Free
-              </Link>
-            </div>
-          </div>
+        <section style={{ padding:'0 48px 120px', maxWidth:1000, margin:'0 auto', textAlign: 'center' }}>
+           <h2 style={{ fontSize:'clamp(2.5rem, 5vw, 4rem)', fontWeight:800, letterSpacing:'-0.03em', marginBottom:24, color: '#f8fafc' }}>
+              Ready to restore peace?
+           </h2>
+           <p style={{ fontSize: '1.15rem', color: '#94a3b8', marginBottom: 40, maxWidth: 600, margin: '0 auto 40px' }}>
+              Join the families who have gamified their households. It's completely free to start playing today.
+           </p>
+           <Link href="/signup" style={{ display:'inline-block', background:'#f8fafc', color:'#0d0d14', textDecoration:'none', fontWeight:700, fontSize:'1.1rem', padding:'18px 48px', borderRadius:14, transition:'transform 0.15s' }}
+             onMouseEnter={e=>e.currentTarget.style.transform='scale(1.02)'}
+             onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+             Get Started Free
+           </Link>
         </section>
 
         {/* ── FOOTER ── */}
-        <footer style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'32px', textAlign:'center', color:'#475569', fontSize:'0.82rem' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:12 }}>
-            <div style={{ width:22, height:22, borderRadius:7, background:'linear-gradient(135deg,#a855f7,#6366f1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.7rem' }}>☀️</div>
-            <span style={{ fontWeight:800, color:'#94a3b8' }}>Kaeluma</span>
+        <footer style={{ borderTop:'1px solid rgba(255,255,255,0.05)', padding:'48px', background: 'rgba(0,0,0,0.3)' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
+             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+               <span style={{ fontSize:'1.2rem' }}>☀️</span>
+               <span style={{ fontWeight:800, color:'#f8fafc', fontSize: '1.1rem' }}>Kaeluma</span>
+             </div>
+             <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                © {new Date().getFullYear()} Kaeluma. All rights reserved.
+             </div>
           </div>
-          <div>© {new Date().getFullYear()} Kaeluma · Built for families who level up together</div>
         </footer>
 
       </div>
