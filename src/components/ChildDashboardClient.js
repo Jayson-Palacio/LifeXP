@@ -390,33 +390,38 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           
           {/* LEFT: Condensed Player Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {/* Avatar & Seamless Rank Badge */}
-            <div style={{ position: 'relative', paddingBottom: 10 }}>
+            {/* Avatar & Fused Crest Emblem */}
+            <div style={{ position: 'relative' }}>
               <div className="hero-avatar-ring" style={{ width: 84, height: 84, margin: 0 }}>
                 <div className="hero-avatar-img">
                   <AvatarDisplay avatarString={child.avatar} size="100%" />
                 </div>
               </div>
               
-              {/* Seamless Badge attached to the bottom center of the avatar */}
+              {/* Emblem fused onto the bottom-right rim of the ring */}
               <div style={{
-                position: 'absolute', bottom: -2, left: '50%', transform: 'translateX(-50%)',
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: 'var(--bg-surface)', border: '2px solid var(--bg-deep)',
-                borderRadius: 'var(--radius-full)', padding: '2px 10px 2px 4px',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.5)', zIndex: 10, whiteSpace: 'nowrap'
+                position: 'absolute', bottom: -2, right: -6,
+                width: 32, height: 32,
+                background: 'var(--bg-deep)', border: '2px solid var(--primary)',
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.5)', zIndex: 10
               }}>
-                <TierCrest tierName={tierName} glowColor="var(--primary)" size={18} />
-                <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#fff' }}>Lv {level}</span>
-                <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
-                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--primary)' }}>{tierName}</span>
+                <TierCrest tierName={tierName} glowColor="var(--primary)" size={20} />
               </div>
             </div>
 
-            {/* Name and Micro-Stats */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 900, margin: 0, color: '#fff', lineHeight: 1 }}>{child.name}</h2>
-              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+            {/* Name, Level, Title and Micro-Stats */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 900, margin: 0, color: '#fff', lineHeight: 1 }}>{child.name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--primary)' }}>Lv {level}</span>
+                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#aaa' }}>{tierName}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(251,191,36,0.1)', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(251,191,36,0.2)' }}>
                   <span style={{ fontSize: '0.8rem' }}>🪙</span>
                   <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fbbf24' }}>{child.coins}</span>
