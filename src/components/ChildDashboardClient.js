@@ -295,7 +295,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     if (hex === 'gradient-midnight') return 'linear-gradient(135deg, #1e1b4b 50%, #4338ca 50%)';
     if (hex === 'gradient-galactic') return 'linear-gradient(135deg, #312e81, #9d174d)';
     if (hex === 'gradient-magma') return 'linear-gradient(135deg, #b91c1c, #ea580c, #facc15)';
-    if (hex === 'gradient-rainbow') return 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)';
+    if (hex === 'gradient-rainbow') return 'linear-gradient(135deg, #FF6B6B, #F6E58D, #B8E994, #82CCDD, #D980FA)';
     return hex;
   };
 

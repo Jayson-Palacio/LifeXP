@@ -104,4 +104,4 @@
 .theme-galactic      { --primary: #9d174d;  --primary-dim: rgba(157, 23, 77, 0.2);    --glow-primary: 0 0 30px rgba(49, 46, 129, 0.5); }
 .theme-magma         { --primary: #ea580c;  --primary-dim: rgba(234, 88, 12, 0.2);    --glow-primary: 0 0 30px rgba(220, 38, 38, 0.5); }
 .theme-rainbow       { --primary: #00ffcc;  --primary-dim: rgba(0, 255, 204, 0.2);    --glow-primary: 0 0 30px rgba(255, 0, 255, 0.4); }
-.theme-everlight     { --primary: #fff;     --primary-dim: rgba(255, 255, 255, 0.2);  --glow-primary: 0 0 30px rgba(255, 255, 255, 0.4); }
+.theme-everlight     { --primary: #fbbf24;  --primary-dim: rgba(251, 191, 36, 0.2);   --glow-primary: 0 0 30px rgba(255, 255, 255, 0.4); }
