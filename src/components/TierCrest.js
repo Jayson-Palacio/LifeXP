@@ -3,7 +3,7 @@
 import React from 'react';
 
 // Common base wrapper for tier crests ensuring consistent sizing and animation hooks
-const CrestWrapper = ({ children, className = '', glowColor = 'var(--primary)', isAnimated = true }) => {
+const CrestWrapper = ({ children, className = '', glowColor = 'var(--primary)', size = '100%', isAnimated = true }) => {
   return (
     <div 
       className={`tier-crest-wrapper ${className} ${isAnimated ? 'crest-animate' : ''}`}
@@ -12,8 +12,8 @@ const CrestWrapper = ({ children, className = '', glowColor = 'var(--primary)', 
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        width: '100%',
-        height: '100%',
+        width: typeof size === 'number' ? `${size}px` : size,
+        height: typeof size === 'number' ? `${size}px` : size,
         filter: `drop-shadow(0 0 10px ${glowColor})`,
         aspectRatio: '1/1' // Keep it square
       }}
@@ -182,7 +182,7 @@ const CrestSun = () => (
 
 
 // Global Exporter Component
-export default function TierCrest({ tierName, className, glowColor }) {
+export default function TierCrest({ tierName, className, glowColor, size = '100%' }) {
   let content = null;
   switch (tierName) {
     case 'The Beginning': content = <CrestSeedling />; break;
@@ -199,7 +199,7 @@ export default function TierCrest({ tierName, className, glowColor }) {
   }
 
   return (
-    <CrestWrapper className={className} glowColor={glowColor}>
+    <CrestWrapper className={className} glowColor={glowColor} size={size}>
       {content}
     </CrestWrapper>
   );
