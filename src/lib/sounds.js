@@ -197,3 +197,94 @@ export function playRandomSuccessSound() {
     case 4: playSoftBloom(ctx, time); break;
   }
 }
+
+// ============================================
+// UI TACTILE FEEDBACK (NEW)
+// ============================================
+
+// Subtle Click (Very fast, very quiet, good for tabs/buttons)
+export function playClick() {
+  const ctx = getContext();
+  if (!ctx) return;
+  const time = ctx.currentTime;
+  
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+
+  osc.type = 'triangle';
+  filter.type = 'lowpass';
+  
+  osc.frequency.setValueAtTime(800, time);
+  osc.frequency.exponentialRampToValueAtTime(100, time + 0.03);
+  
+  filter.frequency.setValueAtTime(2000, time);
+  filter.frequency.exponentialRampToValueAtTime(500, time + 0.03);
+
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(0.1, time + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.01, time + 0.04);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(time);
+  osc.stop(time + 0.04);
+}
+
+// Satisfying Pop (Slightly more resonant, good for opening modals or expanding items)
+export function playPop() {
+  const ctx = getContext();
+  if (!ctx) return;
+  const time = ctx.currentTime;
+  
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = 'sine';
+  
+  // Start high, drop fast to give a "bloop" or "pop" sound
+  osc.frequency.setValueAtTime(600, time);
+  osc.frequency.exponentialRampToValueAtTime(200, time + 0.1);
+
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(0.2, time + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(time);
+  osc.stop(time + 0.15);
+}
+
+// Ka-ching! (Multiple rapid high rings, mimics coins hitting each other - good for rewards)
+export function playKaChing() {
+  const ctx = getContext();
+  if (!ctx) return;
+  const time = ctx.currentTime;
+  
+  const notes = [1200, 1500, 2000]; // Very high frequencies
+  
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const hitTime = time + (i * 0.08); // Rapid succession
+    
+    osc.type = 'sine';
+    
+    osc.frequency.setValueAtTime(freq, hitTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.8, hitTime + 0.3); // Slight bend
+
+    gain.gain.setValueAtTime(0, hitTime);
+    gain.gain.linearRampToValueAtTime(0.15, hitTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.01, hitTime + 0.4);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(hitTime);
+    osc.stop(hitTime + 0.4);
+  });
+} 

@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors, getUnlockedRings } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import { showToast, showFloat } from '../lib/ui';
-import { playRandomSuccessSound } from '../lib/sounds';
+import { playRandomSuccessSound, playKaChing, playPop, playClick } from '../lib/sounds';
 import AvatarDisplay from './AvatarDisplay';
 
 export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true }) {
@@ -55,6 +55,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   };
 
   const handleAvatarTap = () => {
+    if (playPop) playPop();
     setAvatarTaps(prev => {
       const next = prev + 1;
       if (next === 5) {
@@ -67,6 +68,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   };
 
   const handleCoinTap = () => {
+    if (playPop) playPop();
     setIsShakingCoins(true);
     setTimeout(() => setIsShakingCoins(false), 500);
   };
@@ -302,6 +304,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       }
       await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
       setChild({ ...child, coins: newCoins });
+      if (playKaChing) playKaChing();
       const rect = e.target.getBoundingClientRect();
       showFloat(`-${r.cost} 🪙`, '#f59e0b', rect.left + rect.width / 2, rect.top);
       showToast(`🎉 Redeemed: ${r.name}!`);
@@ -363,7 +366,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           {/* ── Theme Picker ── */}
           <div ref={themePickerRef} style={{ position: 'relative' }}>
             <button
-              onClick={() => { setShowThemePicker(v => !v); setShowRingPicker(false); }}
+              onClick={() => {
+                if (playClick) playClick();
+                setShowThemePicker(v => !v); setShowRingPicker(false);
+              }}
               title="Change Theme"
               style={{
                 width: 34, height: 34, borderRadius: '50%', border: '2px solid var(--primary)',
@@ -392,7 +398,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                   {unlockedColors.map(c => (
                     <button
                       key={c.id}
-                      onClick={() => handleChangeTheme(c)}
+                      onClick={() => {
+                        if (playPop) playPop();
+                        handleChangeTheme(c);
+                      }}
                       title={c.name}
                       style={{
                         width: 32, height: 32, borderRadius: '50%', border: activeTheme === c.id ? '3px solid #fff' : '2px solid transparent',
@@ -415,7 +424,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           {/* ── Ring Style Picker ── */}
           <div ref={ringPickerRef} style={{ position: 'relative' }}>
             <button
-              onClick={() => { setShowRingPicker(v => !v); setShowThemePicker(false); }}
+              onClick={() => {
+                if (playClick) playClick();
+                setShowRingPicker(v => !v); setShowThemePicker(false);
+              }}
               title="Change Ring Style"
               style={{
                 width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'transparent', padding: 0,
@@ -447,7 +459,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                   {unlockedRings.map(r => (
                     <button
                       key={r.id}
-                      onClick={() => handleChangeRing(r)}
+                      onClick={() => {
+                        if (playPop) playPop();
+                        handleChangeRing(r);
+                      }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         padding: '7px 10px',

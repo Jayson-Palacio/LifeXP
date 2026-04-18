@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { playClick } from '../lib/sounds';
 
 export default function AppShell({ 
   role, // 'kid' | 'parent'
@@ -39,7 +40,10 @@ export default function AppShell({
             <button 
               key={tab.id}
               className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => {
+                if (activeTab !== tab.id && playClick) playClick();
+                onTabChange(tab.id);
+              }}
             >
               <div className="nav-tab-icon-wrapper">
                 <span className="nav-tab-icon">{tab.icon}</span>

@@ -13,6 +13,7 @@ import AnalyticsTab from './AnalyticsTab';
 import MissionModal from './MissionModal';
 import RewardModal from './RewardModal';
 import ChildModal from './ChildModal';
+import { playClick, playPop, playRandomSuccessSound } from '../lib/sounds';
 
 export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings }) {
   const router = useRouter();
@@ -153,6 +154,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleFulfillReward = async (red, e) => {
     e.stopPropagation();
+    if (playPop) playPop();
     await supabase.from('redemptions').update({ status: 'fulfilled' }).eq('id', red.id);
     setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
     showToast('Reward marked as given!');
@@ -165,6 +167,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     if (!reward || !child) return;
 
     const newCoins = child.coins + reward.cost;
+    if (playClick) playClick();
     await supabase.from('redemptions').update({ status: 'refunded' }).eq('id', red.id);
     await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
     
@@ -216,6 +219,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     
     // Prevent negative balances if we deduct more than they have
     const newCoins = Math.max(0, child.coins + amount); 
+    if (playClick) playClick();
     await supabase.from('children').update({ coins: newCoins }).eq('id', childId);
     setChildren(prev => prev.map(c => c.id === childId ? { ...c, coins: newCoins } : c));
     

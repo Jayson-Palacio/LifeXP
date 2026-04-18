@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import AvatarDisplay from './AvatarDisplay';
+import { playClick, playPop } from '../lib/sounds';
 
 export default function RoleSelectClient({ childrenData, missions, completions, parentPin }) {
   const router = useRouter();
@@ -62,12 +63,14 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
   };
 
   const handleParentClick = () => {
+    if (playClick) playClick();
     setView('pin');
     setPin('');
     setError('');
   };
 
   const handleKeyClick = (val) => {
+    if (playClick) playClick();
     if (val === 'del') {
       setPin(prev => prev.slice(0, -1));
     } else if (pin.length < 4) {
@@ -93,7 +96,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
   if (view === 'pin') {
     return (
       <div className="pin-page page-enter">
-        <button className="back-btn" onClick={() => setView('select')} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
+        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView('select'); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
         <h2 className="pin-title">🔒 Parent Mode</h2>
         <div className={`pin-display ${isShaking ? 'shake' : ''}`}>
           {[0, 1, 2, 3].map(i => (
@@ -148,7 +151,10 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                     width: '100%',
                     position: 'relative'
                   }}
-                  onClick={() => router.push(`/kid/${child.id}`)}
+                  onClick={() => {
+                    if (playPop) playPop();
+                    router.push(`/kid/${child.id}`);
+                  }}
                 >
                   <div className="kaeluma-card-avatar" style={{ border: 'none', background: 'transparent', boxShadow: 'none', overflow: 'visible' }}>
                     <div className={`hero-avatar-ring ring-${child.ring_style || 'solid'}`} style={{ width: '100%', height: '100%', margin: 0 }}>
