@@ -1528,73 +1528,81 @@ const Guardian = () => (
 const Jesus = () => (
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="js-skin" cx="40%" cy="35%"><stop offset="0%" stopColor="#FDDBA8"/><stop offset="100%" stopColor="#C8925A"/></radialGradient>
+      {/* Natural warm skin tone */}
+      <radialGradient id="js-skin" cx="45%" cy="35%"><stop offset="0%" stopColor="#FDE3B8"/><stop offset="100%" stopColor="#C8925A"/></radialGradient>
+      {/* Robe shading */}
       <radialGradient id="js-robe" cx="40%" cy="20%"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#E2E8F0"/></radialGradient>
+      {/* Soft celestial glow */}
+      <radialGradient id="js-halo" cx="50%" cy="50%"><stop offset="0%" stopColor="rgba(253, 224, 71, 0.4)"/><stop offset="100%" stopColor="rgba(253, 224, 71, 0)"/></radialGradient>
     </defs>
     
-    <ellipse cx="50" cy="96" rx="28" ry="5" fill="rgba(0,0,0,0.2)"/>
+    {/* Ground shadow */}
+    <ellipse cx="50" cy="94" rx="28" ry="4" fill="rgba(0,0,0,0.2)"/>
 
-    {/* Halo */}
-    <circle cx="50" cy="35" r="26" fill="rgba(253,224,71,0.15)" stroke="#FDE047" strokeWidth="3" />
-    <circle cx="50" cy="35" r="22" fill="none" stroke="#FBBF24" strokeWidth="2" opacity="0.4" />
+    {/* Radiant Halo (Behind everything) */}
+    <circle cx="50" cy="32" r="32" fill="url(#js-halo)"/>
+    <circle cx="50" cy="32" r="28" fill="none" stroke="#FDE047" strokeWidth="2" opacity="0.6"/>
+    <circle cx="50" cy="32" r="25" fill="none" stroke="#FBBF24" strokeWidth="1" opacity="0.8"/>
 
-    {/* Back Hair */}
-    <path d="M30 35 Q15 65 20 80 Q30 75 30 60 Z" fill="#5C260A" />
-    <path d="M70 35 Q85 65 80 80 Q70 75 70 60 Z" fill="#5C260A" />
+    {/* Back Hair (Flowing behind shoulders) */}
+    <path d="M25 35 Q 15 65 25 80 Q 30 70 30 60 Z" fill="#5C260A" />
+    <path d="M75 35 Q 85 65 75 80 Q 70 70 70 60 Z" fill="#5C260A" />
 
-    {/* Body / Robe */}
-    <path d="M28 50 L15 96 L85 96 L72 50 Z" fill="url(#js-robe)"/>
-    <path d="M28 50 L22 96 L50 96 L50 55 Z" fill="#BFDBFE"/>
+    {/* White Robe Base */}
+    <path d="M26 50 L16 94 L84 94 L74 50 Z" fill="url(#js-robe)"/>
     
-    {/* Red Sash draped across */}
-    <path d="M30 60 Q 50 75 70 60 L 66 68 Q 50 82 34 68 Z" fill="#FCA5A5" opacity="0.8"/>
+    {/* Blue Mantle (left side draped) */}
+    <path d="M26 50 L18 94 L50 94 L50 60 Z" fill="#DBEAFE"/>
+    
+    {/* Red Sash (flowing across chest) */}
+    <path d="M30 65 Q 50 82 70 65 L 66 75 Q 50 92 34 75 Z" fill="#FEE2E2" opacity="0.9"/>
 
-    {/* Right Arm holding staff (viewer's left side) */}
-    <path d="M70 60 Q 78 60 82 65" stroke="#C8925A" strokeWidth="7" strokeLinecap="round" fill="none"/>
-    <circle cx="82" cy="65" r="1.5" fill="#DC2626" opacity="0.8" /> {/* Stigmata */}
+    {/* Shepherd's Staff (Right Hand) */}
+    <path d="M80 94 L 75 35" stroke="#92400E" strokeWidth="5" strokeLinecap="round"/>
+    <path d="M75 35 C 75 20 60 20 60 30" fill="none" stroke="#92400E" strokeWidth="5" strokeLinecap="round"/>
 
-    {/* Staff */}
-    <path d="M85 96 L 79 35" stroke="#78350F" strokeWidth="5" strokeLinecap="round" />
-    <path d="M79 35 C 79 22, 64 22, 64 30" fill="none" stroke="#78350F" strokeWidth="5" strokeLinecap="round" />
+    {/* Tiny Lamb (Cradled in Left Arm) */}
+    <ellipse cx="22" cy="65" rx="14" ry="10" fill="#FFFFFF"/>
+    <circle cx="16" cy="58" r="6" fill="#F8FAFC"/>
+    <circle cx="26" cy="59" r="6" fill="#F1F5F9"/>
+    <circle cx="12" cy="64" r="7" fill="#FFFFFF"/>
+    <ellipse cx="8" cy="60" rx="2" ry="5" fill="#E2E8F0" transform="rotate(-30 8 60)"/>
+    <circle cx="10" cy="63" r="1.5" fill="#1E293B"/> {/* Lamb Eye */}
 
-    {/* Lamb in left arm */}
-    <ellipse cx="22" cy="65" rx="14" ry="10" fill="#F8FAFC"/>
-    <circle cx="15" cy="56" r="8" fill="#FFFFFF"/>
-    <circle cx="23" cy="56" r="6" fill="#F1F5F9"/>
-    <ellipse cx="11" cy="50" rx="3.5" ry="6" fill="#E2E8F0" transform="rotate(-25 11 50)"/>
-    <circle cx="11" cy="55" r="2.5" fill="#1E293B"/>
-    <circle cx="10.5" cy="54.5" r="1" fill="#FFFFFF"/>
+    {/* Arms overlapping the robe */}
+    <path d="M36 58 Q 25 50 18 66" stroke="#C8925A" strokeWidth="7" strokeLinecap="round" fill="none"/> {/* Left arm */}
+    <path d="M64 58 Q 75 58 78 68" stroke="#C8925A" strokeWidth="7" strokeLinecap="round" fill="none"/> {/* Right arm */}
 
-    {/* Left Arm cradling lamb */}
-    <path d="M35 60 Q 25 50 20 65" stroke="#C8925A" strokeWidth="8" strokeLinecap="round" fill="none"/>
-    <circle cx="20" cy="65" r="1.5" fill="#DC2626" opacity="0.8" /> {/* Stigmata */}
+    {/* Stigmata on hands */}
+    <circle cx="18" cy="66" r="1.5" fill="#DC2626" opacity="0.8"/>
+    <circle cx="78" cy="68" r="1.5" fill="#DC2626" opacity="0.8"/>
 
-    {/* Head Base */}
-    <circle cx="50" cy="35" r="22" fill="url(#js-skin)"/>
+    {/* Head Base (Cute chibi oval shape) */}
+    <ellipse cx="50" cy="35" rx="22" ry="20" fill="url(#js-skin)"/>
 
-    {/* Front Hair - Unified framing shape */}
-    <path d="M50 13 C 25 13, 20 35, 23 60 C 26 62, 28 50, 29 42 Q 35 25, 50 28 Q 65 25, 71 42 C 72 50, 74 62, 77 60 C 80 35, 75 13, 50 13 Z" fill="#78350F" />
+    {/* Rosy Cheeks */}
+    <ellipse cx="36" cy="42" rx="4" ry="2.5" fill="#EF4444" opacity="0.25"/>
+    <ellipse cx="64" cy="42" rx="4" ry="2.5" fill="#EF4444" opacity="0.25"/>
 
-    {/* Beard shape */}
-    <path d="M29 42 Q 30 65, 50 68 Q 70 65, 71 42 Q 62 55, 50 55 Q 38 55, 29 42 Z" fill="#78350F" />
+    {/* Full Wavy Beard */}
+    <path d="M28.5 38 Q 30 58 50 60 Q 70 58 71.5 38 Q 63 50 50 50 Q 37 50 28.5 38 Z" fill="#78350F"/>
 
-    {/* Mustache */}
-    <path d="M42 46 Q 50 42 58 46 Q 50 45 42 46 Z" fill="#78350F" />
+    {/* Top Hair with Middle Part */}
+    <path d="M50 15 C 25 15 22 35 25 55 C 27 50 30 40 33 35 Q 40 25 50 27 Q 60 25 67 35 C 70 40 73 50 75 55 C 78 35 75 15 50 15 Z" fill="#78350F"/>
 
-    {/* Eyes */}
-    <Eye cx={42} cy={34} r={5} iris="#451A03"/>
-    <Eye cx={58} cy={34} r={5} iris="#451A03"/>
+    {/* Signature Shiny Anime Eyes */}
+    <Eye cx={41} cy={34} r={6} iris="#451A03"/>
+    <Eye cx={59} cy={34} r={6} iris="#451A03"/>
 
-    {/* Smile gently glowing */}
-    <path d="M45 49 Q 50 53 55 49" fill="none" stroke="#92400E" strokeWidth="2" strokeLinecap="round"/>
+    {/* Expression: Eyebrows and Smile */}
+    <path d="M36 27 Q 41 24 46 27" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.85"/>
+    <path d="M54 27 Q 59 24 64 27" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.85"/>
+    <path d="M45 46 Q 50 50 55 46" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round"/>
 
-    {/* Eyebrows */}
-    <path d="M37 28 Q 42 26 47 28" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-    <path d="M53 28 Q 58 26 63 28" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-
-    {/* Forehead highlight */}
-    <ellipse cx="44" cy="24" rx="10" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-10 44 24)"/>
+    {/* Specular highlight on forehead to match 3D feel */}
+    <ellipse cx="44" cy="22" rx="8" ry="4" fill="rgba(255,255,255,0.3)" transform="rotate(-10 44 22)"/>
   </svg>
+);
 );
 const PET_MAP = {
   pup:Pup, kitty:Kitty, bunny:Bunny, fox:Fox, bear:Bear,
