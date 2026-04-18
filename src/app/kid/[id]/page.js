@@ -20,11 +20,9 @@ export default async function ChildDashboardPage({ params }) {
   // Fetch rewards
   const { data: rewards } = await supabase.from('rewards').select('*').order('cost');
 
-  // Fetch global settings for require_approval and theme_mode
-  const { data: appSettings } = await supabase.from('app_settings').select('require_approval, theme_mode').single();
+  // Fetch global settings for require_approval
+  const { data: appSettings } = await supabase.from('app_settings').select('require_approval').single();
   const requireApproval = appSettings?.require_approval !== false;
-  const themeMode = appSettings?.theme_mode || 'dark';
-  
   // Fetch today's completions for this child by getting all completions and filtering (or just querying)
   const todayStart = new Date();
   todayStart.setUTCHours(0,0,0,0);
@@ -49,7 +47,6 @@ export default async function ChildDashboardPage({ params }) {
       rewards={rewards || []}
       initialRedemptions={allRedemptions || []}
       requireApproval={requireApproval}
-      themeMode={themeMode}
     />
   );
 }

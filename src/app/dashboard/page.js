@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function RoleSelectPage() {
   const supabase = await createClient();
   
-  const { data: settings } = await supabase.from('app_settings').select('setup_complete, parent_pin, theme_mode').single();
+  const { data: settings } = await supabase.from('app_settings').select('setup_complete, parent_pin').single();
   const setupComplete = settings?.setup_complete;
   
   if (!setupComplete) {
@@ -18,5 +18,5 @@ export default async function RoleSelectPage() {
   const { data: missions } = await supabase.from('missions').select('*').eq('is_active', true);
   const { data: completions } = await supabase.from('completions').select('*');
 
-  return <RoleSelectClient childrenData={children} missions={missions} completions={completions} parentPin={settings?.parent_pin} themeMode={settings?.theme_mode || 'dark'} />;
+  return <RoleSelectClient childrenData={children} missions={missions} completions={completions} parentPin={settings?.parent_pin} />;
 }

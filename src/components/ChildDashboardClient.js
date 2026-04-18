@@ -9,7 +9,7 @@ import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound } from '../lib/sounds';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true, themeMode = 'dark' }) {
+export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true }) {
   const router = useRouter();
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
@@ -79,21 +79,11 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const unlockedColors = getUnlockedColors(level);
   const unlockedRings  = getUnlockedRings(level);
 
-  // Apply body theme class
+  // Apply active theme class
   useEffect(() => {
-    let modeClass = '';
-    if (themeMode === 'dynamic') {
-      const hour = new Date().getHours();
-      if (hour >= 6 && hour < 12) modeClass = 'bg-morning';
-      else if (hour >= 12 && hour < 18) modeClass = 'bg-afternoon';
-      else modeClass = 'bg-night';
-    } else if (themeMode === 'light') {
-      modeClass = 'bg-light';
-    }
-    
-    document.body.className = modeClass;
+    document.body.className = `theme-${activeTheme}`;
     return () => { document.body.className = ''; };
-  }, [settings.theme_mode]);
+  }, [activeTheme]);
 
   // Close theme picker when clicking outside
   useEffect(() => {
