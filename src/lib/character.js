@@ -42,18 +42,6 @@ export const PETS = [
     id: 'mech',    name: 'Mechatron', levelUnlock: 50, rarity: 'epic',
     emoji: '🦾',   behavior: 'pulse',  tag: 'Heavy armored warrior',
   },
-  {
-    id: 'dragon',  name: 'Dragon',    levelUnlock: 70, rarity: 'epic',
-    emoji: '🐲',   behavior: 'flap',   tag: 'Ancient scaled beast',
-  },
-  {
-    id: 'unicorn', name: 'Unicorn',   levelUnlock: 90, rarity: 'legendary',
-    emoji: '🦄',   behavior: 'float',  tag: 'Pure radiant magic',
-  },
-  {
-    id: 'phoenix', name: 'Phoenix',   levelUnlock: 100,rarity: 'legendary',
-    emoji: '🔥',   behavior: 'blaze',  tag: 'Reborn from fire and victory',
-  },
 ];
 
 export const RARITY_COLORS = {

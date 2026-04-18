@@ -390,7 +390,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           
           {/* LEFT: Avatar + Name info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 0' }}>
-            <div className="hero-avatar-ring" style={{ width: 56, height: 56 }}>
+            <div className="hero-avatar-ring" style={{ width: 56, height: 56, margin: 0 }}>
               <div className="hero-avatar-img">
                 <AvatarDisplay avatarString={child.avatar} size="100%" />
               </div>
