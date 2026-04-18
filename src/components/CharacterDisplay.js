@@ -1560,7 +1560,7 @@ const Jesus = () => (
     <ellipse cx="44" cy="20" rx="10" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-10 44 20)"/>
   </svg>
 );
-MAP ALL 40 ──────────────────────────────────────────────────────────────
+// MAP ALL 40 ──────────────────────────────────────────────────────────────
 const PET_MAP = {
   pup:Pup, kitty:Kitty, bunny:Bunny, fox:Fox, bear:Bear,
   wolf:Wolf, lion:Lion, eagle:Eagle, panther:Panther, panda:Panda,
