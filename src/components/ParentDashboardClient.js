@@ -43,7 +43,23 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyData, setHistoryData] = useState(null); // null = not loaded yet
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [collapsedCategories, setCollapsedCategories] = useState({});
+  const [collapsedCategories, setCollapsedCategories] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('lifexp_collapsed_categories');
+      if (stored) return JSON.parse(stored);
+    }
+    return {};
+  });
+
+  const toggleCategory = (cat) => {
+    setCollapsedCategories(prev => {
+      const next = { ...prev, [cat]: !prev[cat] };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lifexp_collapsed_categories', JSON.stringify(next));
+      }
+      return next;
+    });
+  };
 
   // Reset history state when opening drawer for a new kid
   useEffect(() => {
@@ -474,7 +490,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                           padding: '14px 18px',
                           transition: 'all 0.2s ease',
                         }}
-                        onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
+                        onClick={() => toggleCategory(cat)}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <span style={{ fontSize: '1.4rem' }}>{icon}</span>
