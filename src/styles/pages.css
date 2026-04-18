@@ -106,7 +106,7 @@
   .role-select-subtitle     { font-size: 0.85rem !important; margin-bottom: 6px !important; }
   .kaeluma-grid             { gap: 14px !important; margin-top: 10px !important; padding-bottom: 16px !important; }
   .kaeluma-card             { padding: 16px 14px !important; gap: 8px !important; }
-  .kaeluma-card-avatar      { width: 72px !important; height: 72px !important; margin-bottom: 6px !important; }
+  .kaeluma-card-avatar      { width: 84px !important; height: 84px !important; margin-bottom: 6px !important; }
   .kaeluma-card-name        { font-size: 1rem !important; }
   .kaeluma-card-level       { font-size: 0.72rem !important; }
   .kaeluma-card-stats       { font-size: 0.75rem !important; margin-top: 4px !important; }
@@ -154,8 +154,8 @@
 
 /* Avatar inside card — scales with screen */
 .kaeluma-card-avatar {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -163,15 +163,18 @@
   justify-content: center;
   font-size: 2.8rem;
   flex-shrink: 0;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: var(--bg-surface);
 }
 
 @media (min-width: 540px) {
-  .kaeluma-card-avatar { width: 90px; height: 90px; font-size: 3.4rem; margin-bottom: 12px; }
+  .kaeluma-card-avatar { width: 104px; height: 104px; font-size: 3.6rem; margin-bottom: 14px; }
 }
 
 @media (min-width: 860px) {
-  .kaeluma-card-avatar { width: 110px; height: 110px; font-size: 4.2rem; margin-bottom: 16px; }
+  .kaeluma-card-avatar { width: 124px; height: 124px; font-size: 4.4rem; margin-bottom: 18px; }
 }
 
 /* Card name text */
@@ -229,10 +232,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 12px 30px rgba(0, 0, 0, 0.3);
   border-radius: var(--radius-xl);
   padding: var(--space-lg) var(--space-md);
   min-width: 0;
@@ -264,10 +269,10 @@
 }
 
 .kaeluma-card:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%);
   transform: translateY(-8px) scale(1.05);
   border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), var(--glow-primary); 
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 20px 40px rgba(0, 0, 0, 0.4), var(--glow-primary); 
 }
 
 .kaeluma-card:hover::before {
