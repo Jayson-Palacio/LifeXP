@@ -494,8 +494,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           {/* XP bar — full width, below stats */}
           <div style={{ width: '100%', padding: '18px 0 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-              <span style={{ fontWeight: 700 }}>Next: Lv {level + 1}</span>
-              <span>{xpDisplay}</span>
+              <span style={{ fontWeight: 700 }}>{level < 100 ? `Next: Lv ${level + 1}` : '✨ MAX LEVEL'}</span>
+              <span>{level < 100 ? xpDisplay : ''}</span>
             </div>
             <div style={{ width: '100%', height: 8, background: 'var(--bg-surface)', borderRadius: 'var(--radius-full)', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}>
               <div style={{
