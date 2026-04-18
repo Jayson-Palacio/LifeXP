@@ -441,27 +441,88 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
             return (
               <>
-                {sortedCategories.map(cat => (
-                  <div key={cat} style={{ marginBottom: 24 }}>
-                    <div 
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: 16 }}
-                      onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
-                    >
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', margin: 0 }}>
-                        {cat === 'General' ? '🏷️ General' : cat}
-                        <span style={{ marginLeft: 8, fontSize: '0.9rem', color: 'var(--text-muted)' }}>({groupedActive[cat].length})</span>
-                      </h3>
-                      <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)', transform: collapsedCategories[cat] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                        ▼
-                      </span>
+                {sortedCategories.map(cat => {
+                  const CATEGORY_ICONS = {
+                    'General': '🏷️',
+                    'Chores': '🧹',
+                    'Morning Routine': '🌅',
+                    'Evening Routine': '🌙',
+                    'Homework': '📚',
+                    'Health & Hygiene': '🦷',
+                    'Behavior': '🤝',
+                    'Activities': '🎨',
+                    'Reading': '📖',
+                    'School & Learning': '🎓',
+                    'Pets': '🐶',
+                    'Exercise': '🏃',
+                  };
+                  const icon = CATEGORY_ICONS[cat] || '📁';
+                  
+                  return (
+                    <div key={cat} style={{ marginBottom: 24 }}>
+                      <div 
+                        style={{ 
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                          cursor: 'pointer', 
+                          marginBottom: collapsedCategories[cat] ? 0 : 16,
+                          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                          borderRadius: 'var(--radius-lg)',
+                          padding: '14px 18px',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span style={{ fontSize: '1.4rem' }}>{icon}</span>
+                          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', margin: 0, letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {cat}
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700, background: 'rgba(0, 0, 0, 0.3)', padding: '2px 8px', borderRadius: '12px' }}>
+                              {groupedActive[cat].length}
+                            </span>
+                          </h3>
+                        </div>
+                        <div style={{ 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                          width: 32, height: 32, borderRadius: '50%', 
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          transform: collapsedCategories[cat] ? 'rotate(-90deg)' : 'none', 
+                          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-bright)' }}>
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      {/* Expanded Missions Container */}
+                      <div style={{
+                        display: 'grid', gridTemplateRows: collapsedCategories[cat] ? '0fr' : '1fr',
+                        transition: 'grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}>
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ paddingTop: collapsedCategories[cat] ? 0 : 4 }}>
+                            {groupedActive[cat].map(m => renderMission(m, false))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    {!collapsedCategories[cat] && groupedActive[cat].map(m => renderMission(m, false))}
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {inactiveMissions.length > 0 && (
                   <div style={{ marginTop: 'var(--space-2xl)' }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 'var(--space-lg)' }}>🗄️ Archived Missions</h3>
+                    <div style={{ 
+                      display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-lg)',
+                      background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: 'var(--radius-lg)',
+                      border: '1px dashed rgba(255, 255, 255, 0.1)',
+                    }}>
+                      <span style={{ fontSize: '1.4rem' }}>🗄️</span>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)', margin: 0 }}>Archived Missions</h3>
+                    </div>
                     {inactiveMissions.map(m => renderMission(m, true))}
                   </div>
                 )}
