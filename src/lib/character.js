@@ -84,3 +84,12 @@ export function checkCharacterUnlocks(oldLevel, newLevel) {
   const newlyUnlocked = PETS.filter(p => p.levelUnlock > oldLevel && p.levelUnlock <= newLevel);
   return newlyUnlocked;
 }
+
+export function getUnlockedPets(level) {
+  return PETS.filter(p => level >= p.levelUnlock);
+}
+
+export function parseCharacter(str) {
+  if (!str) return null;
+  try { return JSON.parse(str); } catch { return null; }
+}
