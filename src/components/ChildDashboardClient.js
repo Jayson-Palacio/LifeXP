@@ -371,33 +371,103 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         </div>
       </div>
 
-      {/* ── HERO BANNER ── */}
+      {/* ── UNIFIED HERO PANEL ── */}
       <div className="hero-banner" style={{ paddingBottom: 0 }}>
-        {/* Avatar ring with spinning conic border */}
-        <div className="hero-avatar-ring">
-          <div className="hero-avatar-img">
-            <AvatarDisplay avatarString={child.avatar} size="100%" />
-          </div>
+        {/* Ambient glow handled by ::before in CSS */}
 
-          {/* Tier badge pill sitting at bottom of ring */}
-          <div className="hero-tier-badge">
-            <div className="hero-tier-badge-icon">
-              <TierCrest tierName={tierName} glowColor="var(--primary)" />
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: '0 4px',
+        }}>
+
+          {/* LEFT: Avatar + name + tier */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 auto', minWidth: 80 }}>
+            {/* Avatar ring */}
+            <div className="hero-avatar-ring" style={{ width: 80, height: 80, marginBottom: 8 }}>
+              <div className="hero-avatar-img">
+                <AvatarDisplay avatarString={child.avatar} size="100%" />
+              </div>
+              <div className="hero-tier-badge" style={{ fontSize: '0.6rem', padding: '2px 8px', bottom: -8 }}>
+                <div className="hero-tier-badge-icon"><TierCrest tierName={tierName} glowColor="var(--primary)" /></div>
+                <span>{tierName}</span>
+              </div>
             </div>
-            <span>{tierName}</span>
+            <h2 className="hero-name" style={{ fontSize: '1.2rem', marginTop: 14, marginBottom: 2 }}>{child.name}</h2>
+            <div style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 700, opacity: 0.85 }}>Level {level}</div>
+          </div>
+
+          {/* CENTER: RPG stat pills */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 4 }}>
+            {/* Coins */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)',
+              border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: 'var(--radius-full)', padding: '6px 14px',
+            }}>
+              <span style={{ fontSize: '1rem' }}>🪙</span>
+              <div>
+                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>{child.coins}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600, lineHeight: 1, marginTop: 2 }}>Coins</div>
+              </div>
+            </div>
+            {/* Streak */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(249,115,22,0.05) 100%)',
+              border: '1px solid rgba(249,115,22,0.25)',
+              borderRadius: 'var(--radius-full)', padding: '6px 14px',
+            }}>
+              <span style={{ fontSize: '1rem' }}>🔥</span>
+              <div>
+                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fb923c', lineHeight: 1 }}>{child.streak || 0}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600, lineHeight: 1, marginTop: 2 }}>Day Streak</div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Pixel character */}
+          <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4 }}>
+            {characterData ? (
+              <div
+                onClick={() => setShowCharacterEditor(true)}
+                style={{ cursor: 'pointer', position: 'relative' }}
+                title="Edit hero"
+              >
+                <CharacterDisplay characterData={characterData} size={90} animated />
+                <div style={{
+                  position: 'absolute', bottom: -4, right: -4,
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'var(--primary)', border: '2px solid var(--bg-deep)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.6rem',
+                }}>✏️</div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCharacterEditor(true)}
+                style={{
+                  width: 80, height: 100,
+                  border: '2px dashed rgba(255,255,255,0.2)',
+                  borderRadius: 'var(--radius-lg)',
+                  background: 'rgba(255,255,255,0.03)',
+                  cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 4, color: 'var(--text-muted)', fontSize: '0.68rem', fontWeight: 700,
+                }}
+              >
+                <span style={{ fontSize: '1.8rem' }}>🎮</span>
+                Build Hero
+              </button>
+            )}
           </div>
         </div>
 
-        <h2 className="hero-name">{child.name}</h2>
-        <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700, opacity: 0.8 }}>Level {level}</div>
-
-        <div className="hero-stats" style={{ marginBottom: 20 }}>
-          <div className="stat-item"><span className="stat-icon">🪙</span><span className="stat-value-amber">{child.coins}</span></div>
-          <div className="stat-item"><span className="stat-icon">🔥</span><span className="stat-value-cyan">{child.streak || 0}</span></div>
-        </div>
-
-        {/* XP bar - full width, right below the banner */}
-        <div style={{ padding: '0 4px 24px' }}>
+        {/* XP bar — full width below the split panel */}
+        <div style={{ padding: '20px 4px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
             <span style={{ fontWeight: 700 }}>Next: Lv {level + 1}</span>
             <span>{xpDisplay}</span>
@@ -413,60 +483,6 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             }} />
           </div>
         </div>
-      </div>
-
-      {/* ── MY CHARACTER ── */}
-      <div style={{ padding: '0 16px', marginBottom: 24 }}>
-        {!characterData ? (
-          // First-time prompt
-          <div style={{
-            borderRadius: 'var(--radius-lg)',
-            padding: '20px',
-            background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(var(--primary-rgb, 74,222,128),0.08) 100%)',
-            border: '1px solid rgba(168,85,247,0.3)',
-            textAlign: 'center',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-          }}>
-            <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎮</div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: '0 0 6px', color: 'var(--text-bright)' }}>Build Your Hero!</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 14px', lineHeight: 1.5 }}>Pick a character and customize it with accessories as you level up.</p>
-            <button
-              onClick={() => setShowCharacterEditor(true)}
-              style={{
-                background: 'linear-gradient(135deg, #a855f7, var(--primary))',
-                color: '#fff', border: 'none', borderRadius: 'var(--radius-full)',
-                padding: '12px 28px', fontWeight: 800, fontSize: '1rem', cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(168,85,247,0.4)',
-              }}
-            >
-              Create My Hero →
-            </button>
-          </div>
-        ) : (
-          // Character card
-          <div
-            onClick={() => setShowCharacterEditor(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 16,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 'var(--radius-lg)', padding: '12px 16px',
-              cursor: 'pointer', transition: 'all 0.2s',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-            }}
-          >
-            <CharacterDisplay characterData={characterData} size={70} animated />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: 3 }}>🎮 My Hero</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {(characterData.hat || characterData.aura || characterData.face || characterData.pet)
-                  ? '⚔️ Tap to customize'
-                  : '✨ Tap to add accessories'}
-              </div>
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, padding: '8px 12px', borderRadius: 'var(--radius-full)', background: 'var(--primary-dim)' }}>Edit</div>
-          </div>
-        )}
       </div>
 
       {/* ── MISSIONS ── */}
