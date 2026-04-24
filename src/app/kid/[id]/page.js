@@ -23,15 +23,10 @@ export default async function ChildDashboardPage({ params }) {
   // Fetch global settings for require_approval
   const { data: appSettings } = await supabase.from('app_settings').select('require_approval').single();
   const requireApproval = appSettings?.require_approval !== false;
-  // Fetch today's completions for this child by getting all completions and filtering (or just querying)
-  const todayStart = new Date();
-  todayStart.setUTCHours(0,0,0,0);
-  
   const { data: completions } = await supabase
     .from('completions')
     .select('*')
-    .eq('child_id', id)
-    .gte('submitted_at', todayStart.toISOString());
+    .eq('child_id', id);
 
   // Fetch all redemptions for this child to compute limits
   const { data: allRedemptions } = await supabase
