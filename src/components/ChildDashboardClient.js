@@ -29,7 +29,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
   // Gamification & Polish States
   const [avatarTaps, setAvatarTaps] = useState(0);
-  const [isAvatarPulsing, setIsAvatarPulsing] = useState(false);
+  const [easterEggAnim, setEasterEggAnim] = useState('');
   const [isShakingCoins, setIsShakingCoins] = useState(false);
 
   // Reset avatar taps if idle
@@ -59,8 +59,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     setAvatarTaps(prev => {
       const next = prev + 1;
       if (next === 5) {
-        setIsAvatarPulsing(true);
-        setTimeout(() => setIsAvatarPulsing(false), 2000);
+        const anims = ['egg-glow', 'egg-spin', 'egg-hue', 'egg-wobble', 'egg-flip', 'egg-shake'];
+        const randomAnim = anims[Math.floor(Math.random() * anims.length)];
+        setEasterEggAnim(randomAnim);
+        setTimeout(() => setEasterEggAnim(''), 2000);
         return 0;
       }
       return next;
@@ -524,7 +526,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         }}>
 
           {/* Avatar — centered */}
-          <div className={`hero-avatar-ring ring-${activeRingId} ${isAvatarPulsing ? 'pulse-avatar' : ''}`} style={{ width: 96, height: 96, margin: '0 0 14px', cursor: 'pointer' }} onClick={handleAvatarTap}>
+          <div className={`hero-avatar-ring ring-${activeRingId} ${easterEggAnim}`} style={{ width: 96, height: 96, margin: '0 0 14px', cursor: 'pointer' }} onClick={handleAvatarTap}>
             <div className="hero-avatar-img">
               <AvatarDisplay avatarString={child.avatar} size="100%" />
             </div>
