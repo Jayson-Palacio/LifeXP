@@ -596,8 +596,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       </div>
 
       {/* ── MISSIONS ── */}
-      <div style={{ padding: '0 16px', marginBottom: 32 }}>
-        <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 14, letterSpacing: '-0.01em' }}>
+      <div style={{ padding: '0 16px', marginTop: 24, marginBottom: 32 }}>
+        <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 16, letterSpacing: '-0.01em' }}>
           🎯 Today's Missions
         </h3>
 
