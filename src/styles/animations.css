@@ -391,3 +391,53 @@
   45%       { transform: rotate(0deg); }
 }
 .pet-guard { animation: pet-guard-kf 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; transform-origin: bottom center; }
+
+/* ============================================
+   GRAND FINALE CELEBRATION
+   ============================================ */
+@keyframes grandFinaleTextScale {
+  0% { transform: scale(0.5); opacity: 0; }
+  15% { transform: scale(1.1); opacity: 1; }
+  25% { transform: scale(1); opacity: 1; }
+  80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+.grand-finale-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.grand-finale-text {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.1;
+  text-shadow: 0 4px 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(251, 191, 36, 0.8);
+  animation: grandFinaleTextScale 4s ease-in-out forwards;
+}
+
+@keyframes goldenAuraPulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), inset 0 0 10px rgba(251, 191, 36, 0.2); 
+    border-color: rgba(251, 191, 36, 0.8);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.8), inset 0 0 20px rgba(251, 191, 36, 0.4); 
+    border-color: rgba(251, 191, 36, 1);
+  }
+}
+
+.golden-aura {
+  animation: goldenAuraPulse 3s ease-in-out infinite !important;
+}

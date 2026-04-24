@@ -31,6 +31,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const [avatarTaps, setAvatarTaps] = useState(0);
   const [easterEggAnim, setEasterEggAnim] = useState('');
   const [isShakingCoins, setIsShakingCoins] = useState(false);
+  const [showAllClearCelebration, setShowAllClearCelebration] = useState(false);
+  const prevAllClearedRef = useRef(null);
 
   // Reset avatar taps if idle
   useEffect(() => {
@@ -182,6 +184,24 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   };
 
   const missionStates = missions.filter(m => m.is_active !== false).map(getMissionState).filter(Boolean);
+
+  const allCleared = missionStates.length > 0 && missionStates.every(m => m.status === 'done' || m.status === 'pending');
+
+  useEffect(() => {
+    // initialize on first run without triggering celebration
+    if (prevAllClearedRef.current === null) {
+      prevAllClearedRef.current = allCleared;
+      return;
+    }
+    
+    if (allCleared && !prevAllClearedRef.current) {
+      setShowAllClearCelebration(true);
+      if (playRandomSuccessSound) playRandomSuccessSound();
+      if (playKaChing) setTimeout(playKaChing, 500);
+      setTimeout(() => setShowAllClearCelebration(false), 5000);
+    }
+    prevAllClearedRef.current = allCleared;
+  }, [allCleared]);
 
   // ─── Handlers ─────────────────────────────────────────────────
   const handleSubmitMission = async (mission, e) => {
@@ -518,15 +538,16 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           flexDirection: 'column',
           alignItems: 'center',
           padding: '24px 20px 0',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: allCleared ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(251, 191, 36, 0.02) 100%)' : 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)',
+          border: allCleared ? '1px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: 'var(--radius-3xl)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          boxShadow: allCleared ? '0 8px 32px rgba(251, 191, 36, 0.1), 0 0 40px rgba(251, 191, 36, 0.15)' : '0 8px 32px rgba(0, 0, 0, 0.2)',
           backdropFilter: 'blur(12px)',
+          transition: 'all 1s ease-in-out',
         }}>
 
           {/* Avatar — centered */}
-          <div className={`hero-avatar-ring ring-${activeRingId} ${easterEggAnim}`} style={{ width: 96, height: 96, margin: '0 0 14px', cursor: 'pointer' }} onClick={handleAvatarTap}>
+          <div className={`hero-avatar-ring ring-${activeRingId} ${easterEggAnim} ${allCleared ? 'golden-aura' : ''}`} style={{ width: 96, height: 96, margin: '0 0 14px', cursor: 'pointer', transition: 'all 1s ease-in-out' }} onClick={handleAvatarTap}>
             <div className="hero-avatar-img">
               <AvatarDisplay avatarString={child.avatar} size="100%" />
             </div>
@@ -762,6 +783,28 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       </div>
       </div>
 
+
+      {/* ── GRAND FINALE OVERLAY ── */}
+      {showAllClearCelebration && (
+        <div className="grand-finale-overlay">
+          <div className="grand-finale-text">
+            All Missions<br/>Cleared!
+          </div>
+          {Array.from({ length: 60 }).map((_, i) => (
+            <div
+              key={`confetti-${i}`}
+              className="confetti-piece"
+              style={{
+                left: `${Math.random() * 100}vw`,
+                top: `-20px`,
+                background: ['#facc15', '#a855f7', '#06b6d4', '#f97316', '#db2777', '#34d399'][Math.floor(Math.random() * 6)],
+                animationDelay: `${Math.random() * 1.5}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
 
     </div>
   );
