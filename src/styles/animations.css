@@ -427,17 +427,17 @@
   animation: grandFinaleTextScale 4s ease-in-out forwards;
 }
 
-@keyframes goldenAuraPulse {
+@keyframes themeAuraPulse {
   0%, 100% { 
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), inset 0 0 10px rgba(251, 191, 36, 0.2); 
-    border-color: rgba(251, 191, 36, 0.8);
+    box-shadow: var(--glow-primary); 
+    border-color: var(--primary);
   }
   50% { 
-    box-shadow: 0 0 40px rgba(251, 191, 36, 0.8), inset 0 0 20px rgba(251, 191, 36, 0.4); 
-    border-color: rgba(251, 191, 36, 1);
+    box-shadow: 0 0 25px var(--primary), inset 0 0 10px var(--primary); 
+    border-color: #fff;
   }
 }
 
-.golden-aura {
-  animation: goldenAuraPulse 3s ease-in-out infinite !important;
+.theme-aura {
+  animation: themeAuraPulse 3s ease-in-out infinite !important;
 }
