@@ -635,6 +635,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                   </div>
                   <h2 style={{ fontSize: '2rem', fontWeight: 800, marginTop: 16 }}>{child.name}'s Profile</h2>
                   <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1.2rem', marginTop: 4 }}>Lv {level} · {tierName}</div>
+                  <button className="btn btn-ghost" style={{ padding: '6px 16px', fontSize: '0.9rem', marginTop: 14, border: '1px solid var(--primary-dim)', borderRadius: 'var(--radius-full)' }} onClick={() => { setModal({ type: 'child', data: child }); setInspectChildId(null); }}>
+                    ✎ Edit Profile
+                  </button>
                </div>
 
                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)', marginBottom: 'var(--space-2xl)' }}>
@@ -785,9 +788,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                  </div>
                </div>
 
-               <div style={{ borderTop: '1px solid var(--bg-glass-border)', paddingTop: 'var(--space-xl)', display: 'flex', gap: 'var(--space-md)' }}>
-                   <button className="btn btn-ghost btn-block" onClick={() => { setModal({ type: 'child', data: child }); setInspectChildId(null); }}>✎ Edit Profile</button>
-                   <button className="btn btn-ghost" style={{ padding: '0 24px', color: 'var(--red)', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={() => handleDeleteChild(child.id)}>🗑 Remove</button>
+               <div style={{ borderTop: '1px solid var(--bg-glass-border)', paddingTop: 'var(--space-xl)', display: 'flex', justifyContent: 'center' }}>
+                   <button className="btn btn-ghost" style={{ padding: '8px 24px', color: 'var(--red)', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={() => handleDeleteChild(child.id)}>🗑 Remove Kid</button>
                </div>
            </div>
         </div>
