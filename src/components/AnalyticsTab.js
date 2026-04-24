@@ -61,35 +61,97 @@ function MiniBar({ value, max, color = 'var(--primary)' }) {
 }
 
 function generateInsight(stats, childName) {
-  const insights = [];
-
   if (stats.totalApproved === 0) {
     return `${childName} hasn't completed any missions yet. Try assigning a simple daily task to get them started! 🚀`;
   }
+  
+  const insights = [];
+  
+  // Power user check
+  if (stats.totalApproved > 50) {
+    insights.push(`is a total powerhouse with over ${stats.totalApproved} completed missions`);
+  }
 
-  // Best day
+  // Best day & Weekend Warrior check
   const bestDayIdx = stats.dayActivity.indexOf(Math.max(...stats.dayActivity));
   const bestDay = DAY_NAMES[bestDayIdx];
-  if (Math.max(...stats.dayActivity) > 0) {
-    insights.push(`most active on ${bestDay}s`);
+  const totalInBestDay = stats.dayActivity[bestDayIdx];
+  const bestDayPercentage = stats.totalApproved > 0 ? (totalInBestDay / stats.totalApproved) : 0;
+  
+  if (bestDayPercentage > 0.35 && stats.totalApproved > 5) {
+     if (bestDay === 'Sat' || bestDay === 'Sun') {
+         insights.push(`is a 'Weekend Warrior', completing most of their missions on ${bestDay}s`);
+     } else {
+         insights.push(`tends to be most productive on ${bestDay}s`);
+     }
   }
 
   // Approval rate
   const rate = stats.totalApproved / (stats.totalApproved + stats.totalRejected + stats.totalPending + 0.001);
-  if (rate > 0.9) insights.push('has an excellent approval rate — very reliable!');
-  else if (rate < 0.5) insights.push('has had some rejections recently — may need clearer instructions');
+  if (rate > 0.95 && stats.totalApproved > 10) {
+      insights.push('maintains an incredibly high approval rate (very reliable!)');
+  } else if (rate < 0.6 && stats.totalRejected > 3) {
+      insights.push('has had a few rejections recently, so they might need clearer instructions');
+  }
 
   // Streak
-  if (stats.currentStreak >= 3) insights.push(`is on a ${stats.currentStreak}-day streak — keep them motivated!`);
+  if (stats.currentStreak >= 10) {
+      insights.push(`is on an impressive ${stats.currentStreak}-day streak`);
+  } else if (stats.currentStreak >= 3) {
+      insights.push(`is building a solid ${stats.currentStreak}-day streak`);
+  }
+
+  // Favorite Mission
+  if (stats.topMissions && stats.topMissions.length > 0) {
+      const topM = stats.topMissions[0];
+      if (topM.count >= 5) {
+          insights.push(`absolutely crushes the '${topM.name}' mission (${topM.count} completions)`);
+      }
+  }
 
   // Spender vs saver
   const netCoins = stats.coinsEarned - stats.coinsSpent;
-  if (stats.coinsSpent > stats.coinsEarned * 0.8) insights.push('tends to spend coins quickly — consider adding savings goals');
-  else if (netCoins > 100) insights.push(`is saving up — has ${netCoins} unspent coins`);
+  if (stats.coinsSpent > stats.coinsEarned * 0.8 && stats.coinsEarned > 50) {
+      insights.push('loves to spend their coins as soon as they get them');
+  } else if (netCoins > 150) {
+      insights.push(`is a master saver, currently hoarding ${netCoins} unspent coins`);
+  }
 
-  if (insights.length === 0) return `${childName} is progressing steadily. Keep assigning varied missions to discover their strengths!`;
+  if (insights.length === 0) {
+      const generic = [
+         `${childName} is progressing steadily. Keep assigning varied missions to discover their strengths!`,
+         `${childName} is doing great. Consistency is key, so keep those daily missions coming!`,
+         `Things are looking good for ${childName}. Try adding a new type of reward to keep excitement high.`
+      ];
+      return generic[Math.floor(Math.random() * generic.length)];
+  }
 
-  return `${childName} is ${insights.join(', and ')}.`;
+  // Shuffle insights to keep it fresh
+  const shuffled = insights.sort(() => 0.5 - Math.random());
+  
+  // Pick 1 to 2 insights to avoid massive run-on sentences
+  const selected = shuffled.slice(0, 2);
+
+  if (selected.length === 1) {
+      const intros = [
+          `Interestingly, ${childName} `,
+          `It looks like ${childName} `,
+          `Based on the data, ${childName} `,
+          `Here's a fun fact: ${childName} `
+      ];
+      return intros[Math.floor(Math.random() * intros.length)] + selected[0] + '.';
+  } else {
+      const intros = [
+          `Based on recent activity, ${childName} `,
+          `Looking at the trends, ${childName} `,
+          `${childName} is doing well! They `,
+      ];
+      const connectors = [' and also ', ', plus they ', ', and '];
+      const intro = intros[Math.floor(Math.random() * intros.length)];
+      const connector = connectors[Math.floor(Math.random() * connectors.length)];
+      
+      return intro + selected[0] + connector + selected[1] + '.';
+  }
 }
 
 export default function AnalyticsTab({ children, singleChildId = null }) {
