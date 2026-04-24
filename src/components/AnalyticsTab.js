@@ -7,6 +7,20 @@ import AvatarDisplay from './AvatarDisplay';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const getStreakIcon = (streak) => {
+  if (streak >= 100) return '🌌';
+  if (streak >= 30) return '💎';
+  if (streak >= 7) return '⚡';
+  return '🔥';
+};
+
+const getStreakColor = (streak) => {
+  if (streak >= 100) return '#d946ef';
+  if (streak >= 30) return '#06b6d4';
+  if (streak >= 7) return '#3b82f6';
+  return '#fb923c';
+};
+
 function StatCard({ icon, label, value, sub, color = 'var(--primary)' }) {
   return (
     <div style={{
@@ -272,12 +286,11 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
             </div>
           )}
 
-          {/* Key Stats Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 'var(--space-xl)' }}>
             <StatCard icon="✅" label="Missions Done" value={stats.totalApproved} sub={`${stats.totalPending} pending · ${stats.totalRejected} rejected`} color="var(--green)" />
             <StatCard icon="🎯" label="Approval Rate" value={`${approvalRate}%`} sub="of all submissions" color={approvalRate > 80 ? 'var(--green)' : approvalRate > 50 ? 'var(--amber)' : 'var(--red)'} />
             <StatCard icon="🪙" label="Coins Earned" value={stats.coinsEarned} sub={`${stats.coinsSpent} spent · ${stats.currentCoins} held`} color="var(--amber)" />
-            <StatCard icon="🔥" label="Day Streak" value={stats.currentStreak} sub={`Lv ${level} · ${stats.totalXp} XP total`} color="var(--cyan)" />
+            <StatCard icon={getStreakIcon(stats.currentStreak)} label="Day Streak" value={stats.currentStreak} sub={`Lv ${level} · ${stats.totalXp} XP total`} color={getStreakColor(stats.currentStreak)} />
           </div>
 
           {/* 60-Day Activity Heatmap */}

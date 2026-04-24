@@ -62,6 +62,20 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     });
   };
 
+  const getStreakIcon = (streak) => {
+    if (streak >= 100) return '🌌';
+    if (streak >= 30) return '💎';
+    if (streak >= 7) return '⚡';
+    return '🔥';
+  };
+
+  const getStreakStyles = (streak) => {
+    if (streak >= 100) return { color: '#d946ef', border: '1px solid #d946ef', background: 'rgba(217, 70, 239, 0.12)', boxShadow: '0 0 10px rgba(217, 70, 239, 0.5)' };
+    if (streak >= 30) return { color: '#06b6d4', border: '1px solid #06b6d4', background: 'rgba(6, 182, 212, 0.12)', boxShadow: '0 0 10px rgba(6, 182, 212, 0.5)' };
+    if (streak >= 7) return { color: '#3b82f6', border: '1px solid #3b82f6', background: 'rgba(59, 130, 246, 0.12)', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' };
+    return { color: '#fb923c', border: '1px solid rgba(251,146,60,0.25)', background: 'rgba(251,146,60,0.12)' };
+  };
+
   // Reset history state when opening drawer for a new kid
   useEffect(() => {
     setHistoryOpen(false);
@@ -372,7 +386,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: '0.9rem' }}>
                 <span style={{ color: 'var(--amber)', fontWeight: 'bold' }}>🪙 {child.coins}</span>
-                {child.streak > 0 && <span style={{ color: 'var(--cyan)', fontWeight: 'bold' }}>🔥 {child.streak} days</span>}
+                {child.streak > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 'var(--radius-full)', ...getStreakStyles(child.streak) }}>
+                    <span style={{ fontSize: '0.8rem' }}>{getStreakIcon(child.streak)}</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>{child.streak} days</span>
+                  </div>
+                )}
               </div>
               <div style={{ marginTop: 'auto', paddingTop: 16 }}>
                 <div style={{ background: 'var(--bg-deep)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
@@ -651,7 +670,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                       </div>
                    </div>
                    <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                      <span className="stat-icon" style={{ fontSize: '2rem' }}>🔥</span>
+                      <span className="stat-icon" style={{ fontSize: '2rem' }}>{getStreakIcon(child.streak)}</span>
                       <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: 8 }}>{child.streak} Day Streak</div>
                    </div>
                </div>
