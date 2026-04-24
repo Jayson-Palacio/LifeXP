@@ -10,18 +10,22 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function StatCard({ icon, label, value, sub, color = 'var(--primary)' }) {
   return (
     <div style={{
-      background: 'var(--bg-surface)',
-      border: '1px solid var(--bg-glass-border)',
-      borderRadius: 'var(--radius-lg)',
-      padding: '18px 20px',
+      background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.02) 100%)',
+      border: '1px solid rgba(255,255,255,0.05)',
+      borderRadius: 'var(--radius-xl)',
+      padding: '20px',
       display: 'flex',
       flexDirection: 'column',
       gap: 4,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{ fontSize: '1.4rem' }}>{icon}</div>
-      <div style={{ fontSize: '1.5rem', fontWeight: 900, color, lineHeight: 1.1, marginTop: 4 }}>{value}</div>
-      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-bright)' }}>{label}</div>
-      {sub && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+      <div style={{ position: 'absolute', top: -10, right: -10, fontSize: '5rem', opacity: 0.05, filter: 'grayscale(1)', pointerEvents: 'none' }}>{icon}</div>
+      <div style={{ fontSize: '1.6rem', marginBottom: 4 }}>{icon}</div>
+      <div style={{ fontSize: '1.7rem', fontWeight: 900, color, lineHeight: 1.1, letterSpacing: '-0.02em' }}>{value}</div>
+      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-bright)' }}>{label}</div>
+      {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -138,14 +142,19 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
       const coinsEarned = approved.reduce((sum, c) => sum + (c.missions?.coin_reward || 0), 0);
       const coinsSpent  = (reds || []).filter(r => r.status !== 'refunded').reduce((sum, r) => sum + (r.rewards?.cost || 0), 0);
 
-      // Last 7 days trend
-      const last7 = Array(7).fill(0);
+      // Activity Heatmap (last 60 days)
+      const heatmapDays = 60;
+      const heatmapData = Array(heatmapDays).fill(0);
       const today = new Date(); today.setHours(0,0,0,0);
       approved.forEach(c => {
         const d = new Date(c.submitted_at || c.created_at);
+        d.setHours(0,0,0,0);
         const diffDays = Math.floor((today - d) / 86400000);
-        if (diffDays >= 0 && diffDays < 7) last7[6 - diffDays]++;
+        if (diffDays >= 0 && diffDays < heatmapDays) {
+          heatmapData[heatmapDays - 1 - diffDays]++;
+        }
       });
+      const maxHeatmap = Math.max(...heatmapData, 1);
 
       const stats = {
         totalApproved: approved.length,
@@ -159,7 +168,8 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
         currentStreak: childRow?.streak || 0,
         currentCoins: childRow?.coins || 0,
         totalXp: childRow?.total_xp_earned || childRow?.xp || 0,
-        last7,
+        heatmapData,
+        maxHeatmap,
       };
 
       setData(prev => ({ ...prev, [childId]: stats }));
@@ -177,7 +187,6 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
     : 0;
 
   const maxDay = stats ? Math.max(...stats.dayActivity, 1) : 1;
-  const maxLast7 = stats ? Math.max(...stats.last7, 1) : 1;
 
   return (
     <div style={{ padding: '0', paddingBottom: singleChildId ? 'var(--space-xl)' : 100 }}>
@@ -243,19 +252,20 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
           {/* AI-style insight */}
           {child && (
             <div style={{
-              background: 'linear-gradient(135deg, rgba(168,85,247,0.15), rgba(99,102,241,0.15))',
-              border: '1px solid rgba(168,85,247,0.3)',
+              background: 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(99,102,241,0.1))',
+              border: '1px solid rgba(168,85,247,0.2)',
               borderRadius: 'var(--radius-xl)',
-              padding: '16px 20px',
+              padding: '20px 24px',
               marginBottom: 'var(--space-xl)',
               display: 'flex',
-              gap: 12,
-              alignItems: 'flex-start',
+              gap: 16,
+              alignItems: 'center',
+              boxShadow: '0 8px 32px rgba(168,85,247,0.1)',
             }}>
-              <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>💡</span>
+              <div style={{ fontSize: '2rem', flexShrink: 0, filter: 'drop-shadow(0 0 10px rgba(168,85,247,0.5))' }}>✨</div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Insight</div>
-                <div style={{ fontSize: '0.95rem', color: 'var(--text-bright)', lineHeight: 1.5 }}>
+                <div style={{ fontWeight: 800, fontSize: '0.75rem', color: '#a855f7', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>AI Insight</div>
+                <div style={{ fontSize: '1.05rem', color: 'var(--text-bright)', lineHeight: 1.5, fontWeight: 500 }}>
                   {generateInsight(stats, child.name)}
                 </div>
               </div>
@@ -270,32 +280,59 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
             <StatCard icon="🔥" label="Day Streak" value={stats.currentStreak} sub={`Lv ${level} · ${stats.totalXp} XP total`} color="var(--cyan)" />
           </div>
 
-          {/* Last 7 Days Trend */}
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-xl)', padding: '18px 20px', marginBottom: 'var(--space-xl)' }}>
-            <div style={{ fontWeight: 800, fontSize: '1rem', marginBottom: 16 }}>📈 Last 7 Days</div>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 60 }}>
-              {stats.last7.map((count, i) => {
-                const dayLabel = DAY_NAMES[new Date(Date.now() - (6 - i) * 86400000).getDay()];
-                const pct = maxLast7 > 0 ? (count / maxLast7) * 100 : 0;
+          {/* 60-Day Activity Heatmap */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-xl)', padding: '24px', marginBottom: 'var(--space-xl)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>🔥 60-Day Activity</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Consistency is key!</div>
+            </div>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {stats.heatmapData.map((count, i) => {
+                const daysAgo = 59 - i;
+                const d = new Date(Date.now() - daysAgo * 86400000);
+                const tooltip = `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${count} missions`;
+                
+                let bg = 'var(--bg-deep)';
+                let opacity = 1;
+                if (count > 0) {
+                  bg = 'var(--primary)';
+                  const intensity = count / stats.maxHeatmap;
+                  if (intensity >= 0.75) opacity = 1;
+                  else if (intensity >= 0.4) opacity = 0.65;
+                  else opacity = 0.35;
+                }
+
                 return (
-                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div style={{
-                      width: '100%',
-                      height: `${Math.max(pct * 0.48, count > 0 ? 6 : 2)}px`,
-                      background: count > 0 ? 'var(--primary)' : 'var(--bg-deep)',
-                      borderRadius: '3px 3px 0 0',
-                      transition: 'height 0.5s ease',
-                      boxShadow: count > 0 ? '0 0 8px var(--primary)66' : 'none',
-                      alignSelf: 'flex-end',
-                    }} />
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>{dayLabel}</div>
-                  </div>
+                  <div 
+                    key={i} 
+                    title={tooltip}
+                    style={{ 
+                      flex: '1 0 calc(10% - 6px)',
+                      minWidth: 14, 
+                      maxWidth: 24,
+                      aspectRatio: '1/1', 
+                      background: bg,
+                      opacity: opacity,
+                      borderRadius: 4,
+                      boxShadow: count > 0 ? '0 2px 4px rgba(0,0,0,0.2)' : 'inset 0 2px 4px rgba(0,0,0,0.2)',
+                      transition: 'transform 0.2s',
+                      cursor: 'help'
+                    }} 
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  />
                 );
               })}
             </div>
-            {stats.last7.every(v => v === 0) && (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 8 }}>No completions in the last 7 days</div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginTop: 16, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+               <span>Less</span>
+               <div style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--bg-deep)' }} />
+               <div style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--primary)', opacity: 0.35 }} />
+               <div style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--primary)', opacity: 0.65 }} />
+               <div style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--primary)', opacity: 1 }} />
+               <span>More</span>
+            </div>
           </div>
 
           {/* Day of Week Heatmap */}
