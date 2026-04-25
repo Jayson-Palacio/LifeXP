@@ -720,6 +720,13 @@
   padding: var(--space-lg);
   text-align: center;
   transition: all var(--duration-normal) var(--ease-out);
+  /* Align button to bottom regardless of content height */
+  display: flex;
+  flex-direction: column;
+}
+
+.reward-card .btn {
+  margin-top: auto;
 }
 
 .reward-card:hover {
