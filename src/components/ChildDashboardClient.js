@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import NavLink from './NavLink';
 import { supabase } from '../lib/supabase';
 import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors, getUnlockedRings } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
@@ -521,13 +522,13 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
         {/* Right Side: Home Button */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <button
+          <NavLink
+            href="/"
             className="cool-home-btn"
-            onClick={() => router.push('/')}
             title={`Return to ${familyName || 'Family'} Dashboard`}
           >
             🏠 <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{familyName || 'Home'}</span>
-          </button>
+          </NavLink>
         </div>
       </div>
 

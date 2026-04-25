@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import NavLink from './NavLink';
 import { supabase } from '../lib/supabase';
 import { showToast, showFloat } from '../lib/ui';
 import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS, REWARD_EMOJI_GROUPS, AVATAR_EMOJIS, MISSION_EMOJIS, REWARD_EMOJIS } from '../lib/ui';
@@ -371,9 +372,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Family Dashboard</div>
           <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: 0 }}>{settings.family_name || 'Your Family'}</h2>
         </div>
-        <button className="cool-home-btn" onClick={() => router.push('/')}>
+        <NavLink href="/" className="cool-home-btn">
           🏠 <span>Home</span>
-        </button>
+        </NavLink>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import NavLink from './NavLink';
 import { supabase } from '../lib/supabase';
 import { showToast, showConfetti, showFloat } from '../lib/ui';
 
@@ -52,7 +53,7 @@ export default function RewardShopClient({ initialChild, rewards }) {
   return (
     <div className="page page-enter">
       <div className="page-header">
-        <button className="back-btn" onClick={() => router.push(`/kid/${child.id}`)}>←</button>
+        <NavLink href={`/kid/${child.id}`} className="back-btn">←</NavLink>
         <h1 className="page-title">Reward Shop</h1>
         <div className="stat-item" style={{ marginLeft: 'auto' }}>
           <span className="stat-icon">🪙</span>
