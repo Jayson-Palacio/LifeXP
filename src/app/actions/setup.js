@@ -2,7 +2,7 @@
 
 import { createClient } from '../../utils/supabase/server';
 
-export async function submitSetupData(pin, childName, childAvatar, missionName, missionIcon) {
+export async function submitSetupData(pin, childName, childAvatar, missionName, missionIcon, familyName = 'Our Family') {
   const supabase = await createClient();
   try {
     // 1. Update App Settings
@@ -10,13 +10,13 @@ export async function submitSetupData(pin, childName, childAvatar, missionName, 
     
     if (existingSettings) {
       await supabase.from('app_settings')
-        .update({ parent_pin: pin, setup_complete: true })
+        .update({ parent_pin: pin, setup_complete: true, family_name: familyName })
         .eq('id', existingSettings.id);
     } else {
       await supabase.from('app_settings').insert([{ 
         parent_pin: pin, 
         setup_complete: true,
-        family_name: 'Our Family'
+        family_name: familyName
       }]);
     }
     
