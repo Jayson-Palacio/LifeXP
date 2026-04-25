@@ -214,19 +214,7 @@
   animation: slideUp var(--duration-normal) var(--ease-out);
 }
 
-@keyframes pageExit {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(80px);
-  }
-}
 
-.page-exit {
-  animation: pageExit 0.4s var(--ease-out) forwards;
-  pointer-events: none;
-}
 
 /* ============================================
    TIER CREST ANIMATIONS
