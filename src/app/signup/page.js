@@ -48,6 +48,9 @@ export default function SignupPage() {
     const emailErr = validateEmail(email)
     if (emailErr) { setError(emailErr); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    const firstName = (formData.get('first_name') || '').trim()
+    const lastName = (formData.get('last_name') || '').trim()
+    if (!firstName || !lastName) { setError('Please enter your first and last name.'); return; }
     setIsLoading(true)
     const result = await signup(formData)
     if (result?.error) { setError(result.error); setIsLoading(false); }
@@ -65,6 +68,17 @@ export default function SignupPage() {
         </h1>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label htmlFor="first_name">First Name</label>
+              <input className="input" id="first_name" name="first_name" type="text" required />
+            </div>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label htmlFor="last_name">Last Name</label>
+              <input className="input" id="last_name" name="last_name" type="text" required />
+            </div>
+          </div>
+
           <div className="input-group">
             <label htmlFor="email">Email</label>
             <input className="input" id="email" name="email" type="email" required />

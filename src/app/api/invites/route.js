@@ -62,15 +62,26 @@ export async function GET(req) {
     .eq('family_owner_id', session.user.id)
     .order('created_at', { ascending: false });
 
+  // Fetch members with their profile names
   const { data: members } = await supabase
     .from('family_members')
-    .select('id, member_user_id, role, created_at')
+    .select('id, member_user_id, role, created_at, profiles!member_user_id(first_name, last_name)')
     .eq('family_owner_id', session.user.id);
 
-  return NextResponse.json({ invites: invites || [], members: members || [] });
+  // Flatten profile data
+  const formattedMembers = (members || []).map(m => ({
+    id: m.id,
+    member_user_id: m.member_user_id,
+    role: m.role,
+    created_at: m.created_at,
+    first_name: m.profiles?.first_name || '',
+    last_name: m.profiles?.last_name || '',
+  }));
+
+  return NextResponse.json({ invites: invites || [], members: formattedMembers });
 }
 
-// DELETE: remove an invite
+// DELETE: remove an invite or a member
 export async function DELETE(req) {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -79,13 +90,22 @@ export async function DELETE(req) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await req.json();
+  const { id, type } = await req.json();
 
-  await supabase
-    .from('family_invites')
-    .delete()
-    .eq('id', id)
-    .eq('family_owner_id', session.user.id);
+  if (type === 'member') {
+    await supabase
+      .from('family_members')
+      .delete()
+      .eq('id', id)
+      .eq('family_owner_id', session.user.id);
+  } else {
+    await supabase
+      .from('family_invites')
+      .delete()
+      .eq('id', id)
+      .eq('family_owner_id', session.user.id);
+  }
 
   return NextResponse.json({ success: true });
 }
+

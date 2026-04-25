@@ -17,11 +17,13 @@ export default function SettingsTab({ initialSettings }) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [pendingInvites, setPendingInvites] = useState([]);
+  const [members, setMembers] = useState([]);
 
-  // Load pending invites on mount
+  // Load pending invites and members on mount
   useEffect(() => {
     fetch('/api/invites').then(r => r.json()).then(data => {
       setPendingInvites(data.invites || []);
+      setMembers(data.members || []);
     }).catch(() => {});
   }, []);
 
@@ -52,10 +54,21 @@ export default function SettingsTab({ initialSettings }) {
     await fetch('/api/invites', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id, type: 'invite' }),
     });
     setPendingInvites(prev => prev.filter(i => i.id !== id));
     showToast('Invite removed');
+  };
+
+  const removeMember = async (id) => {
+    if (!confirm('Are you sure you want to remove this family member?')) return;
+    await fetch('/api/invites', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, type: 'member' }),
+    });
+    setMembers(prev => prev.filter(m => m.id !== id));
+    showToast('Member removed');
   };
 
   // Read and write tz from localStorage (client only)
@@ -219,6 +232,39 @@ export default function SettingsTab({ initialSettings }) {
             {isInviting ? '...' : 'Invite'}
           </button>
         </div>
+        
+        <div style={{ marginBottom: 24 }}>
+          <button 
+            className="btn btn-ghost" 
+            style={{ width: '100%', fontSize: '0.9rem', padding: '10px' }}
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/signup`);
+              showToast('Signup link copied!');
+            }}
+          >
+            🔗 Copy Signup Link to share with them
+          </button>
+        </div>
+
+        {members.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Family Members</div>
+            {members.map(m => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)', marginBottom: 6 }}>
+                <div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>{m.first_name} {m.last_name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Co-parent</div>
+                </div>
+                <button
+                  onClick={() => removeMember(m.id)}
+                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px' }}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {pendingInvites.length > 0 && (
           <div>
@@ -230,7 +276,7 @@ export default function SettingsTab({ initialSettings }) {
                   onClick={() => removeInvite(inv.id)}
                   style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px' }}
                 >
-                  Remove
+                  Cancel
                 </button>
               </div>
             ))}

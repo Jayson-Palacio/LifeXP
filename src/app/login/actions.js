@@ -26,6 +26,8 @@ export async function signup(formData) {
     const supabase = await createClient()
     const email = formData.get('email').toLowerCase().trim()
     const password = formData.get('password')
+    const firstName = (formData.get('first_name') || '').trim()
+    const lastName = (formData.get('last_name') || '').trim()
 
     const { error, data: authData } = await supabase.auth.signUp({ email, password })
 
@@ -38,8 +40,13 @@ export async function signup(formData) {
       return { message: "Success! Please check your email inbox to verify your account." }
     }
 
-    // After successful signup, check if this email was invited to a family
+    // Save profile with name
     if (authData?.user) {
+      await supabase.from('profiles').insert([
+        { user_id: authData.user.id, first_name: firstName, last_name: lastName }
+      ]).then(() => {}).catch(() => {})
+
+      // Check if this email was invited to a family
       const { data: invite } = await supabase
         .from('family_invites')
         .select('family_owner_id')
