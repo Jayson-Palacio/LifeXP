@@ -36,7 +36,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   useEffect(() => { setRewards(initialRewards || []); }, [initialRewards]);
   useEffect(() => { setPending(initialPending || []); }, [initialPending]);
   useEffect(() => { setPendingRedemptions(initialPendingRedemptions || []); }, [initialPendingRedemptions]);
-  useEffect(() => { setSettings(initialSettings || { require_approval: true, family_name: 'Our Family', theme_mode: 'dark' }); }, [initialSettings]);
+  useEffect(() => { setSettings(initialSettings || { require_approval: true, family_name: 'Our Family' }); }, [initialSettings]);
   
   // Modals specific
   const [modal, setModal] = useState(null);

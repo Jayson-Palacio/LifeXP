@@ -11,8 +11,7 @@ create table if not exists app_settings (
   parent_pin text,
   setup_complete boolean default false,
   require_approval boolean default true,
-  family_name text default 'Our Family',
-  theme_mode text default 'dark'
+  family_name text default 'Our Family'
 );
 
 -- ============================================
@@ -25,11 +24,8 @@ create table if not exists children (
   xp integer default 0,
   total_xp_earned integer default 0,
   coins integer default 0,
-  level integer default 1,
   streak integer default 0,
   last_completion_date text,
-  pending_level_up boolean default false,
-  new_level_info jsonb,
   theme text default 'seedling',
   unlocked_colors text[] default ARRAY['seedling'],
   ring_style text default 'solid'
@@ -44,9 +40,9 @@ create table if not exists missions (
   xp_reward integer default 10,
   coin_reward integer default 5,
   icon text,
-  is_recurring boolean default true,
   max_completions integer default 1,
   frequency text default 'daily',  -- 'daily' | 'weekly' | 'monthly' | 'date_range'
+  max_completions_per_period integer default 1,
   specific_days integer[], -- [0=Sun, 1=Mon, ...] for weekly missions
   start_date date,
   end_date date,
