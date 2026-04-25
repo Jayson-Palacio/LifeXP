@@ -85,7 +85,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
         // Compare locally — no server round trip needed
         if (newPin === parentPin) {
           setIsExiting(true);
-          router.push('/parent');
+          setTimeout(() => router.push('/parent'), 250);
         } else {
           setIsShaking(true);
           setError('Wrong PIN. Try again.');
@@ -163,7 +163,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                     // Persist theme so the loading skeleton matches this kid's color
                     try { localStorage.setItem('lifexp_kid_theme', child.theme || 'seedling'); } catch {}
                     setIsExiting(true);
-                    router.push(`/kid/${child.id}`);
+                    setTimeout(() => router.push(`/kid/${child.id}`), 250);
                   }}
                 >
                   <div className="kaeluma-card-avatar" style={{ border: 'none', background: 'transparent', boxShadow: 'none', overflow: 'visible' }}>

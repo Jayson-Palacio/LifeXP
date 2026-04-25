@@ -533,17 +533,18 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
         {/* Right Side: Home Button */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', pointerEvents: 'auto' }}>
-          <NavLink
-            href="/"
+          <button
             className="cool-home-btn"
             title={`Return to ${familyName || 'Family'} Dashboard`}
             onClick={() => {
+              if (isExiting) return;
               if (playPop) playPop();
               setIsExiting(true);
+              setTimeout(() => router.push('/'), 250);
             }}
           >
             {isExiting ? '🚀' : '🏠'} <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isExiting ? 'Warping...' : (familyName || 'Home')}</span>
-          </NavLink>
+          </button>
         </div>
       </div>
 
