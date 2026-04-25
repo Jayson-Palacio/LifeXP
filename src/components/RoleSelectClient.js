@@ -143,6 +143,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
               const activeTheme = child.theme ? child.theme : tierColor;
 
               const stats = getDailyMissionStats(child.id);
+              const isAllDone = stats && stats.done >= stats.total && stats.total > 0;
 
               return (
                 <button 
@@ -152,7 +153,8 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                     animationDelay: `${index * 0.05}s`,
                     flexDirection: 'column',
                     width: '100%',
-                    position: 'relative'
+                    position: 'relative',
+                    border: isAllDone ? '1px solid var(--primary)' : undefined,
                   }}
                   onClick={() => {
                     if (playPop) playPop();
