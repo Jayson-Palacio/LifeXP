@@ -14,7 +14,7 @@ export default async function RoleSelectPage() {
   }
 
   // Check for pending invite token
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const inviteToken = cookieStore.get('lifexp_invite_token')?.value;
 
   if (inviteToken) {
