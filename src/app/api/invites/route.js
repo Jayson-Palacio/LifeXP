@@ -87,21 +87,41 @@ export async function GET(req) {
     .eq('family_owner_id', session.user.id)
     .order('created_at', { ascending: false });
 
-  // Fetch members with their profile names
-  const { data: members } = await supabase
+  // Fetch members
+  const { data: members, error: membersError } = await supabase
     .from('family_members')
-    .select('id, member_user_id, role, created_at, profiles!member_user_id(first_name, last_name)')
+    .select('id, member_user_id, role, created_at')
     .eq('family_owner_id', session.user.id);
 
-  // Flatten profile data
-  const formattedMembers = (members || []).map(m => ({
-    id: m.id,
-    member_user_id: m.member_user_id,
-    role: m.role,
-    created_at: m.created_at,
-    first_name: m.profiles?.first_name || '',
-    last_name: m.profiles?.last_name || '',
-  }));
+  if (membersError) {
+    console.error("Error fetching members:", membersError);
+  }
+
+  let formattedMembers = [];
+
+  if (members && members.length > 0) {
+    // Fetch their profiles
+    const userIds = members.map(m => m.member_user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, first_name, last_name')
+      .in('user_id', userIds);
+
+    const profileMap = {};
+    if (profiles) {
+      profiles.forEach(p => { profileMap[p.user_id] = p; });
+    }
+
+    // Merge them
+    formattedMembers = members.map(m => ({
+      id: m.id,
+      member_user_id: m.member_user_id,
+      role: m.role,
+      created_at: m.created_at,
+      first_name: profileMap[m.member_user_id]?.first_name || 'Family',
+      last_name: profileMap[m.member_user_id]?.last_name || 'Member',
+    }));
+  }
 
   return NextResponse.json({ invites: invites || [], members: formattedMembers });
 }
