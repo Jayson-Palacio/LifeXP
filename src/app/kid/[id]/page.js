@@ -23,7 +23,7 @@ export default async function ChildDashboardPage({ params }) {
   ] = await Promise.all([
     supabase.from('missions').select('*').order('name'),
     supabase.from('rewards').select('*').order('cost'),
-    supabase.from('app_settings').select('require_approval, family_name').single(),
+    supabase.from('app_settings').select('require_approval, family_name').order('setup_complete', { ascending: false }).limit(1).single(),
     supabase.from('completions').select('*').eq('child_id', id),
     supabase.from('redemptions').select('*').eq('child_id', id),
   ]);

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../lib/ui';
 import { changeParentPin, updateAppSettings } from '../app/actions/auth';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function SettingsTab({ initialSettings }) {
   const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
@@ -13,6 +14,25 @@ export default function SettingsTab({ initialSettings }) {
   const [storedCurrentPin, setStoredCurrentPin] = useState('');
   const [storedNewPin, setStoredNewPin] = useState('');
   const [pinError, setPinError] = useState('');
+
+  const [inviteToken, setInviteToken] = useState(null);
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+
+  const generateInvite = async () => {
+    setIsGeneratingInvite(true);
+    try {
+      const res = await fetch('/api/invites', { method: 'POST' });
+      const data = await res.json();
+      if (data.token) {
+        setInviteToken(data.token);
+      } else {
+        showToast('Failed to generate invite');
+      }
+    } catch (e) {
+      showToast('Error generating invite');
+    }
+    setIsGeneratingInvite(false);
+  };
 
   // Read and write tz from localStorage (client only)
   const [tzOffset, setTzOffset] = useState(() => {
@@ -148,6 +168,47 @@ export default function SettingsTab({ initialSettings }) {
         </form>
       </div>
 
+
+      {/* FAMILY SHARING */}
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
+        <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>👨‍👩‍👧‍👦 Family Sharing</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+          Invite a co-parent or grandparent to help manage the kids. They can log in with their own account.
+        </div>
+        
+        {!inviteToken ? (
+          <button 
+            className="btn btn-primary" 
+            style={{ width: '100%' }} 
+            onClick={generateInvite}
+            disabled={isGeneratingInvite}
+          >
+            {isGeneratingInvite ? 'Generating...' : 'Generate Invite Code'}
+          </button>
+        ) : (
+          <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)' }}>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+              <div style={{ background: 'white', padding: 12, borderRadius: 12 }}>
+                <QRCodeSVG value={`${window.location.origin}/invite/${inviteToken}`} size={180} />
+              </div>
+            </div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Scan to Join!</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+              Have them scan this QR code with their phone camera, or send them the link below. Valid for 7 days.
+            </div>
+            <button 
+              className="btn btn-ghost" 
+              style={{ width: '100%', fontSize: '0.9rem' }}
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/invite/${inviteToken}`);
+                showToast('Link copied to clipboard!');
+              }}
+            >
+              🔗 Copy Invite Link
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* TIMEZONE */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>

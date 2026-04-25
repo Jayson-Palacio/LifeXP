@@ -7,6 +7,8 @@ export async function verifyParentPin(pin) {
   const { data, error } = await supabase
     .from('app_settings')
     .select('parent_pin')
+    .order('setup_complete', { ascending: false })
+    .limit(1)
     .single();
     
   if (error || !data) return false;
@@ -18,6 +20,8 @@ export async function changeParentPin(currentPin, newPin) {
   const { data } = await supabase
     .from('app_settings')
     .select('parent_pin')
+    .order('setup_complete', { ascending: false })
+    .limit(1)
     .single();
 
   if (!data || data.parent_pin !== currentPin) {
