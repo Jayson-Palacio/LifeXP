@@ -156,6 +156,8 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                   }}
                   onClick={() => {
                     if (playPop) playPop();
+                    // Persist theme so the loading skeleton matches this kid's color
+                    try { localStorage.setItem('lifexp_kid_theme', child.theme || 'seedling'); } catch {}
                     router.push(`/kid/${child.id}`);
                   }}
                 >
