@@ -9,7 +9,7 @@ export default async function InvitePage({ params }) {
   // 1. Verify token exists and is not expired
   const { data: invite, error } = await supabase
     .from('family_invites')
-    .select('family_owner_id, expires_at, app_settings!family_owner_id(family_name)')
+    .select('family_owner_id, expires_at')
     .eq('token', token)
     .single();
 
@@ -35,7 +35,14 @@ export default async function InvitePage({ params }) {
   }
 
 
-  const familyName = invite.app_settings?.family_name || 'a Family';
+  // Fetch family name separately
+  const { data: settings } = await supabase
+    .from('app_settings')
+    .select('family_name')
+    .eq('user_id', invite.family_owner_id)
+    .single();
+
+  const familyName = settings?.family_name || 'a Family';
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0814', color: 'white', padding: 20, textAlign: 'center' }}>
