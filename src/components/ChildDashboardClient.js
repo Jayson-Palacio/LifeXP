@@ -379,9 +379,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         position: 'sticky', top: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '12px 16px',
-        background: 'rgba(var(--bg-deep-rgb, 10,8,20),0.85)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid var(--bg-glass-border)',
+        background: 'rgba(10, 8, 20, 0.4)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}>
         {/* Left Side: Theme + Ring pickers */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
