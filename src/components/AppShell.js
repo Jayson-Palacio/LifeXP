@@ -9,7 +9,8 @@ export default function AppShell({
   activeTab, 
   onTabChange, 
   children,
-  notifications = {} // e.g., { approvals: 2 }
+  notifications = {}, // e.g., { approvals: 2 }
+  isOwner = true
 }) {
   const router = useRouter();
 
@@ -19,11 +20,14 @@ export default function AppShell({
     { id: 'shop',     label: 'Shop',     icon: '🛒' }
   ];
 
-  const parentTabs = [
+  let parentTabs = [
     { id: 'overview',   label: 'Overview',   icon: '🏠', badge: notifications.approvals },
     { id: 'manage',     label: 'Manage',     icon: '🎯' },
-    { id: 'settings',   label: 'Settings',   icon: '⚙️' }
   ];
+
+  if (isOwner) {
+    parentTabs.push({ id: 'settings',   label: 'Settings',   icon: '⚙️' });
+  }
 
   const tabs = role === 'parent' ? parentTabs : kidTabs;
 
