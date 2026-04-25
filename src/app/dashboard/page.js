@@ -19,7 +19,7 @@ export default async function RoleSelectPage() {
 
   if (inviteToken) {
     // Look up token
-    const { data: invite } = await supabase.from('family_invites').select('family_owner_id, expires_at').eq('token', inviteToken).single();
+    const { data: invite } = await supabase.rpc('get_invite_by_token', { invite_token: inviteToken }).single();
     
     if (invite && new Date(invite.expires_at) > new Date()) {
       // Create member link

@@ -8,9 +8,7 @@ export default async function InvitePage({ params }) {
 
   // 1. Verify token exists and is not expired
   const { data: invite, error } = await supabase
-    .from('family_invites')
-    .select('family_owner_id, expires_at')
-    .eq('token', token)
+    .rpc('get_invite_by_token', { invite_token: token })
     .single();
 
   if (error || !invite) {
