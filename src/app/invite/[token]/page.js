@@ -6,16 +6,17 @@ export default async function InvitePage({ params }) {
   const { token } = params;
   const supabase = await createClient();
 
-  // 1. Verify token exists and is not expired
+  // 1. Verify token exists and is not expired using the secure RPC
   const { data: invite, error } = await supabase
     .rpc('get_invite_by_token', { invite_token: token })
-    .single();
+    .maybeSingle();
 
   if (error || !invite) {
+    console.error('Invite lookup failed:', error);
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0814', color: 'white', padding: 20, textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: 16 }}>Invalid or Expired Invite ❌</h1>
-        <p style={{ color: '#94a3b8', marginBottom: 32 }}>This invite link is no longer valid. Please ask for a new one.</p>
+        <h1 style={{ fontSize: '2rem', marginBottom: 16 }}>Invalid Invite ❌</h1>
+        <p style={{ color: '#94a3b8', marginBottom: 32 }}>This invite link is invalid or has already been used.</p>
         <Link href="/" className="btn btn-primary">Go to Home</Link>
       </div>
     );
