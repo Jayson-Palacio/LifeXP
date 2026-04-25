@@ -13,6 +13,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   // Pre-warm all kid pages and parent page so navigation feels instant
   useEffect(() => {
@@ -83,6 +84,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
       if (newPin.length === 4) {
         // Compare locally — no server round trip needed
         if (newPin === parentPin) {
+          setIsExiting(true);
           router.push('/parent');
         } else {
           setIsShaking(true);
@@ -98,7 +100,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
 
   if (view === 'pin') {
     return (
-      <div className="pin-page page-enter">
+      <div className={`pin-page ${isExiting ? 'page-exit' : 'page-enter'}`}>
         <button className="back-btn" onClick={() => { if (playClick) playClick(); setView('select'); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
         <h2 className="pin-title">🔒 Parent Mode</h2>
         <div className={`pin-display ${isShaking ? 'shake' : ''}`}>
@@ -120,7 +122,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
   }
 
   return (
-    <div className="role-select-page page-enter">
+    <div className={`role-select-page ${isExiting ? 'page-exit' : 'page-enter'}`}>
       
       {/* Ambient energetic cosmic background for Kaeluma */}
       <div className="kaeluma-bg" />
@@ -160,6 +162,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                     if (playPop) playPop();
                     // Persist theme so the loading skeleton matches this kid's color
                     try { localStorage.setItem('lifexp_kid_theme', child.theme || 'seedling'); } catch {}
+                    setIsExiting(true);
                     router.push(`/kid/${child.id}`);
                   }}
                 >

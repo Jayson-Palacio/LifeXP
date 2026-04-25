@@ -33,6 +33,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const [easterEggAnim, setEasterEggAnim] = useState('');
   const [isShakingCoins, setIsShakingCoins] = useState(false);
   const [showAllClearCelebration, setShowAllClearCelebration] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
   const prevAllClearedRef = useRef(null);
   const justLeveledUpRef = useRef(false);
 
@@ -382,7 +383,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   return (
     <div className={`theme-${activeTheme}`} style={{ minHeight: '100dvh', overflowY: 'auto', paddingBottom: 40, position: 'relative' }}>
       <div className="kaeluma-bg" style={{ opacity: 0.12, position: 'fixed', zIndex: 0 }} />
-      <div className="page-enter" style={{ position: 'relative', zIndex: 1, maxWidth: 900, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
+      <div className={isExiting ? 'page-exit' : 'page-enter'} style={{ position: 'relative', zIndex: 1, maxWidth: 900, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
 
       {/* ── TOP NAV ── */}
       <div style={{
@@ -399,6 +400,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           <div ref={themePickerRef} style={{ position: 'relative' }}>
             <button
               onClick={() => {
+                if (isExiting) return;
                 if (playClick) playClick();
                 setShowThemePicker(v => !v); setShowRingPicker(false);
               }}
@@ -535,8 +537,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
             href="/"
             className="cool-home-btn"
             title={`Return to ${familyName || 'Family'} Dashboard`}
+            onClick={() => {
+              if (playPop) playPop();
+              setIsExiting(true);
+            }}
           >
-            🏠 <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{familyName || 'Home'}</span>
+            {isExiting ? '🚀' : '🏠'} <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isExiting ? 'Warping...' : (familyName || 'Home')}</span>
           </NavLink>
         </div>
       </div>
