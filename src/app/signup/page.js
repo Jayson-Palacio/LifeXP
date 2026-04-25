@@ -4,26 +4,56 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { signup } from '../login/actions'
 
+const BLOCKED_DOMAINS = new Set([
+  'mailinator.com','guerrillamail.com','tempmail.com','throwaway.email',
+  'yopmail.com','sharklasers.com','spam4.me','trashmail.com','trashmail.me',
+  'trashmail.at','trashmail.io','trashmail.net','fakeinbox.com','maildrop.cc',
+  'dispostable.com','spamgourmet.com','mintemail.com','tempr.email',
+  'discard.email','mailnesia.com','binkmail.com','bob.email','getnada.com',
+  'moakt.com','throwam.com','tmpmail.net','tmpmail.org','discardmail.com',
+]);
+
+const FAKE_PATTERNS = [
+  /^test\d*$/i, /^fake\d*$/i, /^asdf/i, /^qwer/i, /^zxcv/i,
+  /^aaa+$/i, /^123/i, /^abc\d*$/i, /^noreply/i, /^no-reply/i,
+  /^example/i, /^sample/i, /^dummy/i,
+];
+
+function validateEmail(email) {
+  const lower = email.toLowerCase();
+  const atIdx = lower.indexOf('@');
+  if (atIdx < 1) return 'Please enter a valid email address.';
+  const local = lower.slice(0, atIdx);
+  const domain = lower.slice(atIdx + 1);
+  const parts = domain.split('.');
+  if (parts.length < 2 || parts[parts.length - 1].length < 2) return 'Please enter a valid email address.';
+  if (BLOCKED_DOMAINS.has(domain)) return 'Disposable email addresses are not allowed. Please use a real email.';
+  if (local.length < 3) return 'Please enter a valid email address.';
+  for (const p of FAKE_PATTERNS) { if (p.test(local)) return 'Please use your real email address.'; }
+  return null;
+}
+
 export default function SignupPage() {
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+
   async function handleSubmit(e) {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
     setMessage(null)
     const formData = new FormData(e.currentTarget)
+    const email = (formData.get('email') || '').trim()
+    const password = formData.get('password') || ''
+    const emailErr = validateEmail(email)
+    if (emailErr) { setError(emailErr); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    setIsLoading(true)
     const result = await signup(formData)
-    
-    if (result?.error) {
-      setError(result.error)
-      setIsLoading(false)
-    } else if (result?.message) {
-      setMessage(result.message)
-      setIsLoading(false)
-    }
+    if (result?.error) { setError(result.error); setIsLoading(false); }
+    else if (result?.message) { setMessage(result.message); setIsLoading(false); }
   }
+
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
