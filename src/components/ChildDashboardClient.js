@@ -539,10 +539,10 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           flexDirection: 'column',
           alignItems: 'center',
           padding: '24px 20px 0',
-          background: allCleared ? 'linear-gradient(135deg, var(--primary-dim) 0%, rgba(255,255,255,0.01) 100%)' : 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)',
-          border: allCleared ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: 'var(--radius-3xl)',
-          boxShadow: allCleared ? 'var(--glow-primary)' : '0 8px 32px rgba(0, 0, 0, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
           backdropFilter: 'blur(12px)',
           transition: 'all 1s ease-in-out',
         }}>
