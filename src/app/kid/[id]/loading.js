@@ -109,7 +109,7 @@ export default function Loading() {
         transition: 'background 0.5s ease',
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div className="page-enter" style={{ position: 'relative', zIndex: 1 }}>
 
         {/* ── Top nav bar ── */}
         <div style={{
