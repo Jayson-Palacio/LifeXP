@@ -216,10 +216,10 @@
 
 @keyframes pageExit {
   from {
-    transform: scale(1) translateY(0);
+    transform: translateY(0);
   }
   to {
-    transform: scale(0.90) translateY(40px);
+    transform: translateY(80px);
   }
 }
 
