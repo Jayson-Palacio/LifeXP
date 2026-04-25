@@ -13,26 +13,46 @@ export default async function RoleSelectPage() {
     redirect('/login');
   }
 
-  // Check for pending invite token
+  // Check for pending invite token (set by the /invite/[token] page via client-side cookie)
   const cookieStore = await cookies();
   const inviteToken = cookieStore.get('lifexp_invite_token')?.value;
 
   if (inviteToken) {
-    // Look up token
-    const { data: invite } = await supabase.rpc('get_invite_by_token', { invite_token: inviteToken }).maybeSingle();
+    // Look up the invite directly from the table
+    const { data: invite } = await supabase
+      .from('family_invites')
+      .select('family_owner_id, expires_at')
+      .eq('token', inviteToken)
+      .maybeSingle();
     
     if (invite && new Date(invite.expires_at) > new Date()) {
-      // Create member link
+      // Link this user as a family member (ignore if already linked)
       await supabase.from('family_members').insert([
         { family_owner_id: invite.family_owner_id, member_user_id: session.user.id }
-      ]).select().single().then(() => {}).catch(() => {}); // silent catch for unique constraint
+      ]).then(() => {}).catch(() => {});
+
+      // Ensure this user has an app_settings row with setup_complete = true
+      // so they don't get funneled into the new-family setup wizard
+      const { data: existing } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('app_settings')
+          .update({ setup_complete: true })
+          .eq('user_id', session.user.id);
+      } else {
+        await supabase.from('app_settings').insert([
+          { user_id: session.user.id, setup_complete: true, family_name: 'Our Family' }
+        ]).then(() => {}).catch(() => {});
+      }
     }
-    // Also mark setup complete for the new user so they bypass setup
-    await supabase.from('app_settings').update({ setup_complete: true }).eq('user_id', session.user.id);
   }
 
-  // Fetch settings. Because of family sharing, the user might have access to multiple app_settings rows.
-  // We prioritize the one where setup_complete is true (the owner's settings).
+  // Fetch settings — with family sharing RLS, the user sees both their own
+  // and any family owner's rows. Prioritise setup_complete = true.
   const { data: settingsArray } = await supabase
     .from('app_settings')
     .select('setup_complete, parent_pin')
@@ -57,3 +77,4 @@ export default async function RoleSelectPage() {
     </>
   );
 }
+

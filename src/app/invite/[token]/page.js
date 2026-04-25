@@ -50,15 +50,18 @@ export default async function InvitePage({ params }) {
         <div style={{ fontSize: '4rem', marginBottom: 20 }}>💌</div>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>You've been invited!</h1>
         <p style={{ color: '#94a3b8', fontSize: '1.1rem', marginBottom: 32, lineHeight: 1.5 }}>
-          You have been invited to help manage <strong>{familyName}</strong> on LifeXP.
+          You have been invited to help manage <strong>{familyName}</strong> on Kaeluma.
         </p>
         
-        <Link href="/login" className="btn btn-primary" style={{ display: 'block', width: '100%', padding: 16, fontSize: '1.2rem' }}>
-          Accept &amp; Sign In
+        <Link href="/signup" className="btn btn-primary" style={{ display: 'block', width: '100%', padding: 16, fontSize: '1.2rem' }}>
+          Accept & Create Account
         </Link>
         <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: 16 }}>
-          You can sign in with Google or create a new account with your email.
+          Create a free account with your email to get started.
         </p>
+        <Link href="/login" style={{ color: '#a855f7', fontSize: '0.85rem', marginTop: 8, display: 'inline-block' }}>
+          Already have an account? Log in
+        </Link>
       </div>
     </div>
   );
