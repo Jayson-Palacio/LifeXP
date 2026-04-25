@@ -16,17 +16,19 @@ export default async function RoleSelectPage() {
   // and any family owner's rows. Prioritise setup_complete = true.
   const { data: settingsArray } = await supabase
     .from('app_settings')
-    .select('setup_complete, parent_pin')
+    .select('user_id, setup_complete, parent_pin')
     .order('setup_complete', { ascending: false })
     .limit(1);
 
   const settings = settingsArray?.[0];
+  const isOwner = session && settings ? (session.user.id === settings.user_id) : false;
   
-  if (!settings?.setup_complete) {
+  const { data: children } = await supabase.from('children').select('*').order('name');
+  
+  if (!settings?.setup_complete || (isOwner && (!children || children.length === 0))) {
     redirect('/setup');
   }
 
-  const { data: children } = await supabase.from('children').select('*').order('name');
   const { data: missions } = await supabase.from('missions').select('*').eq('is_active', true);
   const { data: completions } = await supabase.from('completions').select('*');
 

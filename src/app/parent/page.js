@@ -23,11 +23,11 @@ export default async function ParentDashboardPage() {
     supabase.from('redemptions').select('*').eq('status', 'pending').order('redeemed_at', { ascending: false })
   ]);
 
-  if (!appSettings?.setup_complete) {
+  const isOwner = session && appSettings ? (session.user.id === appSettings.user_id) : false;
+
+  if (!appSettings?.setup_complete || (isOwner && (!children || children.length === 0))) {
     redirect('/setup');
   }
-
-  const isOwner = session && appSettings ? (session.user.id === appSettings.user_id) : false;
 
   return (
     <ParentDashboardClient 
