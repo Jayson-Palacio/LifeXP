@@ -2,52 +2,27 @@ import { createClient } from '../../../utils/supabase/server';
 import Link from 'next/link';
 
 export default async function InvitePage({ params }) {
-  const { token } = params;
+  const { token } = await params;
   const supabase = await createClient();
 
-  // DEBUG: Try multiple approaches to find the token
-  const debugInfo = { token };
-
-  // Approach 1: Try the RPC function
-  const rpcResult = await supabase
-    .rpc('get_invite_by_token', { invite_token: token })
-    .maybeSingle();
-  debugInfo.rpc = { data: rpcResult.data, error: rpcResult.error?.message || null };
-
-  // Approach 2: Try direct table query  
-  const directResult = await supabase
+  // Look up the invite token directly
+  const { data: invite, error } = await supabase
     .from('family_invites')
-    .select('*')
+    .select('family_owner_id, expires_at')
     .eq('token', token)
     .maybeSingle();
-  debugInfo.direct = { data: directResult.data, error: directResult.error?.message || null };
 
-  // Approach 3: List ALL invites (to see if any exist at all)
-  const allResult = await supabase
-    .from('family_invites')
-    .select('token, expires_at')
-    .limit(5);
-  debugInfo.allInvites = { data: allResult.data, error: allResult.error?.message || null };
-
-  // Show debug info temporarily
-  const invite = rpcResult.data || directResult.data;
-
-  if (!invite) {
+  if (error || !invite) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0814', color: 'white', padding: 20, textAlign: 'center' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: 16 }}>Invalid Invite ❌</h1>
-        <p style={{ color: '#94a3b8', marginBottom: 16 }}>This invite link is invalid or has already been used.</p>
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 12, textAlign: 'left', fontSize: '0.75rem', color: '#64748b', maxWidth: 500, width: '100%', marginBottom: 24, wordBreak: 'break-all' }}>
-          <strong style={{ color: '#f59e0b' }}>Debug Info (temporary):</strong>
-          <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{JSON.stringify(debugInfo, null, 2)}</pre>
-        </div>
+        <p style={{ color: '#94a3b8', marginBottom: 32 }}>This invite link is invalid or has already been used.</p>
         <Link href="/" className="btn btn-primary">Go to Home</Link>
       </div>
     );
   }
 
-  const now = new Date();
-  if (new Date(invite.expires_at) < now) {
+  if (new Date(invite.expires_at) < new Date()) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0814', color: 'white', padding: 20, textAlign: 'center' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: 16 }}>Invite Expired ⏰</h1>
@@ -57,7 +32,7 @@ export default async function InvitePage({ params }) {
     );
   }
 
-  // Fetch family name separately
+  // Fetch family name
   const { data: settings } = await supabase
     .from('app_settings')
     .select('family_name')
@@ -88,3 +63,4 @@ export default async function InvitePage({ params }) {
     </div>
   );
 }
+
