@@ -22,6 +22,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   // AppShell state
   const [activeTab, setActiveTab] = useState('overview');
   const [manageTab, setManageTab] = useState('missions');
+  const [isExiting, setIsExiting] = useState(false);
   
   // Data State
   const [children, setChildren] = useState(initialChildren || []);
@@ -372,9 +373,14 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Family Dashboard</div>
           <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: 0 }}>{settings.family_name || 'Your Family'}</h2>
         </div>
-        <NavLink href="/" className="cool-home-btn">
-          🏠 <span>Home</span>
-        </NavLink>
+        <button className="cool-home-btn" onClick={() => {
+            if (isExiting) return;
+            if (playPop) playPop();
+            setIsExiting(true);
+            setTimeout(() => router.push('/'), 250);
+        }}>
+          {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Home'}</span>
+        </button>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-md)' }}>
@@ -450,8 +456,13 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
         <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Activities</h2>
-        <button className="cool-home-btn" onClick={() => router.push('/')}>
-          🏠 <span>Home</span>
+        <button className="cool-home-btn" onClick={() => {
+            if (isExiting) return;
+            if (playPop) playPop();
+            setIsExiting(true);
+            setTimeout(() => router.push('/'), 250);
+        }}>
+          {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Home'}</span>
         </button>
       </div>
       
