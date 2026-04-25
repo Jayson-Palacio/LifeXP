@@ -13,7 +13,7 @@ export default async function ParentDashboardPage() {
     { data: completions },
     { data: redemptions }
   ] = await Promise.all([
-    supabase.from('app_settings').select('*').single(),
+    supabase.from('app_settings').select('setup_complete, parent_pin, require_approval, family_name').single(),
     supabase.from('children').select('*').order('name'),
     supabase.from('missions').select('*').order('name'),
     supabase.from('rewards').select('*').order('cost'),
