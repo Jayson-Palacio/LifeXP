@@ -22,19 +22,44 @@ export async function POST(req) {
     return NextResponse.json({ error: "You can't invite yourself!" }, { status: 400 });
   }
 
+  // Check if user already exists
+  const { data: existingUserId } = await supabase.rpc('get_user_id_by_email', { search_email: normalizedEmail });
+
+  if (existingUserId) {
+    // Instantly link them
+    await supabase.from('family_members').insert([
+      { family_owner_id: session.user.id, member_user_id: existingUserId }
+    ]).then(() => {}).catch(() => {});
+
+    // Make sure they have app_settings
+    const { data: existingSettings } = await supabase
+      .from('app_settings')
+      .select('id')
+      .eq('user_id', existingUserId)
+      .maybeSingle();
+
+    if (!existingSettings) {
+      await supabase.from('app_settings').insert([
+        { user_id: existingUserId, setup_complete: true, family_name: 'Our Family' }
+      ]).then(() => {}).catch(() => {});
+    }
+
+    return NextResponse.json({ success: true, email: normalizedEmail, instantLink: true });
+  }
+
   // Check if this email already has a pending invite from this owner
-  const { data: existing } = await supabase
+  const { data: existingInvite } = await supabase
     .from('family_invites')
     .select('id')
     .eq('family_owner_id', session.user.id)
     .eq('invited_email', normalizedEmail)
     .maybeSingle();
 
-  if (existing) {
+  if (existingInvite) {
     return NextResponse.json({ error: 'This email has already been invited.' }, { status: 400 });
   }
 
-  // Save the invite
+  // Save the pending invite
   const { error } = await supabase.from('family_invites').insert([
     { family_owner_id: session.user.id, invited_email: normalizedEmail }
   ]);
@@ -44,7 +69,7 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Failed to create invite.' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, email: normalizedEmail });
+  return NextResponse.json({ success: true, email: normalizedEmail, instantLink: false });
 }
 
 // GET: list current invites and members

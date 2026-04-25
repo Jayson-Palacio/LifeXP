@@ -38,8 +38,16 @@ export default function SettingsTab({ initialSettings }) {
       });
       const data = await res.json();
       if (data.success) {
-        showToast(`Invite sent to ${data.email}!`);
-        setPendingInvites(prev => [{ invited_email: data.email, id: Date.now() }, ...prev]);
+        if (data.instantLink) {
+          showToast(`${data.email} is already on Kaeluma and has been instantly added to your family!`);
+          // Refetch to get their name
+          const r = await fetch('/api/invites');
+          const d = await r.json();
+          setMembers(d.members || []);
+        } else {
+          showToast(`Invite sent to ${data.email}!`);
+          setPendingInvites(prev => [{ invited_email: data.email, id: Date.now() }, ...prev]);
+        }
         setInviteEmail('');
       } else {
         showToast(data.error || 'Failed to invite');

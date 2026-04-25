@@ -17,6 +17,47 @@ export async function login(formData) {
     return { error: error.message }
   }
 
+  // After successful login, check if this email has any pending invites
+  if (data?.user) {
+    const { data: invites } = await supabase
+      .from('family_invites')
+      .select('family_owner_id')
+      .eq('invited_email', data.user.email)
+
+    if (invites && invites.length > 0) {
+      for (const invite of invites) {
+        // Link as family member
+        await supabase.from('family_members').insert([
+          { family_owner_id: invite.family_owner_id, member_user_id: data.user.id }
+        ]).then(() => {}).catch(() => {})
+
+        // Ensure app_settings exists and setup is complete
+        const { data: existingSettings } = await supabase
+          .from('app_settings')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (!existingSettings) {
+          await supabase.from('app_settings').insert([
+            { user_id: data.user.id, setup_complete: true, family_name: 'Our Family' }
+          ]).then(() => {}).catch(() => {})
+        } else {
+          await supabase.from('app_settings')
+            .update({ setup_complete: true })
+            .eq('user_id', data.user.id)
+            .then(() => {}).catch(() => {})
+        }
+
+        // Remove the invite
+        await supabase.from('family_invites')
+          .delete()
+          .eq('invited_email', data.user.email)
+          .eq('family_owner_id', invite.family_owner_id)
+      }
+    }
+  }
+
   revalidatePath('/dashboard')
   redirect('/dashboard')
 }
