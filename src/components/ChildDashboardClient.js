@@ -34,6 +34,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const [isShakingCoins, setIsShakingCoins] = useState(false);
   const [showAllClearCelebration, setShowAllClearCelebration] = useState(false);
   const prevAllClearedRef = useRef(null);
+  const justLeveledUpRef = useRef(false);
 
   // Reset avatar taps if idle
   useEffect(() => {
@@ -196,12 +197,20 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     }
     
     if (allCleared && !prevAllClearedRef.current) {
-      setShowAllClearCelebration(true);
-      if (playRandomSuccessSound) playRandomSuccessSound();
-      if (playKaChing) setTimeout(playKaChing, 500);
-      setTimeout(() => setShowAllClearCelebration(false), 5000);
+      // If they just leveled up on this exact mission, skip this smaller celebration to prevent overlap
+      if (!justLeveledUpRef.current) {
+        setShowAllClearCelebration(true);
+        if (playRandomSuccessSound) playRandomSuccessSound();
+        if (playKaChing) setTimeout(playKaChing, 500);
+        setTimeout(() => setShowAllClearCelebration(false), 5000);
+      }
     }
     prevAllClearedRef.current = allCleared;
+    
+    // Reset the level-up flag after a cycle
+    if (justLeveledUpRef.current) {
+      setTimeout(() => { justLeveledUpRef.current = false; }, 100);
+    }
   }, [allCleared]);
 
   // ─── Handlers ─────────────────────────────────────────────────
@@ -254,6 +263,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         }, 150);
 
         if (newLevel.level > oldLevel.level) {
+          justLeveledUpRef.current = true;
           const { showLevelUp, showTierUp } = await import('../lib/ui');
           const { checkColorUnlocks } = await import('../lib/levels');
           if (newLevel.tierName !== oldLevel.tierName) {
