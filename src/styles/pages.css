@@ -6,6 +6,10 @@
   padding: 0 var(--space-lg);
   padding-bottom: var(--space-2xl);
   min-height: 100dvh;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }
 
 
