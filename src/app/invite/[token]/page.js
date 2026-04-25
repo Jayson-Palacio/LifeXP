@@ -1,22 +1,46 @@
 import { createClient } from '../../../utils/supabase/server';
-import { cookies } from 'next/headers';
 import Link from 'next/link';
 
 export default async function InvitePage({ params }) {
   const { token } = params;
   const supabase = await createClient();
 
-  // 1. Verify token exists and is not expired using the secure RPC
-  const { data: invite, error } = await supabase
+  // DEBUG: Try multiple approaches to find the token
+  const debugInfo = { token };
+
+  // Approach 1: Try the RPC function
+  const rpcResult = await supabase
     .rpc('get_invite_by_token', { invite_token: token })
     .maybeSingle();
+  debugInfo.rpc = { data: rpcResult.data, error: rpcResult.error?.message || null };
 
-  if (error || !invite) {
-    console.error('Invite lookup failed:', error);
+  // Approach 2: Try direct table query  
+  const directResult = await supabase
+    .from('family_invites')
+    .select('*')
+    .eq('token', token)
+    .maybeSingle();
+  debugInfo.direct = { data: directResult.data, error: directResult.error?.message || null };
+
+  // Approach 3: List ALL invites (to see if any exist at all)
+  const allResult = await supabase
+    .from('family_invites')
+    .select('token, expires_at')
+    .limit(5);
+  debugInfo.allInvites = { data: allResult.data, error: allResult.error?.message || null };
+
+  // Show debug info temporarily
+  const invite = rpcResult.data || directResult.data;
+
+  if (!invite) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0814', color: 'white', padding: 20, textAlign: 'center' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: 16 }}>Invalid Invite ❌</h1>
-        <p style={{ color: '#94a3b8', marginBottom: 32 }}>This invite link is invalid or has already been used.</p>
+        <p style={{ color: '#94a3b8', marginBottom: 16 }}>This invite link is invalid or has already been used.</p>
+        <div style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 12, textAlign: 'left', fontSize: '0.75rem', color: '#64748b', maxWidth: 500, width: '100%', marginBottom: 24, wordBreak: 'break-all' }}>
+          <strong style={{ color: '#f59e0b' }}>Debug Info (temporary):</strong>
+          <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{JSON.stringify(debugInfo, null, 2)}</pre>
+        </div>
         <Link href="/" className="btn btn-primary">Go to Home</Link>
       </div>
     );
@@ -32,7 +56,6 @@ export default async function InvitePage({ params }) {
       </div>
     );
   }
-
 
   // Fetch family name separately
   const { data: settings } = await supabase
@@ -56,7 +79,7 @@ export default async function InvitePage({ params }) {
         </p>
         
         <Link href="/login" className="btn btn-primary" style={{ display: 'block', width: '100%', padding: 16, fontSize: '1.2rem' }}>
-          Accept & Sign In
+          Accept &amp; Sign In
         </Link>
         <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: 16 }}>
           You can sign in with Google or create a new account with your email.
