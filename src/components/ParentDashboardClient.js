@@ -297,11 +297,19 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         <div style={{ marginBottom: 'var(--space-2xl)' }}>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 'var(--space-lg)' }}>Action Required</h2>
           
-          {pending.map(comp => {
+          {pending.map((comp, index) => {
              const child = children.find(c => c.id === comp.child_id) || {};
              const mission = missions.find(m => m.id === comp.mission_id) || {};
              return (
-              <div key={comp.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--primary-dim)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-md)', boxShadow: 'var(--glow-primary)' }}>
+              <div key={comp.id} style={{ 
+                display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', 
+                background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.03) 100%)', 
+                border: '1px solid var(--primary)', borderRadius: 'var(--radius-lg)', 
+                marginBottom: 'var(--space-md)', 
+                boxShadow: '0 0 20px rgba(var(--primary-rgb, 168,85,247), 0.15)',
+                animation: 'slideUp 0.4s ease-out backwards',
+                animationDelay: `${index * 0.1}s`
+              }}>
                 <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
                    <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '3rem' }} />
                    <div>
@@ -315,17 +323,25 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
                    <button className="btn btn-ghost" style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: 'none' }} onClick={(e) => handleReject(comp, e)}>✗ Reject</button>
-                   <button className="btn btn-success" style={{ flex: 2, padding: '12px', fontSize: '1.1rem' }} onClick={(e) => handleApprove(comp, e)}>✓ Approve!</button>
+                   <button className="btn btn-success" style={{ flex: 2, padding: '12px', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }} onClick={(e) => handleApprove(comp, e)}>✓ Approve!</button>
                 </div>
               </div>
              );
           })}
 
-          {pendingRedemptions.map(red => {
+          {pendingRedemptions.map((red, index) => {
              const child = children.find(c => c.id === red.child_id) || {};
              const reward = rewards.find(r => r.id === red.reward_id) || {};
              return (
-                <div key={red.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--secondary-dim, rgba(168,85,247,0.3))', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-md)', boxShadow: 'var(--glow-primary)' }}>
+                <div key={red.id} style={{ 
+                  display: 'flex', flexDirection: 'column', padding: 'var(--space-lg)', 
+                  background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.03) 100%)', 
+                  border: '1px solid var(--secondary-dim, rgba(168,85,247,0.5))', 
+                  borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-md)', 
+                  boxShadow: '0 0 20px rgba(168,85,247, 0.15)',
+                  animation: 'slideUp 0.4s ease-out backwards',
+                  animationDelay: `${(pending.length + index) * 0.1}s`
+                }}>
                   <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
                      <div style={{ flexShrink: 0, width: 56, height: 56, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
                        {reward.image
@@ -343,7 +359,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                   </div>
                   <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
                      <button className="btn btn-ghost" style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: 'none' }} onClick={(e) => handleRefundReward(red, e)}>↻ Refund</button>
-                     <button className="btn btn-success" style={{ flex: 2, padding: '12px', fontSize: '1.1rem' }} onClick={(e) => handleFulfillReward(red, e)}>✓ Mark Given!</button>
+                     <button className="btn btn-success" style={{ flex: 2, padding: '12px', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }} onClick={(e) => handleFulfillReward(red, e)}>✓ Mark Given!</button>
                   </div>
                 </div>
              );
@@ -358,7 +374,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
-        {children.map(child => {
+        {children.map((child, index) => {
           const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
           const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
           const activeTheme = child.theme ? child.theme : tierColor;
@@ -369,8 +385,20 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             <div 
               key={child.id} 
               className={`theme-${activeTheme}`}
-              style={{ padding: 'var(--space-lg)', background: 'var(--bg-surface)', border: '1px solid var(--primary-dim)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--glow-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+              style={{ 
+                padding: 'var(--space-lg)', 
+                background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.02) 100%)', 
+                border: '1px solid var(--primary-dim)', 
+                borderRadius: 'var(--radius-lg)', 
+                boxShadow: 'var(--glow-primary)', 
+                cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                animation: 'slideUp 0.5s ease-out backwards',
+                animationDelay: `${index * 0.1}s`,
+                transition: 'transform 0.2s, box-shadow 0.2s',
+              }}
               onClick={() => setInspectChildId(child.id)}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                 <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '2.5rem' }} />
@@ -447,8 +475,18 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             }, {});
             const sortedCategories = Object.keys(groupedActive).sort();
             
-            const renderMission = (m, isInactive) => (
-              <div key={m.id} className="mission-card" style={{ padding: '16px', opacity: isInactive ? 0.6 : 1, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+            const renderMission = (m, isInactive, index = 0) => (
+              <div key={m.id} className="mission-card" style={{ 
+                padding: '16px', 
+                opacity: isInactive ? 0.6 : 1, 
+                marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12,
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                animation: 'slideUp 0.3s ease-out backwards',
+                animationDelay: `${index * 0.05}s`
+              }}>
                 <div className="mission-icon" style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
                   {m.image
                     ? <img src={m.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -544,7 +582,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                       }}>
                         <div style={{ overflow: 'hidden' }}>
                           <div style={{ paddingTop: collapsedCategories[cat] ? 0 : 4 }}>
-                            {groupedActive[cat].map(m => renderMission(m, false))}
+                            {groupedActive[cat].map((m, idx) => renderMission(m, false, idx))}
                           </div>
                         </div>
                       </div>
@@ -580,8 +618,16 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
               const activeRewards = rewards.filter(r => r.is_active !== false);
               const inactiveRewards = rewards.filter(r => r.is_active === false);
               
-              const renderReward = (r, isInactive) => (
-                <div key={r.id} className="mission-card" style={{ padding: '16px', opacity: isInactive ? 0.6 : 1, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+              const renderReward = (r, isInactive, index = 0) => (
+                <div key={r.id} className="mission-card" style={{ 
+                  padding: '16px', opacity: isInactive ? 0.6 : 1, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12,
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                  animation: 'slideUp 0.3s ease-out backwards',
+                  animationDelay: `${index * 0.05}s`
+                }}>
                   <div className="mission-icon" style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '2rem' }}>
                     {r.image
                       ? <img src={r.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -612,12 +658,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
               return (
                 <>
-                  {activeRewards.map(r => renderReward(r, false))}
+                  {activeRewards.map((r, idx) => renderReward(r, false, idx))}
                   
                   {inactiveRewards.length > 0 && (
                     <div style={{ marginTop: 'var(--space-2xl)' }}>
                       <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 'var(--space-lg)' }}>Saved for Later</h3>
-                      {inactiveRewards.map(r => renderReward(r, true))}
+                      {inactiveRewards.map((r, idx) => renderReward(r, true, idx))}
                     </div>
                   )}
                 </>
