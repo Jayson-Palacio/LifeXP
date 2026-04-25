@@ -34,13 +34,12 @@ export default async function InvitePage({ params }) {
     );
   }
 
-  // Set the invite token in a cookie so it survives the login/signup process
-  cookies().set('lifexp_invite_token', token, { maxAge: 60 * 60 * 24 }); // 24 hours
 
   const familyName = invite.app_settings?.family_name || 'a Family';
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0814', color: 'white', padding: 20, textAlign: 'center' }}>
+      <script dangerouslySetInnerHTML={{ __html: `document.cookie = "lifexp_invite_token=${token}; path=/; max-age=86400";` }} />
       <div className="kaeluma-bg" style={{ opacity: 0.2, position: 'absolute', inset: 0, zIndex: 0 }} />
       
       <div style={{ position: 'relative', zIndex: 1, background: 'rgba(255,255,255,0.03)', padding: 40, borderRadius: 24, border: '1px solid rgba(168,85,247,0.3)', backdropFilter: 'blur(20px)', maxWidth: 400, width: '100%' }}>

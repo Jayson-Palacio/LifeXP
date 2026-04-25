@@ -25,10 +25,8 @@ export default async function RoleSelectPage() {
       // Create member link
       await supabase.from('family_members').insert([
         { family_owner_id: invite.family_owner_id, member_user_id: session.user.id }
-      ]);
+      ]).select().single().then(() => {}).catch(() => {}); // silent catch for unique constraint
     }
-    // Clear cookie regardless
-    cookieStore.set('lifexp_invite_token', '', { maxAge: 0 });
     // Also mark setup complete for the new user so they bypass setup
     await supabase.from('app_settings').update({ setup_complete: true }).eq('user_id', session.user.id);
   }
@@ -52,5 +50,10 @@ export default async function RoleSelectPage() {
   const { data: missions } = await supabase.from('missions').select('*').eq('is_active', true);
   const { data: completions } = await supabase.from('completions').select('*');
 
-  return <RoleSelectClient childrenData={children} missions={missions} completions={completions} parentPin={settings?.parent_pin} />;
+  return (
+    <>
+      {inviteToken && <script dangerouslySetInnerHTML={{ __html: `document.cookie = "lifexp_invite_token=; path=/; max-age=0";` }} />}
+      <RoleSelectClient childrenData={children} missions={missions} completions={completions} parentPin={settings?.parent_pin} />
+    </>
+  );
 }
