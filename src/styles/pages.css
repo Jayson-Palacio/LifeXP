@@ -513,7 +513,7 @@
 .hero-banner {
   position: relative;
   padding: 28px 20px 20px;
-  background: var(--bg-deep);
+  background: transparent;
   text-align: center;
   overflow: hidden;
 }

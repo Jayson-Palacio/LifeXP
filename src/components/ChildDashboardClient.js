@@ -372,7 +372,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   return (
     <div className={`theme-${activeTheme}`} style={{ minHeight: '100dvh', overflowY: 'auto', paddingBottom: 40, position: 'relative' }}>
       <div className="kaeluma-bg" style={{ opacity: 0.12, position: 'fixed', zIndex: 0 }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 900, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
 
       {/* ── TOP NAV ── */}
       <div style={{
