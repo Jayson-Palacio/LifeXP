@@ -47,4 +47,17 @@ alter table children add column IF NOT EXISTS ring_style text default 'solid';
 -- ============================================
 -- THEME MODE SETTING (2026-04-18)
 -- ============================================
-alter table app_settings add column IF NOT EXISTS theme_mode text default 'dark';
+-- ============================================
+-- DATABASE CLEANUP (2026-04-24)
+-- ============================================
+
+-- Remove unused children columns (level is calculated client-side)
+ALTER TABLE children DROP COLUMN IF EXISTS level;
+ALTER TABLE children DROP COLUMN IF EXISTS pending_level_up;
+ALTER TABLE children DROP COLUMN IF EXISTS new_level_info;
+
+-- Remove unused missions column
+ALTER TABLE missions DROP COLUMN IF EXISTS is_recurring;
+
+-- Remove unused app_settings column
+ALTER TABLE app_settings DROP COLUMN IF EXISTS theme_mode;
