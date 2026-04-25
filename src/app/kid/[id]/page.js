@@ -20,9 +20,10 @@ export default async function ChildDashboardPage({ params }) {
   // Fetch rewards
   const { data: rewards } = await supabase.from('rewards').select('*').order('cost');
 
-  // Fetch global settings for require_approval
-  const { data: appSettings } = await supabase.from('app_settings').select('require_approval').single();
+  // Fetch global settings
+  const { data: appSettings } = await supabase.from('app_settings').select('*').single();
   const requireApproval = appSettings?.require_approval !== false;
+  const familyName = appSettings?.family_name || 'Our Family';
   const { data: completions } = await supabase
     .from('completions')
     .select('*')
@@ -42,6 +43,7 @@ export default async function ChildDashboardPage({ params }) {
       rewards={rewards || []}
       initialRedemptions={allRedemptions || []}
       requireApproval={requireApproval}
+      familyName={familyName}
     />
   );
 }

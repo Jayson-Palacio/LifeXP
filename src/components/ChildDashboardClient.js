@@ -9,7 +9,7 @@ import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound, playKaChing, playPop, playClick } from '../lib/sounds';
 import AvatarDisplay from './AvatarDisplay';
 
-export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true }) {
+export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true, familyName }) {
   const router = useRouter();
   const [child, setChild] = useState(initialChild);
   const [completions, setCompletions] = useState(initialCompletions);
@@ -524,8 +524,9 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           <button
             className="cool-home-btn"
             onClick={() => router.push('/')}
+            title={`Return to ${familyName || 'Family'} Dashboard`}
           >
-            🏠 <span>Home</span>
+            🏠 <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{familyName || 'Home'}</span>
           </button>
         </div>
       </div>

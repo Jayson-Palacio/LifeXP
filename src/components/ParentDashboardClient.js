@@ -367,7 +367,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         </div>
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Your Family</h2>
+        <div>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Family Dashboard</div>
+          <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: 0 }}>{settings.family_name || 'Your Family'}</h2>
+        </div>
         <button className="cool-home-btn" onClick={() => router.push('/')}>
           🏠 <span>Home</span>
         </button>
