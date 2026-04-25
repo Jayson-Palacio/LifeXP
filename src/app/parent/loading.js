@@ -1,158 +1,151 @@
+'use client';
+
 const css = `
-  @keyframes shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
   @keyframes cosmicGradient {
     0%   { background-position: 0% 50%; }
     50%  { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
-  @keyframes auraFloat {
-    0%, 100% { transform: scale(1);   opacity: 0.5; }
-    50%       { transform: scale(1.1); opacity: 0.85; }
+  @keyframes spinSlow {
+    100% { transform: rotate(360deg); }
   }
-  .sk-shimmer {
-    background: linear-gradient(
-      90deg,
-      rgba(99,102,241,0.07) 0%,
-      rgba(168,85,247,0.18) 40%,
-      rgba(99,102,241,0.07) 80%
-    );
-    background-size: 250% 100%;
-    animation: shimmer 1.8s ease-in-out infinite;
-    flex-shrink: 0;
+  @keyframes spinReverseFast {
+    100% { transform: rotate(-360deg); }
+  }
+  @keyframes pulseOpacity {
+    0%, 100% { opacity: 0.6; transform: scale(0.95); }
+    50%       { opacity: 1; transform: scale(1.05); }
+  }
+  @keyframes shimmerText {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @keyframes floatUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 `;
 
-const S = ({ w = '100%', h = 16, r = 8, style = {} }) => (
-  <div className="sk-shimmer" style={{ width: w, height: h, borderRadius: r, ...style }} />
-);
-
 export default function Loading() {
   return (
-    <div style={{ minHeight: '100dvh', background: '#0a0814', overflow: 'hidden', position: 'relative' }}>
+    <div style={{
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#0a0814',
+      overflow: 'hidden',
+      position: 'relative',
+      padding: '20px'
+    }}>
       <style>{css}</style>
 
       {/* Cosmic bg */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
         background: 'linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #000000)',
         backgroundSize: '400% 400%',
         animation: 'cosmicGradient 15s ease infinite',
         opacity: 0.85,
       }} />
-      {/* Top glow */}
+
+      {/* Deep purple radial bloom */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 80% 30% at 50% 0%, rgba(99,102,241,0.2) 0%, transparent 70%)',
+        position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(circle at center, rgba(139,92,246,0.15) 0%, transparent 60%)',
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1, padding: '20px 16px' }}>
+      {/* Main Glassmorphic Container */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '48px 40px',
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(139,92,246,0.15)',
+        borderRadius: '32px',
+        backdropFilter: 'blur(20px)',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05)',
+        animation: 'floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        maxWidth: '100%',
+        textAlign: 'center'
+      }}>
+        
+        {/* Intricate Sync Rings */}
+        <div style={{ position: 'relative', width: 120, height: 120, marginBottom: '36px' }}>
+          
+          {/* Ambient Glow */}
+          <div style={{
+            position: 'absolute', inset: '20%',
+            background: '#8b5cf6',
+            filter: 'blur(30px)',
+            opacity: 0.5,
+            animation: 'pulseOpacity 3s ease-in-out infinite'
+          }} />
 
-        {/* ── Tab bar ── */}
-        <div style={{
-          display: 'flex', gap: 4, marginBottom: 28,
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 12, padding: 4,
-          border: '1px solid rgba(139,92,246,0.12)',
-        }}>
-          {[1, 2, 3, 4, 5].map((_, i) => (
-            <div key={i} className="sk-shimmer" style={{
-              flex: 1, height: 38, borderRadius: 9,
-              ...(i === 0 ? {
-                background: 'linear-gradient(90deg, rgba(99,102,241,0.4) 0%, rgba(168,85,247,0.4) 100%)',
-                backgroundSize: '250% 100%',
-              } : {}),
-            }} />
-          ))}
-        </div>
+          {/* Outer Ring (Dashed) */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            border: '2px dashed rgba(139,92,246,0.3)',
+            borderRadius: '50%',
+            animation: 'spinSlow 12s linear infinite'
+          }} />
 
-        {/* ── Header row ── */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginBottom: 24,
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <S w={90} h={11} r={4} />
-            <S w={200} h={30} r={8} />
-          </div>
-          <S w={80} h={34} r={20} />
-        </div>
+          {/* Middle Ring (Solid with gaps) */}
+          <div style={{
+            position: 'absolute', inset: 12,
+            border: '3px solid transparent',
+            borderTopColor: 'rgba(99,102,241,0.9)',
+            borderBottomColor: 'rgba(168,85,247,0.9)',
+            borderRadius: '50%',
+            animation: 'spinReverseFast 3s cubic-bezier(0.4, 0, 0.2, 1) infinite'
+          }} />
 
-        {/* ── Family card grid — 2 col ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 28 }}>
-          {[0, 1].map(i => (
-            <div key={i} style={{
-              padding: 16, borderRadius: 18,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(139,92,246,0.15)',
-              backdropFilter: 'blur(12px)',
-              display: 'flex', flexDirection: 'column', gap: 12,
-              // stagger opacity so it looks alive
-              opacity: i === 0 ? 1 : 0.75,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {/* Avatar with glow ring */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <div className="sk-shimmer" style={{
-                    width: 52, height: 52, borderRadius: '50%',
-                    border: '2px solid rgba(168,85,247,0.3)',
-                  }} />
-                  <div style={{
-                    position: 'absolute', inset: -4, borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%)',
-                    animation: 'auraFloat 2.5s ease-in-out infinite',
-                  }} />
-                </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  <S w="70%" h={16} r={6} />
-                  <S w="50%" h={12} r={4} />
-                </div>
-              </div>
-              {/* XP bar */}
-              <div style={{ height: 7, borderRadius: 10, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-                <div className="sk-shimmer" style={{ width: `${55 + i * 15}%`, height: '100%', borderRadius: 10 }} />
-              </div>
-              {/* Stat chips */}
-              <div style={{ display: 'flex', gap: 6 }}>
-                <S w={58} h={24} r={20} />
-                <S w={58} h={24} r={20} />
-              </div>
-            </div>
-          ))}
-        </div>
+          {/* Inner Ring (Dotted) */}
+          <div style={{
+            position: 'absolute', inset: 26,
+            border: '2px dotted rgba(255,255,255,0.3)',
+            borderRadius: '50%',
+            animation: 'spinSlow 8s linear infinite'
+          }} />
 
-        {/* ── Pending approvals section ── */}
-        <S w={190} h={20} r={6} style={{ marginBottom: 14 }} />
-        {[1, 0.7].map((opacity, i) => (
-          <div key={i} style={{
-            padding: 16, borderRadius: 16, marginBottom: 12,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(250,204,21,0.1)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex', flexDirection: 'column', gap: 12,
-            opacity,
+          {/* Center Icon */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '2.5rem',
+            animation: 'pulseOpacity 2s ease-in-out infinite',
+            textShadow: '0 0 20px rgba(139,92,246,0.6)',
+            paddingBottom: '4px' // Optical alignment for emoji
           }}>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div className="sk-shimmer" style={{
-                width: 54, height: 54, borderRadius: 14, flexShrink: 0,
-              }} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <S w="38%" h={11} r={4} />
-                <S w="68%" h={18} r={6} />
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <S w={58} h={22} r={20} />
-                  <S w={58} h={22} r={20} />
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <S w="28%" h={42} r={12} />
-              <S w="72%" h={42} r={12} />
-            </div>
+            🔓
           </div>
-        ))}
+        </div>
+
+        {/* Premium Typography */}
+        <div style={{
+          fontSize: '0.85rem',
+          fontWeight: 800,
+          letterSpacing: '0.3em',
+          textTransform: 'uppercase',
+          marginBottom: '12px',
+          background: 'linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #a855f7, #6366f1)',
+          backgroundSize: '200% auto',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          animation: 'shimmerText 3s linear infinite'
+        }}>
+          Accessing Dashboard
+        </div>
+
+        <div style={{
+          fontSize: '0.95rem',
+          color: 'rgba(255,255,255,0.5)',
+          fontWeight: 500,
+          letterSpacing: '0.05em'
+        }}>
+          Syncing family data...
+        </div>
 
       </div>
     </div>
