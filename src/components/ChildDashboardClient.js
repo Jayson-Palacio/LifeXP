@@ -378,14 +378,12 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       <div style={{
         position: 'sticky', top: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px',
-        background: 'rgba(10, 8, 20, 0.4)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        padding: '14px 16px',
+        background: 'transparent',
+        pointerEvents: 'none',
       }}>
         {/* Left Side: Theme + Ring pickers */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
 
           {/* ── Theme Picker ── */}
           <div ref={themePickerRef} style={{ position: 'relative' }}>
@@ -522,7 +520,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         </div>
 
         {/* Right Side: Home Button */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', pointerEvents: 'auto' }}>
           <NavLink
             href="/"
             className="cool-home-btn"
