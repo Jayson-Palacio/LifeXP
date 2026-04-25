@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { signup } from '../login/actions'
-import { createClient } from '../../utils/supabase/client'
 
 export default function SignupPage() {
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  async function handleSubmit(e) {
     e.preventDefault()
     setIsLoading(true)
     setError(null)

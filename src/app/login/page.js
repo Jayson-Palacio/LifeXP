@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { login } from './actions'
-import { createClient } from '../../utils/supabase/client'
 
 export default function LoginPage() {
   const [error, setError] = useState(null)
