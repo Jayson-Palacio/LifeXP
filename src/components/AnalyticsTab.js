@@ -348,7 +348,7 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 'var(--space-xl)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 'var(--space-xl)' }}>
             <StatCard icon="✅" label="Missions Done" value={stats.totalApproved} sub={`${stats.totalPending} pending · ${stats.totalRejected} rejected`} color="var(--green)" />
             <StatCard icon="🎯" label="Approval Rate" value={`${approvalRate}%`} sub="of all submissions" color={approvalRate > 80 ? 'var(--green)' : approvalRate > 50 ? 'var(--amber)' : 'var(--red)'} />
             <StatCard icon="🪙" label="Coins Earned" value={stats.coinsEarned} sub={`${stats.coinsSpent} spent · ${stats.currentCoins} held`} color="var(--amber)" />
@@ -361,44 +361,46 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
               <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>🔥 60-Day Activity</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Consistency is key!</div>
             </div>
-            
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {stats.heatmapData.map((count, i) => {
-                const daysAgo = 59 - i;
-                const d = new Date(Date.now() - daysAgo * 86400000);
-                const tooltip = `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${count} missions`;
-                
-                let bg = 'var(--bg-deep)';
-                let opacity = 1;
-                if (count > 0) {
-                  bg = 'var(--primary)';
-                  const intensity = count / stats.maxHeatmap;
-                  if (intensity >= 0.75) opacity = 1;
-                  else if (intensity >= 0.4) opacity = 0.65;
-                  else opacity = 0.35;
-                }
+            {/* Scroll wrapper — prevents squishing on narrow phones */}
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, minWidth: 320 }}>
+                {stats.heatmapData.map((count, i) => {
+                  const daysAgo = 59 - i;
+                  const d = new Date(Date.now() - daysAgo * 86400000);
+                  const tooltip = `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${count} missions`;
 
-                return (
-                  <div 
-                    key={i} 
-                    title={tooltip}
-                    style={{ 
-                      flex: '1 0 calc(10% - 6px)',
-                      minWidth: 14, 
-                      maxWidth: 24,
-                      aspectRatio: '1/1', 
-                      background: bg,
-                      opacity: opacity,
-                      borderRadius: 4,
-                      boxShadow: count > 0 ? '0 2px 4px rgba(0,0,0,0.2)' : 'inset 0 2px 4px rgba(0,0,0,0.2)',
-                      transition: 'transform 0.2s',
-                      cursor: 'help'
-                    }} 
-                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
-                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                  />
-                );
-              })}
+                  let bg = 'var(--bg-deep)';
+                  let opacity = 1;
+                  if (count > 0) {
+                    bg = 'var(--primary)';
+                    const intensity = count / stats.maxHeatmap;
+                    if (intensity >= 0.75) opacity = 1;
+                    else if (intensity >= 0.4) opacity = 0.65;
+                    else opacity = 0.35;
+                  }
+
+                  return (
+                    <div
+                      key={i}
+                      title={tooltip}
+                      style={{
+                        flex: '1 0 calc(10% - 5px)',
+                        minWidth: 16,
+                        maxWidth: 24,
+                        aspectRatio: '1/1',
+                        background: bg,
+                        opacity,
+                        borderRadius: 4,
+                        boxShadow: count > 0 ? '0 2px 4px rgba(0,0,0,0.2)' : 'inset 0 2px 4px rgba(0,0,0,0.2)',
+                        transition: 'transform 0.2s',
+                        cursor: 'help',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                    />
+                  );
+                })}
+              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginTop: 16, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                <span>Less</span>

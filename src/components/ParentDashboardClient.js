@@ -377,7 +377,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         </NavLink>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-md)' }}>
         {children.map((child, index) => {
           const { level, tierColor } = getLevelForXP(child.total_xp_earned || child.xp || 0);
           const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
