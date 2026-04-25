@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../lib/ui';
 import { changeParentPin, updateAppSettings } from '../app/actions/auth';
-import { QRCodeSVG } from 'qrcode.react';
 
 export default function SettingsTab({ initialSettings }) {
   const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
@@ -15,23 +14,48 @@ export default function SettingsTab({ initialSettings }) {
   const [storedNewPin, setStoredNewPin] = useState('');
   const [pinError, setPinError] = useState('');
 
-  const [inviteToken, setInviteToken] = useState(null);
-  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState([]);
 
-  const generateInvite = async () => {
-    setIsGeneratingInvite(true);
+  // Load pending invites on mount
+  useEffect(() => {
+    fetch('/api/invites').then(r => r.json()).then(data => {
+      setPendingInvites(data.invites || []);
+    }).catch(() => {});
+  }, []);
+
+  const sendInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setIsInviting(true);
     try {
-      const res = await fetch('/api/invites', { method: 'POST' });
+      const res = await fetch('/api/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail.trim() }),
+      });
       const data = await res.json();
-      if (data.token) {
-        setInviteToken(data.token);
+      if (data.success) {
+        showToast(`Invite sent to ${data.email}!`);
+        setPendingInvites(prev => [{ invited_email: data.email, id: Date.now() }, ...prev]);
+        setInviteEmail('');
       } else {
-        showToast('Failed to generate invite');
+        showToast(data.error || 'Failed to invite');
       }
     } catch (e) {
-      showToast('Error generating invite');
+      showToast('Error sending invite');
     }
-    setIsGeneratingInvite(false);
+    setIsInviting(false);
+  };
+
+  const removeInvite = async (id) => {
+    await fetch('/api/invites', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    setPendingInvites(prev => prev.filter(i => i.id !== id));
+    showToast('Invite removed');
   };
 
   // Read and write tz from localStorage (client only)
@@ -173,39 +197,43 @@ export default function SettingsTab({ initialSettings }) {
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
         <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>👨‍👩‍👧‍👦 Family Sharing</div>
         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-          Invite a co-parent or grandparent to help manage the kids. They can log in with their own account.
+          Invite a co-parent or grandparent by email. When they sign up with that email, they'll automatically join your family.
         </div>
         
-        {!inviteToken ? (
-          <button 
-            className="btn btn-primary" 
-            style={{ width: '100%' }} 
-            onClick={generateInvite}
-            disabled={isGeneratingInvite}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <input
+            className="input"
+            type="email"
+            placeholder="grandma@email.com"
+            value={inviteEmail}
+            onChange={e => setInviteEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendInvite()}
+            style={{ flex: 1 }}
+          />
+          <button
+            className="btn btn-primary"
+            onClick={sendInvite}
+            disabled={isInviting || !inviteEmail.trim()}
+            style={{ whiteSpace: 'nowrap' }}
           >
-            {isGeneratingInvite ? 'Generating...' : 'Generate Invite Code'}
+            {isInviting ? '...' : 'Invite'}
           </button>
-        ) : (
-          <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
-              <div style={{ background: 'white', padding: 12, borderRadius: 12 }}>
-                <QRCodeSVG value={`${window.location.origin}/invite/${inviteToken}`} size={180} />
+        </div>
+
+        {pendingInvites.length > 0 && (
+          <div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Pending Invites</div>
+            {pendingInvites.map(inv => (
+              <div key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)', marginBottom: 6 }}>
+                <span style={{ fontSize: '0.9rem' }}>✉️ {inv.invited_email}</span>
+                <button
+                  onClick={() => removeInvite(inv.id)}
+                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px' }}
+                >
+                  Remove
+                </button>
               </div>
-            </div>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Scan to Join!</div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-              Have them scan this QR code with their phone camera, or send them the link below. Valid for 7 days.
-            </div>
-            <button 
-              className="btn btn-ghost" 
-              style={{ width: '100%', fontSize: '0.9rem' }}
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/invite/${inviteToken}`);
-                showToast('Link copied to clipboard!');
-              }}
-            >
-              🔗 Copy Invite Link
-            </button>
+            ))}
           </div>
         )}
       </div>
