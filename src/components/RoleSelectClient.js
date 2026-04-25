@@ -64,6 +64,9 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
 
   const handleParentClick = () => {
     if (playClick) playClick();
+    // Re-trigger prefetch the moment they show intent — guarantees the
+    // route is warm for the entire ~2s they spend typing the PIN.
+    router.prefetch('/parent');
     setView('pin');
     setPin('');
     setError('');
