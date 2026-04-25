@@ -537,6 +537,19 @@
   animation: scaleIn var(--duration-normal) var(--ease-bounce);
 }
 
+/* Tiny screen (≤380px, e.g. iPhone SE) — reclaim wasted padding space */
+@media (max-width: 380px) {
+  .modal-overlay {
+    padding: var(--space-sm);
+    align-items: flex-end; /* slide up from bottom on small phones */
+  }
+  .modal-content {
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0; /* bottom-sheet feel */
+    max-height: 92vh;
+  }
+}
+
 .modal-title {
   font-size: 1.25rem;
   font-weight: 700;

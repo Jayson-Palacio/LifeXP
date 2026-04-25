@@ -12,6 +12,13 @@
   width: 100%;
 }
 
+@media (max-width: 380px) {
+  .page {
+    padding: 0 var(--space-md);
+    padding-bottom: var(--space-2xl);
+  }
+}
+
 
 
 /* ============================================
@@ -346,6 +353,21 @@
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
   text-decoration: none;
+  /* Prevent overflow on small screens */
+  max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+@media (max-width: 380px) {
+  .cool-home-btn {
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    gap: 5px;
+    max-width: 120px;
+  }
 }
 
 .cool-home-btn:hover {
