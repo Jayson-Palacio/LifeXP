@@ -17,7 +17,7 @@ const SUGGESTIONS = [
 ];
 
 export default function MissionModal({ modal, childrenList = [], closeModal, onSuccess }) {
-  const isEdit = !!modal.data;
+  const isEdit = !!modal.data?.id;
   const defaultFrequency = modal.data?.frequency || 'daily';
   const defaultCategory = modal.data?.category || 'General';
   

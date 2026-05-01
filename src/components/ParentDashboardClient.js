@@ -618,6 +618,37 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                     {inactiveMissions.map(m => renderMission(m, true))}
                   </div>
                 )}
+                
+                {/* Mission Inspiration Box */}
+                <div style={{ marginTop: 'var(--space-2xl)', padding: 'var(--space-xl)', background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                    <span style={{ fontSize: '1.5rem' }}>💡</span>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', margin: 0 }}>Need Inspiration?</h3>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 20 }}>Tap any idea below to instantly use it as a template:</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {[
+                      { name: 'Make Bed', icon: '🛏️', category: 'Chores', coins: 5 },
+                      { name: 'Brush Teeth', icon: '🦷', category: 'Health & Hygiene', coins: 5 },
+                      { name: 'Read 20 Mins', icon: '📚', category: 'School & Learning', coins: 10 },
+                      { name: 'Clean Room', icon: '🧹', category: 'Chores', coins: 15 },
+                      { name: 'Do Homework', icon: '📝', category: 'School & Learning', coins: 10 },
+                      { name: 'Feed Pet', icon: '🐕', category: 'Chores', coins: 5 },
+                      { name: 'Drink Water', icon: '💧', category: 'Health & Hygiene', coins: 2 },
+                      { name: 'Help with Dinner', icon: '🍽️', category: 'Chores', coins: 10 }
+                    ].map(idea => (
+                       <button 
+                         key={idea.name} 
+                         onClick={() => setModal({ type: 'mission', data: { name: idea.name, icon: idea.icon, category: idea.category, coin_reward: idea.coins, frequency: 'daily' } })}
+                         className="btn btn-ghost"
+                         style={{ background: 'var(--bg-glass)', border: '1px solid var(--bg-glass-border)', padding: '8px 16px', borderRadius: 'var(--radius-full)', fontSize: '0.9rem', color: 'var(--text-bright)' }}
+                       >
+                         {idea.icon} {idea.name}
+                       </button>
+                    ))}
+                  </div>
+                </div>
+
               </>
             );
           })()}
