@@ -26,7 +26,7 @@ const MISSION_LIBRARY = [
       { name: 'Pack Backpack', icon: '🎒', category: 'Morning Routine', coins: 5 },
       { name: 'Brush Teeth (AM)', icon: '🦷', category: 'Morning Routine', coins: 5 },
       { name: 'Wash Face', icon: '💦', category: 'Morning Routine', coins: 2 },
-      { name: 'Brush Hair', icon: '梳', category: 'Morning Routine', coins: 2 },
+      { name: 'Brush Hair', icon: '🪮', category: 'Morning Routine', coins: 2 },
       { name: 'Put on Shoes', icon: '👟', category: 'Morning Routine', coins: 2 },
       { name: 'Feed Pet (AM)', icon: '🐈', category: 'Morning Routine', coins: 5 },
       { name: 'Pack Lunch', icon: '🥪', category: 'Morning Routine', coins: 10 },
