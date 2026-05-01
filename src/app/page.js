@@ -10,12 +10,12 @@ export default function LandingPage() {
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', padding: 'var(--space-2xl) var(--space-lg)' }}>
         
         {/* Navigation */}
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8vh' }}>
+        <header style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8vh' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ fontSize: '2.5rem' }}>☀</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 900, background: 'linear-gradient(135deg, #a855f7, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Kaeluma</div>
           </div>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <Link href="/login" className="btn btn-ghost" style={{ marginRight: 'var(--space-md)' }}>Log in</Link>
             <Link href="/signup" className="btn btn-primary">Sign up</Link>
           </div>
