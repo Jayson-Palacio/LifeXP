@@ -620,31 +620,108 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                 )}
                 
                 {/* Mission Inspiration Box */}
-                <div style={{ marginTop: 'var(--space-2xl)', padding: 'var(--space-xl)', background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ marginTop: 'var(--space-2xl)', marginBottom: 'var(--space-xl)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                     <span style={{ fontSize: '1.5rem' }}>💡</span>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', margin: 0 }}>Need Inspiration?</h3>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-bright)', margin: 0 }}>Mission Inspiration Library</h3>
                   </div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 20 }}>Tap any idea below to instantly use it as a template:</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 24 }}>Swipe and tap any card below to instantly add it as a mission:</div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     {[
-                      { name: 'Make Bed', icon: '🛏️', category: 'Chores', coins: 5 },
-                      { name: 'Brush Teeth', icon: '🦷', category: 'Health & Hygiene', coins: 5 },
-                      { name: 'Read 20 Mins', icon: '📚', category: 'School & Learning', coins: 10 },
-                      { name: 'Clean Room', icon: '🧹', category: 'Chores', coins: 15 },
-                      { name: 'Do Homework', icon: '📝', category: 'School & Learning', coins: 10 },
-                      { name: 'Feed Pet', icon: '🐕', category: 'Chores', coins: 5 },
-                      { name: 'Drink Water', icon: '💧', category: 'Health & Hygiene', coins: 2 },
-                      { name: 'Help with Dinner', icon: '🍽️', category: 'Chores', coins: 10 }
-                    ].map(idea => (
-                       <button 
-                         key={idea.name} 
-                         onClick={() => setModal({ type: 'mission', data: { name: idea.name, icon: idea.icon, category: idea.category, coin_reward: idea.coins, frequency: 'daily' } })}
-                         className="btn btn-ghost"
-                         style={{ background: 'var(--bg-glass)', border: '1px solid var(--bg-glass-border)', padding: '8px 16px', borderRadius: 'var(--radius-full)', fontSize: '0.9rem', color: 'var(--text-bright)' }}
-                       >
-                         {idea.icon} {idea.name}
-                       </button>
+                      {
+                        category: '🌅 Morning Routine',
+                        ideas: [
+                          { name: 'Make Bed', icon: '🛏️', category: 'Morning Routine', coins: 5 },
+                          { name: 'Get Dressed', icon: '👕', category: 'Morning Routine', coins: 5 },
+                          { name: 'Eat Breakfast', icon: '🥞', category: 'Morning Routine', coins: 5 },
+                          { name: 'Pack Backpack', icon: '🎒', category: 'Morning Routine', coins: 5 },
+                          { name: 'Brush Teeth', icon: '🦷', category: 'Health & Hygiene', coins: 5 },
+                        ]
+                      },
+                      {
+                        category: '🧹 Chores',
+                        ideas: [
+                          { name: 'Clean Room', icon: '🧹', category: 'Chores', coins: 15 },
+                          { name: 'Feed Pet', icon: '🐕', category: 'Chores', coins: 5 },
+                          { name: 'Take Out Trash', icon: '🗑️', category: 'Chores', coins: 10 },
+                          { name: 'Load Dishwasher', icon: '🍽️', category: 'Chores', coins: 10 },
+                          { name: 'Vacuum', icon: '🔌', category: 'Chores', coins: 15 },
+                          { name: 'Fold Laundry', icon: '👕', category: 'Chores', coins: 15 },
+                        ]
+                      },
+                      {
+                        category: '📚 Learning & Growth',
+                        ideas: [
+                          { name: 'Read 20 Mins', icon: '📖', category: 'Reading', coins: 10 },
+                          { name: 'Do Homework', icon: '📝', category: 'Homework', coins: 10 },
+                          { name: 'Math Practice', icon: '🧮', category: 'School & Learning', coins: 10 },
+                          { name: 'Practice Instrument', icon: '🎸', category: 'Activities', coins: 15 },
+                          { name: 'Learn a Word', icon: '🧠', category: 'School & Learning', coins: 5 },
+                        ]
+                      },
+                      {
+                        category: '🧼 Health & Hygiene',
+                        ideas: [
+                          { name: 'Wash Hands', icon: '🫧', category: 'Health & Hygiene', coins: 2 },
+                          { name: 'Drink Water', icon: '💧', category: 'Health & Hygiene', coins: 2 },
+                          { name: 'Take a Shower', icon: '🚿', category: 'Health & Hygiene', coins: 10 },
+                          { name: 'Eat a Veggie', icon: '🥦', category: 'Health & Hygiene', coins: 5 },
+                          { name: 'Lights Out', icon: '🌙', category: 'Evening Routine', coins: 10 },
+                        ]
+                      },
+                      {
+                        category: '🤝 Good Behavior',
+                        ideas: [
+                          { name: 'Help with Dinner', icon: '🥗', category: 'Behavior', coins: 10 },
+                          { name: 'Share with Sibling', icon: '🤗', category: 'Behavior', coins: 10 },
+                          { name: 'Say Please / Thanks', icon: '🙏', category: 'Behavior', coins: 5 },
+                          { name: 'No Screen Time', icon: '🚫', category: 'Behavior', coins: 20 },
+                        ]
+                      }
+                    ].map(lib => (
+                      <div key={lib.category}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>{lib.category}</div>
+                        <div style={{ 
+                          display: 'flex', 
+                          gap: 12, 
+                          overflowX: 'auto', 
+                          paddingBottom: 12,
+                          scrollSnapType: 'x mandatory',
+                          WebkitOverflowScrolling: 'touch',
+                          scrollbarWidth: 'none', /* Firefox */
+                          msOverflowStyle: 'none'  /* IE and Edge */
+                        }}>
+                          {lib.ideas.map(idea => (
+                            <div 
+                              key={idea.name}
+                              onClick={() => setModal({ type: 'mission', data: { name: idea.name, icon: idea.icon, category: idea.category, coin_reward: idea.coins, frequency: 'daily' } })}
+                              style={{
+                                minWidth: 130,
+                                flexShrink: 0,
+                                scrollSnapAlign: 'start',
+                                background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                borderRadius: 'var(--radius-lg)',
+                                padding: '16px 12px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                textAlign: 'center',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s, background 0.2s',
+                              }}
+                              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)'; }}
+                            >
+                              <div style={{ fontSize: '2.2rem', marginBottom: 8, filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }}>{idea.icon}</div>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-bright)', lineHeight: 1.2, marginBottom: 8 }}>{idea.name}</div>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--amber)', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: '12px' }}>🪙 {idea.coins}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
