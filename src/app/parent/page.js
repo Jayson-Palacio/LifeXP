@@ -5,8 +5,6 @@ import ParentDashboardClient from '../../components/ParentDashboardClient';
 export default async function ParentDashboardPage() {
   const supabase = await createClient();
   
-  const { data: { session } } = await supabase.auth.getSession();
-  
   const [
     { data: appSettings },
     { data: children },
@@ -15,7 +13,7 @@ export default async function ParentDashboardPage() {
     { data: completions },
     { data: redemptions }
   ] = await Promise.all([
-    supabase.from('app_settings').select('user_id, setup_complete, parent_pin, require_approval, family_name').order('setup_complete', { ascending: false }).limit(1).single(),
+    supabase.from('app_settings').select('setup_complete, parent_pin, require_approval, family_name').order('setup_complete', { ascending: false }).limit(1).single(),
     supabase.from('children').select('*').order('name'),
     supabase.from('missions').select('*').order('name'),
     supabase.from('rewards').select('*').order('cost'),
@@ -23,9 +21,7 @@ export default async function ParentDashboardPage() {
     supabase.from('redemptions').select('*').eq('status', 'pending').order('redeemed_at', { ascending: false })
   ]);
 
-  const isOwner = session && appSettings ? (session.user.id === appSettings.user_id) : false;
-
-  if (!appSettings?.setup_complete || (isOwner && (!children || children.length === 0))) {
+  if (!appSettings?.setup_complete) {
     redirect('/setup');
   }
 
@@ -37,7 +33,6 @@ export default async function ParentDashboardPage() {
       initialPending={completions || []}
       initialPendingRedemptions={redemptions || []}
       initialSettings={appSettings}
-      isOwner={isOwner}
     />
   );
 }

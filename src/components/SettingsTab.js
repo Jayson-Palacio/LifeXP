@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState } from 'react';
 import { showToast } from '../lib/ui';
 import { changeParentPin, updateAppSettings } from '../app/actions/auth';
 
@@ -13,71 +12,6 @@ export default function SettingsTab({ initialSettings }) {
   const [storedCurrentPin, setStoredCurrentPin] = useState('');
   const [storedNewPin, setStoredNewPin] = useState('');
   const [pinError, setPinError] = useState('');
-
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
-  const [pendingInvites, setPendingInvites] = useState([]);
-  const [members, setMembers] = useState([]);
-
-  // Load pending invites and members on mount
-  useEffect(() => {
-    fetch('/api/invites').then(r => r.json()).then(data => {
-      setPendingInvites(data.invites || []);
-      setMembers(data.members || []);
-    }).catch(() => {});
-  }, []);
-
-  const sendInvite = async () => {
-    if (!inviteEmail.trim()) return;
-    setIsInviting(true);
-    try {
-      const res = await fetch('/api/invites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail.trim() }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        if (data.instantLink) {
-          showToast(`${data.email} is already on Kaeluma and has been instantly added to your family!`);
-          // Refetch to get their name
-          const r = await fetch('/api/invites');
-          const d = await r.json();
-          setMembers(d.members || []);
-        } else {
-          showToast(`Invite sent to ${data.email}!`);
-          setPendingInvites(prev => [{ invited_email: data.email, id: Date.now() }, ...prev]);
-        }
-        setInviteEmail('');
-      } else {
-        showToast(data.error || 'Failed to invite');
-      }
-    } catch (e) {
-      showToast('Error sending invite');
-    }
-    setIsInviting(false);
-  };
-
-  const removeInvite = async (id) => {
-    await fetch('/api/invites', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, type: 'invite' }),
-    });
-    setPendingInvites(prev => prev.filter(i => i.id !== id));
-    showToast('Invite removed');
-  };
-
-  const removeMember = async (id) => {
-    if (!confirm('Are you sure you want to remove this family member?')) return;
-    await fetch('/api/invites', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, type: 'member' }),
-    });
-    setMembers(prev => prev.filter(m => m.id !== id));
-    showToast('Member removed');
-  };
 
   // Read and write tz from localStorage (client only)
   const [tzOffset, setTzOffset] = useState(() => {
@@ -211,85 +145,6 @@ export default function SettingsTab({ initialSettings }) {
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Save Name</button>
         </form>
-      </div>
-
-
-      {/* FAMILY SHARING */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginBottom: 'var(--space-md)' }}>
-        <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>👨‍👩‍👧‍👦 Family Sharing</div>
-        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-          Invite a co-parent or grandparent by email. When they sign up with that email, they'll automatically join your family.
-        </div>
-        
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <input
-            className="input"
-            type="email"
-            placeholder="grandma@email.com"
-            value={inviteEmail}
-            onChange={e => setInviteEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && sendInvite()}
-            style={{ flex: 1 }}
-          />
-          <button
-            className="btn btn-primary"
-            onClick={sendInvite}
-            disabled={isInviting || !inviteEmail.trim()}
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            {isInviting ? '...' : 'Invite'}
-          </button>
-        </div>
-        
-        <div style={{ marginBottom: 24 }}>
-          <button 
-            className="btn btn-ghost" 
-            style={{ width: '100%', fontSize: '0.9rem', padding: '10px' }}
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/signup`);
-              showToast('Signup link copied!');
-            }}
-          >
-            🔗 Copy Signup Link to share with them
-          </button>
-        </div>
-
-        {members.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Family Members</div>
-            {members.map(m => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)', marginBottom: 6 }}>
-                <div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>{m.first_name} {m.last_name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Co-parent</div>
-                </div>
-                <button
-                  onClick={() => removeMember(m.id)}
-                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px' }}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {pendingInvites.length > 0 && (
-          <div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Pending Invites</div>
-            {pendingInvites.map(inv => (
-              <div key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)', marginBottom: 6 }}>
-                <span style={{ fontSize: '0.9rem' }}>✉️ {inv.invited_email}</span>
-                <button
-                  onClick={() => removeInvite(inv.id)}
-                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px' }}
-                >
-                  Cancel
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* TIMEZONE */}

@@ -16,7 +16,7 @@ import RewardModal from './RewardModal';
 import ChildModal from './ChildModal';
 import { playClick, playPop, playRandomSuccessSound } from '../lib/sounds';
 
-export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings, isOwner = true }) {
+export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings }) {
   const router = useRouter();
   
   // AppShell state
@@ -879,10 +879,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   return (
     <>
-      <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length }} isOwner={isOwner}>
+      <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length }}>
         {activeTab === 'overview'   && renderOverview()}
         {activeTab === 'manage'     && renderManage()}
-        {activeTab === 'settings'   && isOwner && <SettingsTab initialSettings={settings} />}
+        {activeTab === 'settings'   && <SettingsTab initialSettings={settings} />}
       </AppShell>
 
       {/* Slide-Up Drawer for Kid Inspect Mode */}
