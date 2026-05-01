@@ -13,6 +13,10 @@ export default function SettingsTab({ initialSettings }) {
   const [storedNewPin, setStoredNewPin] = useState('');
   const [pinError, setPinError] = useState('');
 
+  const [ticketType, setTicketType] = useState('bug');
+  const [ticketMessage, setTicketMessage] = useState('');
+  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+
   // Read and write tz from localStorage (client only)
   const [tzOffset, setTzOffset] = useState(() => {
     if (typeof localStorage !== 'undefined') {
@@ -233,6 +237,55 @@ export default function SettingsTab({ initialSettings }) {
             </button>
           </div>
         )}
+      </div>
+
+      {/* SUPPORT & FEEDBACK */}
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>💬 Support & Feedback</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+          Found a bug or have an idea to make Kaeluma better? Let me know directly!
+        </div>
+
+        <select
+          className="input"
+          value={ticketType}
+          onChange={(e) => setTicketType(e.target.value)}
+          style={{ marginBottom: 12 }}
+          disabled={isSubmittingTicket}
+        >
+          <option value="bug">🐛 Report a Bug</option>
+          <option value="feature">💡 Request a Feature</option>
+        </select>
+
+        <textarea
+          className="input"
+          value={ticketMessage}
+          onChange={(e) => setTicketMessage(e.target.value)}
+          placeholder="What's on your mind?"
+          style={{ marginBottom: 16, minHeight: '100px', resize: 'vertical' }}
+          disabled={isSubmittingTicket}
+        />
+
+        <button 
+          className="btn btn-primary" 
+          style={{ width: '100%' }} 
+          disabled={isSubmittingTicket || !ticketMessage.trim()}
+          onClick={async () => {
+            setIsSubmittingTicket(true);
+            const { submitTicket } = await import('../app/actions/support');
+            const res = await submitTicket(ticketType, ticketMessage);
+            setIsSubmittingTicket(false);
+            if (res.success) {
+              showToast(ticketType === 'bug' ? '🐛 Bug reported! Thank you.' : '💡 Idea submitted! Thank you.');
+              setTicketMessage('');
+              setTicketType('bug');
+            } else {
+              showToast(res.error || 'Failed to submit ticket');
+            }
+          }}
+        >
+          {isSubmittingTicket ? 'Sending...' : 'Send Message'}
+        </button>
       </div>
 
       {/* ACCOUNT SETTINGS */}

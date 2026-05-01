@@ -17,7 +17,16 @@ DROP TABLE IF EXISTS public.family_members;
 -- 4. Drop the helper function used for email lookups
 DROP FUNCTION IF EXISTS public.get_user_id_by_email(text);
 
--- 5. Drop the family access helper used in RLS policies
+-- 5. Drop RLS policies that depend on get_accessible_family_owner_ids()
+DROP POLICY IF EXISTS "Shared members can select app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Shared members can select children" ON public.children;
+DROP POLICY IF EXISTS "Shared members can update children" ON public.children;
+DROP POLICY IF EXISTS "Shared members can manage missions" ON public.missions;
+DROP POLICY IF EXISTS "Shared members can manage rewards" ON public.rewards;
+DROP POLICY IF EXISTS "Shared members can manage completions" ON public.completions;
+DROP POLICY IF EXISTS "Shared members can manage redemptions" ON public.redemptions;
+
+-- 6. Now safely drop the function
 DROP FUNCTION IF EXISTS public.get_accessible_family_owner_ids();
 
 -- Done! Your database is now clean of all family sharing artifacts.
