@@ -7,6 +7,15 @@ import { MISSION_EMOJI_GROUPS, MISSION_EMOJIS } from '../lib/ui';
 import GroupedEmojiPicker from './GroupedEmojiPicker';
 import InlineCrop from './CropOverlay';
 
+const SUGGESTIONS = [
+  { name: 'Make Bed', icon: '🛏️', category: 'Chores' },
+  { name: 'Brush Teeth', icon: '🦷', category: 'Health & Hygiene' },
+  { name: 'Read 15 Mins', icon: '📚', category: 'School & Learning' },
+  { name: 'Clean Room', icon: '🧹', category: 'Chores' },
+  { name: 'Do Homework', icon: '📝', category: 'School & Learning' },
+  { name: 'Be Kind', icon: '🤝', category: 'Behavior' }
+];
+
 export default function MissionModal({ modal, childrenList = [], closeModal, onSuccess }) {
   const isEdit = !!modal.data;
   const defaultFrequency = modal.data?.frequency || 'daily';
@@ -17,6 +26,10 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
   const [missionCropSrc, setMissionCropSrc] = useState(null);
   const [missionImage, setMissionImage] = useState(isEdit ? modal.data?.image || null : null);
   const [specificDays, setSpecificDays] = useState(isEdit ? modal.data?.specific_days || [] : []);
+  
+  const [missionName, setMissionName] = useState(modal.data?.name || '');
+  const [missionIcon, setMissionIcon] = useState(modal.data?.icon || MISSION_EMOJIS[0]);
+  const [pickerKey, setPickerKey] = useState(0);
   
   // Track coins for dynamic XP calculation
   const [coinAmount, setCoinAmount] = useState(modal.data?.coin_reward?.toString() ?? '5');
@@ -92,7 +105,42 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
 
       <div className="input-group" style={{ marginBottom: 14 }}>
         <label>Mission Name</label>
-        <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="e.g. Make your bed" />
+        <input name="name" className="input" value={missionName} onChange={e => setMissionName(e.target.value)} required placeholder="e.g. Make your bed" />
+        
+        {/* Suggestion Box */}
+        {!isEdit && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>Quick Add:</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {SUGGESTIONS.map(s => (
+                <button
+                  key={s.name}
+                  type="button"
+                  onClick={() => {
+                    setMissionName(s.name);
+                    setMissionIcon(s.icon);
+                    setMissionCategory(s.category);
+                    setPickerKey(k => k + 1);
+                  }}
+                  style={{
+                    background: 'var(--bg-glass)',
+                    border: '1px solid var(--bg-glass-border)',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.8rem',
+                    color: 'var(--text-bright)',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseOut={(e) => e.target.style.background = 'var(--bg-glass)'}
+                >
+                  {s.icon} {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Coins & Dynamic XP */}
@@ -271,9 +319,10 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
         <div className="input-group" style={{ marginBottom: 14 }}>
           <label>Emoji Icon</label>
           <GroupedEmojiPicker
+            key={pickerKey}
             groups={MISSION_EMOJI_GROUPS}
             name="icon"
-            defaultValue={modal.data?.icon || MISSION_EMOJIS[0]}
+            defaultValue={missionIcon}
           />
         </div>
       )}
