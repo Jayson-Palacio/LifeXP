@@ -6,7 +6,7 @@ const S = {
   search: { width: '100%', maxWidth: 340, background: '#1e2130', border: '1px solid #2d3148', borderRadius: 8, color: '#e2e8f0', padding: '8px 14px', fontSize: 14, marginBottom: 18, outline: 'none' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
   th: { textAlign: 'left', padding: '10px 12px', background: '#161926', color: '#94a3b8', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid #2d3148' },
-  td: { padding: '10px 12px', borderBottom: '1px solid #1e2130', color: '#cbd5e1', verticalAlign: 'top', wordBreak: 'break-word', maxWidth: 240 },
+  td: { padding: '10px 12px', borderBottom: '1px solid #1e2130', color: '#cbd5e1', verticalAlign: 'top', wordBreak: 'break-word', maxWidth: 160 },
   badge: (color) => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: color + '22', color }),
   btn: (color) => ({ background: 'none', border: `1px solid ${color}44`, color, borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', marginRight: 6 }),
   editBox: { background: '#1a1f35', border: '1px solid #3b82f6', borderRadius: 8, padding: 16, marginBottom: 8 },
@@ -19,13 +19,28 @@ const S = {
 const STATUS_COLORS = { pending: '#f59e0b', approved: '#22c55e', fulfilled: '#22c55e', rejected: '#ef4444', refunded: '#6366f1' }
 const PAGE_SIZE = 25
 
+function ExpandableText({ text }) {
+  const [expanded, setExpanded] = useState(false)
+  if (text.length <= 40) return <span>{text}</span>
+  return (
+    <span 
+      onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }} 
+      style={{ cursor: 'pointer', color: expanded ? '#fff' : '#cbd5e1' }}
+      title={expanded ? "Click to collapse" : "Click to expand"}
+    >
+      {expanded ? text : text.slice(0, 40) + '…'}
+      {!expanded && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>more</span>}
+    </span>
+  )
+}
+
 function fmt(val) {
   if (val === null || val === undefined) return <span style={{ color: '#475569' }}>—</span>
   if (typeof val === 'boolean') return val ? '✅' : '❌'
-  if (typeof val === 'object') return <span style={{ color: '#64748b', fontSize: 11 }}>{JSON.stringify(val).slice(0, 60)}</span>
+  if (typeof val === 'object') return <ExpandableText text={JSON.stringify(val)} />
   const s = String(val)
   if (s.match(/^\d{4}-\d{2}-\d{2}T/)) return new Date(s).toLocaleString()
-  if (s.length > 80) return s.slice(0, 80) + '…'
+  if (s.length > 40) return <ExpandableText text={s} />
   return s
 }
 
