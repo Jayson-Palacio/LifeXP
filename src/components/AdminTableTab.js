@@ -21,14 +21,14 @@ const PAGE_SIZE = 25
 
 function ExpandableText({ text }) {
   const [expanded, setExpanded] = useState(false)
-  if (text.length <= 40) return <span>{text}</span>
+  if (text.length <= 10) return <span>{text}</span>
   return (
     <span 
       onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }} 
       style={{ cursor: 'pointer', color: expanded ? '#fff' : '#cbd5e1' }}
       title={expanded ? "Click to collapse" : "Click to expand"}
     >
-      {expanded ? text : text.slice(0, 40) + '…'}
+      {expanded ? text : text.slice(0, 10) + '…'}
       {!expanded && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>more</span>}
     </span>
   )
@@ -40,7 +40,7 @@ function fmt(val) {
   if (typeof val === 'object') return <ExpandableText text={JSON.stringify(val)} />
   const s = String(val)
   if (s.match(/^\d{4}-\d{2}-\d{2}T/)) return new Date(s).toLocaleString()
-  if (s.length > 40) return <ExpandableText text={s} />
+  if (s.length > 10) return <ExpandableText text={s} />
   return s
 }
 
