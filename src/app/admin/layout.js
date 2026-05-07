@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '../../utils/supabase/server'
 
 export const metadata = {
-  title: 'LifeXP Admin',
+  title: 'Kaeluma Admin',
   robots: 'noindex, nofollow',
 }
 

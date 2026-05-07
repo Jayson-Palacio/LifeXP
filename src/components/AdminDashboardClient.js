@@ -1,5 +1,6 @@
 'use client'
 import { useState, useCallback } from 'react'
+import { logout } from '../app/login/actions'
 import AdminOverviewTab from './AdminOverviewTab'
 import AdminTableTab from './AdminTableTab'
 
@@ -83,6 +84,7 @@ export default function AdminDashboardClient({
 }) {
   const [tab, setTab] = useState('overview')
   const [data, setData] = useState({
+    users: authUsers,
     children: childrenData,
     missions,
     completions,
@@ -111,13 +113,23 @@ export default function AdminDashboardClient({
       {/* Header */}
       <header style={{ background: '#0a0d16', borderBottom: '1px solid #1e2130', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 24, height: 56, flexShrink: 0 }}>
         <span style={{ fontWeight: 800, fontSize: 16, background: 'linear-gradient(135deg,#3b82f6,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          LifeXP Admin
+          Kaeluma Admin
         </span>
         <span style={{ color: '#334155', fontSize: 12 }}>|</span>
         <span style={{ color: '#475569', fontSize: 13 }}>Command Center</span>
-        <span style={{ marginLeft: 'auto', background: '#22c55e22', color: '#22c55e', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
-          ● LIVE
-        </span>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ background: '#22c55e22', color: '#22c55e', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+            ● LIVE
+          </span>
+          <button 
+            onClick={() => logout()} 
+            style={{ background: 'none', border: '1px solid #2d3148', color: '#94a3b8', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', transition: 'color 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.color = '#ef4444'}
+            onMouseOut={e => e.currentTarget.style.color = '#94a3b8'}
+          >
+            Log Out
+          </button>
+        </div>
       </header>
 
       {/* Tab Bar */}
@@ -159,10 +171,10 @@ export default function AdminDashboardClient({
 
           {tab === 'users' && (
             <AdminTableTab
-              rows={authUsers}
+              rows={data.users}
               columns={COLUMNS.users}
               statusField={null}
-              onDelete={null}
+              onDelete={id => handleDelete('users', id)}
               onEdit={null}
             />
           )}

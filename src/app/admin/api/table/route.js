@@ -1,7 +1,7 @@
 import { createAdminClient } from '../../../../utils/supabase/admin'
 import { createClient } from '../../../../utils/supabase/server'
 
-const ALLOWED_TABLES = ['children', 'missions', 'completions', 'rewards', 'redemptions', 'app_settings']
+const ALLOWED_TABLES = ['children', 'missions', 'completions', 'rewards', 'redemptions', 'app_settings', 'users']
 
 async function verifyAdmin() {
   const supabase = await createClient()
@@ -37,7 +37,15 @@ export async function DELETE(request) {
   }
 
   const admin = createAdminClient()
-  const { error } = await admin.from(table).delete().eq('id', id)
+  let error = null
+
+  if (table === 'users') {
+    const res = await admin.auth.admin.deleteUser(id)
+    error = res.error
+  } else {
+    const res = await admin.from(table).delete().eq('id', id)
+    error = res.error
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
   return Response.json({ success: true })
