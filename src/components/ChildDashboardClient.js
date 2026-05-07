@@ -293,6 +293,25 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
   };
 
+  const handleUndoMission = async (mission, e) => {
+    if (e) e.stopPropagation();
+    setLoadingMissions(prev => ({ ...prev, [mission.id]: true }));
+
+    try {
+      // Find the pending completion for this exact mission
+      const pendingComp = completions.find(c => c.mission_id === mission.id && c.status === 'pending');
+      if (pendingComp) {
+        await supabase.from('completions').delete().eq('id', pendingComp.id);
+        setCompletions(prev => prev.filter(c => c.id !== pendingComp.id));
+        showToast('Mission unmarked. You can do it again!');
+      }
+    } catch (err) {
+      showToast('Error undoing', 'error');
+    } finally {
+      setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
+    }
+  };
+
   const handleRedeem = async (r, e) => {
     e.target.disabled = true;
     e.target.textContent = '...';
@@ -667,12 +686,21 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                           )}
                         </button>
                       ) : m.status === 'pending' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 16px', borderRadius: 'var(--radius-full)', background: 'var(--bg-glass)', border: '1px solid var(--amber-dim)', color: 'var(--amber)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.95rem' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            <span>Waiting</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 16px', borderRadius: 'var(--radius-full)', background: 'var(--bg-glass)', border: '1px solid var(--amber-dim)', color: 'var(--amber)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.95rem' }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                              <span>Waiting</span>
+                            </div>
+                            {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
                           </div>
-                          {hasProgress && <span style={{ fontSize: '0.75rem', opacity: 0.9, fontWeight: 600 }}>{m.periodDone}/{m.maxPerPeriod}×</span>}
+                          <button 
+                            onClick={(e) => handleUndoMission(m, e)} 
+                            disabled={loadingMissions[m.id]}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                          >
+                            Undo
+                          </button>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 16px', borderRadius: 'var(--radius-full)', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.25)', color: 'var(--green)', animation: 'scaleIn 0.3s ease-out', boxShadow: '0 0 12px rgba(34, 197, 94, 0.1)' }}>

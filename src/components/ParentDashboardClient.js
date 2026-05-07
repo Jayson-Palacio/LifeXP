@@ -56,6 +56,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           setPendingRedemptions(prev => [payload.new, ...prev]);
         }
       })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'completions' }, (payload) => {
+        setPending(prev => prev.filter(p => p.id !== payload.old.id));
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
