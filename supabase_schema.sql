@@ -28,7 +28,8 @@ create table if not exists children (
   last_completion_date text,
   theme text default 'seedling',
   unlocked_colors text[] default ARRAY['seedling'],
-  ring_style text default 'solid'
+  ring_style text default 'solid',
+  age_group text default 'all'
 );
 
 -- ============================================

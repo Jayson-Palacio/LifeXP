@@ -1,6 +1,6 @@
 "use client";
 
-// Simple Web Audio API Synthesizer designed for LifeXP Celebration Moments
+// Simple Web Audio API Synthesizer designed for Kaeluma Celebration Moments
 let audioCtx = null;
 
 function getContext() {

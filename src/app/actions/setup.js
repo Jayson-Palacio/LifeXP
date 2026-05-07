@@ -2,7 +2,7 @@
 
 import { createClient } from '../../utils/supabase/server';
 
-export async function submitSetupData(pin, childName, childAvatar, missionName, missionIcon, familyName = 'Our Family') {
+export async function submitSetupData(pin, childName, childAvatar, childAgeGroup, missionName, missionIcon, rewardName, rewardCost, rewardIcon, familyName = 'Our Family') {
   const supabase = await createClient();
   try {
     // 1. Update App Settings
@@ -23,7 +23,8 @@ export async function submitSetupData(pin, childName, childAvatar, missionName, 
     // 2. Add Child
     await supabase.from('children').insert([{ 
       name: childName, 
-      avatar: childAvatar, 
+      avatar: childAvatar,
+      age_group: childAgeGroup,
       xp: 0, 
       total_xp_earned: 0, 
       coins: 0, 
@@ -40,6 +41,16 @@ export async function submitSetupData(pin, childName, childAvatar, missionName, 
       max_completions: 1,
       max_completions_per_period: 1
     }]);
+
+    // 4. Add Reward
+    if (rewardName) {
+      await supabase.from('rewards').insert([{
+        name: rewardName,
+        icon: rewardIcon,
+        cost: rewardCost || 10,
+        is_active: true
+      }]);
+    }
 
     return { success: true };
   } catch (err) {

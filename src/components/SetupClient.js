@@ -2,24 +2,59 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS } from '../lib/ui';
+import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS, REWARD_EMOJI_GROUPS } from '../lib/ui';
 import { submitSetupData } from '../app/actions/setup';
 import GroupedEmojiPicker from './GroupedEmojiPicker';
 import InlineCrop from './CropOverlay';
 import { showConfetti } from '../lib/ui';
 
-const TOTAL_STEPS = 6; // 0=Welcome, 1=FamilyName, 2=PIN, 3=Kid, 4=Mission, 5=Done
+const TOTAL_STEPS = 7; // 0=Welcome, 1=FamilyName, 2=PIN, 3=Kid, 4=Mission, 5=Reward, 6=Done
 
-const STEP_LABELS = ['Welcome', 'Family', 'PIN', 'Kid', 'Mission', 'Done!'];
+const STEP_LABELS = ['Welcome', 'Family', 'PIN', 'Kid', 'Mission', 'Reward', 'Done!'];
 
-const MISSION_TEMPLATES = [
-  { icon: '🛏️', name: 'Make Your Bed' },
-  { icon: '🦷', name: 'Brush Teeth' },
-  { icon: '📚', name: 'Read for 15 Minutes' },
-  { icon: '🧹', name: 'Clean Your Room' },
-  { icon: '📝', name: 'Do Homework' },
-  { icon: '🐕', name: 'Feed the Pet' },
-];
+const AGE_GROUPS = ['3-5', '6-8', '9-12', '13+'];
+
+const MISSION_TEMPLATES = {
+  '3-5': [
+    { icon: '🦷', name: 'Brush Teeth' },
+    { icon: '🧸', name: 'Pick Up Toys' },
+    { icon: '👗', name: 'Get Dressed' },
+  ],
+  '6-8': [
+    { icon: '🛏️', name: 'Make Your Bed' },
+    { icon: '📚', name: 'Read 15 Mins' },
+    { icon: '🐕', name: 'Feed the Pet' },
+  ],
+  '9-12': [
+    { icon: '📝', name: 'Do Homework' },
+    { icon: '🧹', name: 'Clean Room' },
+    { icon: '🗑️', name: 'Take Out Trash' },
+  ],
+  '13+': [
+    { icon: '👕', name: 'Do Laundry' },
+    { icon: '🦮', name: 'Walk the Dog' },
+    { icon: '🍽️', name: 'Load Dishwasher' },
+  ]
+};
+
+const REWARD_TEMPLATES = {
+  '3-5': [
+    { icon: '🍦', name: 'Ice Cream Trip', cost: 15 },
+    { icon: '📺', name: '15 Mins Shows', cost: 10 },
+  ],
+  '6-8': [
+    { icon: '🎮', name: '30 Mins Gaming', cost: 15 },
+    { icon: '🧸', name: 'Pick a New Toy', cost: 50 },
+  ],
+  '9-12': [
+    { icon: '🍕', name: 'Pizza Night', cost: 40 },
+    { icon: '🎮', name: '1 Hour Gaming', cost: 20 },
+  ],
+  '13+': [
+    { icon: '📱', name: 'Extra Screen Time', cost: 20 },
+    { icon: '💵', name: '$5 Allowance', cost: 50 },
+  ]
+};
 
 export default function SetupClient() {
   const router = useRouter();
@@ -28,20 +63,27 @@ export default function SetupClient() {
   const [pin, setPin] = useState('');
   const [childName, setChildName] = useState('');
   const [childAvatar, setChildAvatar] = useState(AVATAR_EMOJI_GROUPS[0].emojis[0]);
+  const [childAgeGroup, setChildAgeGroup] = useState('6-8');
   const [pendingBase64, setPendingBase64] = useState(null);
   const [cropSrc, setCropSrc] = useState(null);
   const [missionName, setMissionName] = useState('');
   const [missionIcon, setMissionIcon] = useState(MISSION_EMOJI_GROUPS[0].emojis[0]);
+  const [rewardName, setRewardName] = useState('');
+  const [rewardIcon, setRewardIcon] = useState(REWARD_EMOJI_GROUPS[0].emojis[0]);
+  const [rewardCost, setRewardCost] = useState(15);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const familyNameRef = useRef(null);
   const nameInputRef = useRef(null);
   const missionInputRef = useRef(null);
 
+  const rewardInputRef = useRef(null);
+
   useEffect(() => {
     if (step === 1 && familyNameRef.current) familyNameRef.current.focus();
     if (step === 3 && nameInputRef.current) nameInputRef.current.focus();
     if (step === 4 && missionInputRef.current) missionInputRef.current.focus();
+    if (step === 5 && rewardInputRef.current) rewardInputRef.current.focus();
   }, [step]);
 
   const handlePinKey = (val) => {
@@ -63,15 +105,17 @@ export default function SetupClient() {
   };
 
   const handleFinish = async () => {
-    if (!missionName.trim()) return;
+    if (!rewardName.trim()) return;
     setIsSubmitting(true);
     const finalAvatar = pendingBase64 || childAvatar;
     const result = await submitSetupData(
-      pin, childName.trim(), finalAvatar,
-      missionName.trim(), missionIcon, familyName.trim() || 'Our Family'
+      pin, childName.trim(), finalAvatar, childAgeGroup,
+      missionName.trim(), missionIcon, 
+      rewardName.trim(), rewardCost, rewardIcon,
+      familyName.trim() || 'Our Family'
     );
     if (result.success) {
-      setStep(5);
+      setStep(6);
       setTimeout(() => showConfetti(80), 200);
     } else {
       setIsSubmitting(false);
@@ -90,11 +134,11 @@ export default function SetupClient() {
       padding: '24px 20px', background: 'var(--bg-deep)',
     }}>
 
-      {/* Progress Bar — hidden on Welcome (0) and Done (5) */}
-      {step > 0 && step < 5 && (
+      {/* Progress Bar — hidden on Welcome (0) and Done (6) */}
+      {step > 0 && step < 6 && (
         <div style={{ width: '100%', maxWidth: 440, marginBottom: 32 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            {STEP_LABELS.slice(1, 5).map((label, i) => (
+            {STEP_LABELS.slice(1, 6).map((label, i) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%',
@@ -118,7 +162,7 @@ export default function SetupClient() {
             <div style={{
               height: '100%', borderRadius: 'var(--radius-full)',
               background: 'linear-gradient(90deg, var(--primary), var(--primary-light, var(--primary)))',
-              width: `${((step - 1) / 4) * 100}%`,
+              width: `${((step - 1) / 5) * 100}%`,
               transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
               boxShadow: 'var(--glow-primary)',
             }} />
@@ -142,7 +186,7 @@ export default function SetupClient() {
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '5rem', marginBottom: 16, filter: 'drop-shadow(0 0 24px rgba(168,85,247,0.6))', animation: 'pulse 3s ease-in-out infinite' }}>🌟</div>
             <h1 style={{ fontSize: '2.4rem', fontWeight: 900, margin: '0 0 8px', background: 'linear-gradient(135deg, #fff 0%, var(--primary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              LifeXP
+              Kaeluma
             </h1>
             <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: 8 }}>
               Turn everyday moments into<br /><strong style={{ color: 'var(--text-bright)' }}>epic adventures.</strong>
@@ -286,6 +330,30 @@ export default function SetupClient() {
                   />
                 </div>
 
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: '0.8rem', marginBottom: 8, display: 'block', textAlign: 'center', color: 'var(--text-muted)' }}>Age Group</label>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                    {AGE_GROUPS.map(age => (
+                      <button
+                        key={age}
+                        type="button"
+                        onClick={() => setChildAgeGroup(age)}
+                        style={{
+                          flex: 1, padding: '10px 0',
+                          borderRadius: 'var(--radius-md)',
+                          background: childAgeGroup === age ? 'var(--primary)' : 'var(--bg-deep)',
+                          border: childAgeGroup === age ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.06)',
+                          color: childAgeGroup === age ? '#fff' : 'var(--text-muted)',
+                          fontWeight: childAgeGroup === age ? 800 : 600,
+                          cursor: 'pointer', transition: 'all 0.15s'
+                        }}
+                      >
+                        {age}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {!pendingBase64 && (
                   <div className="input-group" style={{ marginBottom: 20 }}>
                     <label style={{ fontSize: '0.8rem', marginBottom: 6 }}>Choose Emoji Avatar</label>
@@ -328,9 +396,9 @@ export default function SetupClient() {
 
             {/* Quick-start templates */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Quick Start</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Quick Start for Ages {childAgeGroup}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {MISSION_TEMPLATES.map(t => (
+                {MISSION_TEMPLATES[childAgeGroup].map(t => (
                   <button
                     key={t.name}
                     type="button"
@@ -375,8 +443,77 @@ export default function SetupClient() {
             </p>
 
             <button
+              className="btn btn-primary btn-block btn-lg"
+              disabled={!missionName.trim()}
+              onClick={() => setStep(5)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
+
+        {/* ── STEP 5: First Reward ── */}
+        {step === 5 && (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎁</div>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 6px' }}>First Reward</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                What is {childName} working towards?
+              </p>
+            </div>
+
+            {/* Quick-start templates */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Ideas for Ages {childAgeGroup}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {REWARD_TEMPLATES[childAgeGroup].map(t => (
+                  <button
+                    key={t.name}
+                    type="button"
+                    onClick={() => { setRewardName(t.name); setRewardIcon(t.icon); setRewardCost(t.cost); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '10px 12px',
+                      borderRadius: 'var(--radius-lg)',
+                      background: rewardName === t.name ? 'rgba(var(--primary-rgb,168,85,247),0.15)' : 'var(--bg-deep)',
+                      border: rewardName === t.name ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.06)',
+                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>{t.icon}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-bright)' }}>{t.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>OR CUSTOM</span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            </div>
+
+            <div className="input-group" style={{ marginBottom: 12 }}>
+              <input
+                ref={rewardInputRef}
+                type="text"
+                className="input"
+                placeholder="Type your own reward..."
+                value={rewardName}
+                onChange={e => setRewardName(e.target.value)}
+                maxLength={40}
+                autoComplete="off"
+              />
+            </div>
+
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 20, textAlign: 'center' }}>
+              Cost: 🪙 {rewardCost} Coins — customize anytime
+            </p>
+
+            <button
               className="btn btn-gold btn-block btn-lg"
-              disabled={!missionName.trim() || isSubmitting}
+              disabled={!rewardName.trim() || isSubmitting}
               onClick={handleFinish}
             >
               {isSubmitting ? 'Setting up...' : "🚀 Let's Go!"}
@@ -384,15 +521,15 @@ export default function SetupClient() {
           </div>
         )}
 
-        {/* ── STEP 5: Celebration ── */}
-        {step === 5 && (
+        {/* ── STEP 6: Celebration ── */}
+        {step === 6 && (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: 12, animation: 'bounce 0.6s ease infinite alternate' }}>🎉</div>
             <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: '0 0 6px', background: 'linear-gradient(135deg, #fbbf24, var(--primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               You're all set!
             </h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: 28, fontSize: '0.95rem' }}>
-              Welcome to LifeXP, {familyName || 'your family'}!
+              Welcome to Kaeluma, {familyName || 'your family'}!
             </p>
 
             {/* Summary card */}
@@ -424,6 +561,13 @@ export default function SetupClient() {
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>First Mission</div>
                   <div style={{ fontWeight: 800, fontSize: '1rem' }}>{missionName}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: '1.5rem' }}>{rewardIcon}</span>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>First Reward</div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem' }}>{rewardName}</div>
                 </div>
               </div>
             </div>

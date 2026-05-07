@@ -37,6 +37,8 @@ export default function SignupPage() {
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordMismatch, setPasswordMismatch] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -48,6 +50,7 @@ export default function SignupPage() {
     const emailErr = validateEmail(email)
     if (emailErr) { setError(emailErr); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match. Please try again.'); setPasswordMismatch(true); return; }
     const firstName = (formData.get('first_name') || '').trim()
     const lastName = (formData.get('last_name') || '').trim()
     if (!firstName || !lastName) { setError('Please enter your first and last name.'); return; }
@@ -87,6 +90,26 @@ export default function SignupPage() {
           <div className="input-group">
             <label htmlFor="password">Password</label>
             <input className="input" id="password" name="password" type="password" required />
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="confirm_password" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              Confirm Password
+              {passwordMismatch && <span style={{ color: 'var(--red)', fontSize: '0.8rem', fontWeight: 600 }}>Passwords don't match</span>}
+            </label>
+            <input
+              className="input"
+              id="confirm_password"
+              name="confirm_password"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={e => {
+                setConfirmPassword(e.target.value)
+                setPasswordMismatch(false)
+              }}
+              style={passwordMismatch ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(239,68,68,0.25)' } : {}}
+            />
           </div>
 
           {error && <p style={{ color: 'var(--red)', fontSize: '0.9rem', textAlign: 'center' }}>{error}</p>}

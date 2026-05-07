@@ -42,7 +42,7 @@ export default function Loading() {
 
   useEffect(() => {
     try {
-      const theme = localStorage.getItem('lifexp_kid_theme') || 'seedling';
+      const theme = localStorage.getItem('kaeluma_kid_theme') || 'seedling';
       setColor(THEME_COLORS[theme] ?? '#6366f1');
     } catch {}
   }, []);
