@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { login } from './actions'
+import { updatePassword } from '../login/actions'
 
-export default function LoginPage() {
+export default function UpdatePasswordPage() {
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -12,8 +11,19 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    
     const formData = new FormData(e.currentTarget)
-    const result = await login(formData)
+    const password = formData.get('password')
+    const confirmPassword = formData.get('confirm_password')
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
+    }
+
+    const result = await updatePassword(formData)
+    
     if (result?.error) {
       setError(result.error)
       setIsLoading(false)
@@ -25,34 +35,31 @@ export default function LoginPage() {
       <div className="kaeluma-bg" />
       
       <div style={{ zIndex: 1, background: 'rgba(10, 8, 20, 0.7)', backdropFilter: 'blur(16px)', padding: 'var(--space-2xl)', borderRadius: 'var(--radius-2xl)', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, textAlign: 'center', marginBottom: 'var(--space-xl)', background: 'linear-gradient(135deg, #a855f7, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Welcome Back
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, textAlign: 'center', marginBottom: 'var(--space-md)', background: 'linear-gradient(135deg, #a855f7, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          New Password
         </h1>
 
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 'var(--space-xl)' }}>
+          Enter your new password below.
+        </p>
+        
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
           <div className="input-group">
-            <label htmlFor="email">Email</label>
-            <input className="input" id="email" name="email" type="email" required />
+            <label htmlFor="password">New Password</label>
+            <input className="input" id="password" name="password" type="password" required minLength={6} />
           </div>
-          
+
           <div className="input-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label htmlFor="password">Password</label>
-              <Link href="/forgot-password" style={{ color: 'var(--primary)', fontSize: '0.85rem', textDecoration: 'none' }}>Forgot Password?</Link>
-            </div>
-            <input className="input" id="password" name="password" type="password" required />
+            <label htmlFor="confirm_password">Confirm New Password</label>
+            <input className="input" id="confirm_password" name="confirm_password" type="password" required minLength={6} />
           </div>
 
           {error && <p style={{ color: 'var(--red)', fontSize: '0.9rem', textAlign: 'center' }}>{error}</p>}
 
           <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Log in'}
+            {isLoading ? 'Updating...' : 'Update Password'}
           </button>
         </form>
-
-        <p style={{ textAlign: 'center', marginTop: 'var(--space-xl)', color: 'var(--text-muted)' }}>
-          Don't have an account? <Link href="/signup" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Sign up</Link>
-        </p>
       </div>
     </div>
   )
