@@ -94,8 +94,8 @@ export default function AdminOverviewTab({ stats }) {
   ]
 
   return (
-    <div style={{ padding: '0 24px 40px' }}>
-      <div style={S.grid}>
+    <div className="admin-content" style={{ padding: '0 24px 40px' }}>
+      <div className="admin-grid-cards" style={S.grid}>
         {cards.map(c => (
           <div key={c.label} style={{ ...S.card, borderTop: `3px solid ${c.color}` }}>
             <div style={S.label}>{c.icon} {c.label}</div>
@@ -104,12 +104,12 @@ export default function AdminOverviewTab({ stats }) {
         ))}
       </div>
 
-      <div style={S.chartsRow}>
+      <div className="admin-grid-charts" style={S.chartsRow}>
         <BarChart data={stats.signupsByDay} color="#3b82f6" label="📈 New Signups (Last 30 Days)" />
         <LineChart data={stats.completionsByDay} color="#22c55e" label="✅ Completions (Last 14 Days)" />
       </div>
 
-      <div style={S.topRow}>
+      <div className="admin-grid-charts" style={S.topRow}>
         <TopList items={stats.topMissions} color="#f59e0b" label="🏆 Top Missions" />
         <TopList items={stats.topRewards} color="#a855f7" label="🎁 Top Rewards" />
       </div>

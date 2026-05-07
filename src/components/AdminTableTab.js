@@ -50,7 +50,7 @@ export default function AdminTableTab({ rows = [], columns, statusField, onDelet
   const editableCols = columns.filter(c => c.editable)
 
   return (
-    <div style={S.wrap}>
+    <div className="admin-content" style={S.wrap}>
       <input style={S.search} placeholder="Search…" value={q} onChange={e => { setQ(e.target.value); setPage(0) }} />
       <div style={{ overflowX: 'auto' }}>
         <table style={S.table}>

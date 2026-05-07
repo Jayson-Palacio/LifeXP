@@ -110,15 +110,44 @@ export default function AdminDashboardClient({
 
   return (
     <div style={{ display: 'flex', minHeight: '100dvh', flexDirection: 'column' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .admin-header { padding: 0 16px !important; gap: 12px !important; }
+        .admin-header-title { font-size: 14px !important; }
+        .admin-header-pipe { display: none !important; }
+        .admin-header-subtitle { display: none !important; }
+        .admin-summary { padding: 12px 16px !important; gap: 16px !important; justify-content: space-between; }
+        .admin-summary-item { flex-basis: calc(50% - 8px); }
+        .admin-content { padding: 0 16px 24px !important; }
+        
+        .admin-grid-cards { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+        .admin-grid-charts { grid-template-columns: 1fr !important; }
+        
+        .admin-nav::-webkit-scrollbar { display: none; }
+        .admin-nav { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @media (min-width: 640px) {
+          .admin-header { padding: 0 24px !important; gap: 24px !important; }
+          .admin-header-title { font-size: 16px !important; }
+          .admin-header-pipe { display: inline !important; }
+          .admin-header-subtitle { display: inline !important; }
+          .admin-summary { padding: 16px 24px !important; gap: 24px !important; justify-content: flex-start; }
+          .admin-summary-item { flex-basis: auto; }
+          .admin-content { padding: 0 24px 40px !important; }
+          .admin-grid-cards { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important; }
+        }
+        @media (min-width: 768px) {
+          .admin-grid-charts { grid-template-columns: 1fr 1fr !important; }
+        }
+      `}} />
       {/* Header */}
-      <header style={{ background: '#0a0d16', borderBottom: '1px solid #1e2130', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 24, height: 56, flexShrink: 0 }}>
-        <span style={{ fontWeight: 800, fontSize: 16, background: 'linear-gradient(135deg,#3b82f6,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      <header className="admin-header" style={{ background: '#0a0d16', borderBottom: '1px solid #1e2130', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 24, height: 56, flexShrink: 0 }}>
+        <span className="admin-header-title" style={{ fontWeight: 800, fontSize: 16, background: 'linear-gradient(135deg,#3b82f6,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', whiteSpace: 'nowrap' }}>
           Kaeluma Admin
         </span>
-        <span style={{ color: '#334155', fontSize: 12 }}>|</span>
-        <span style={{ color: '#475569', fontSize: 13 }}>Command Center</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ background: '#22c55e22', color: '#22c55e', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+        <span className="admin-header-pipe" style={{ color: '#334155', fontSize: 12 }}>|</span>
+        <span className="admin-header-subtitle" style={{ color: '#475569', fontSize: 13, whiteSpace: 'nowrap' }}>Command Center</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ background: '#22c55e22', color: '#22c55e', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>
             ● LIVE
           </span>
           <button 
@@ -133,7 +162,7 @@ export default function AdminDashboardClient({
       </header>
 
       {/* Tab Bar */}
-      <nav style={{ background: '#0a0d16', borderBottom: '1px solid #1e2130', display: 'flex', overflowX: 'auto', flexShrink: 0 }}>
+      <nav className="admin-nav" style={{ background: '#0a0d16', borderBottom: '1px solid #1e2130', display: 'flex', overflowX: 'auto', flexShrink: 0 }}>
         {TABS.map(t => (
           <button
             key={t.id}
@@ -151,7 +180,7 @@ export default function AdminDashboardClient({
       {/* Content */}
       <main style={{ flex: 1, overflowY: 'auto' }}>
         {/* Summary bar */}
-        <div style={{ display: 'flex', gap: 24, padding: '16px 24px', background: '#0a0d16', borderBottom: '1px solid #1e2130', flexWrap: 'wrap' }}>
+        <div className="admin-summary" style={{ display: 'flex', gap: 24, padding: '16px 24px', background: '#0a0d16', borderBottom: '1px solid #1e2130', flexWrap: 'wrap' }}>
           {[
             ['Users', stats.totalUsers, '#3b82f6'],
             ['Children', stats.totalChildren, '#a855f7'],
@@ -159,7 +188,7 @@ export default function AdminDashboardClient({
             ['Pending', stats.pendingApprovals, '#ef4444'],
             ['Coins Spent', stats.totalCoinsSpent, '#f97316'],
           ].map(([l, v, c]) => (
-            <div key={l} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <div key={l} className="admin-summary-item" style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span style={{ color: c, fontWeight: 800, fontSize: 18 }}>{v.toLocaleString()}</span>
               <span style={{ color: '#475569', fontSize: 12 }}>{l}</span>
             </div>
