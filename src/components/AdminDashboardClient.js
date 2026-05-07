@@ -17,9 +17,9 @@ const TABS = [
 const COLUMNS = {
   users: [
     { key: 'email', label: 'Email' },
+    { key: 'display_name', label: 'Name' },
     { key: 'created_at', label: 'Signed Up' },
     { key: 'last_sign_in_at', label: 'Last Sign In' },
-    { key: 'email_confirmed_at', label: 'Confirmed' },
   ],
   children: [
     { key: 'name', label: 'Name', editable: true },

@@ -24,7 +24,20 @@ export default async function AdminPage() {
   ])
 
   // Fetch auth users via the admin API
-  const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: { users: rawAuthUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  
+  const authUsers = (rawAuthUsers || []).map(u => {
+    const meta = u.raw_user_meta_data || {}
+    let displayName = '—'
+    if (meta.first_name) displayName = `${meta.first_name} ${meta.last_name || ''}`.trim()
+    else if (meta.full_name) displayName = meta.full_name
+    else if (meta.name) displayName = meta.name
+    
+    return {
+      ...u,
+      display_name: displayName
+    }
+  })
 
   // ── Analytics aggregations ──────────────────────────────────────────────────
 
