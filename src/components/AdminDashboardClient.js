@@ -6,6 +6,7 @@ import AdminTableTab from './AdminTableTab'
 
 const TABS = [
   { id: 'overview', label: '📊 Overview' },
+  { id: 'tickets', label: '🚨 Tickets' },
   { id: 'users', label: '👤 Users' },
   { id: 'children', label: '👶 Children' },
   { id: 'missions', label: '🎯 Missions' },
@@ -15,6 +16,13 @@ const TABS = [
 ]
 
 const COLUMNS = {
+  tickets: [
+    { key: 'user_email', label: 'User Email' },
+    { key: 'ticket_type', label: 'Type' },
+    { key: 'message', label: 'Message' },
+    { key: 'status', label: 'Status', editable: true },
+    { key: 'created_at', label: 'Created At' },
+  ],
   users: [
     { key: 'email', label: 'Email' },
     { key: 'display_name', label: 'Name' },
@@ -80,7 +88,7 @@ async function apiDelete(table, id) {
 
 export default function AdminDashboardClient({
   authUsers, children: childrenData, missions, completions,
-  rewards, redemptions, appSettings, stats,
+  rewards, redemptions, appSettings, tickets, stats,
 }) {
   const [tab, setTab] = useState('overview')
   const [data, setData] = useState({
@@ -90,6 +98,7 @@ export default function AdminDashboardClient({
     completions,
     rewards,
     redemptions,
+    support_tickets: tickets,
   })
 
   const handleEdit = useCallback(async (table, id, updates) => {
@@ -197,6 +206,16 @@ export default function AdminDashboardClient({
 
         <div style={{ paddingTop: 24 }}>
           {tab === 'overview' && <AdminOverviewTab stats={stats} />}
+
+          {tab === 'tickets' && (
+            <AdminTableTab
+              rows={data.support_tickets}
+              columns={COLUMNS.tickets}
+              statusField="status"
+              onDelete={id => handleDelete('support_tickets', id)}
+              onEdit={(id, updates) => handleEdit('support_tickets', id, updates)}
+            />
+          )}
 
           {tab === 'users' && (
             <AdminTableTab

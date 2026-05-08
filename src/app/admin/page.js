@@ -14,19 +14,21 @@ export default async function AdminPage() {
     { data: rewards },
     { data: redemptions },
     { data: appSettings },
+    { data: tickets },
   ] = await Promise.all([
-    admin.from('children').select('*').order('name'),
+    admin.from('children').select('*').order('created_at', { ascending: false }),
     admin.from('missions').select('*').order('name'),
     admin.from('completions').select('*').order('submitted_at', { ascending: false }),
     admin.from('rewards').select('*').order('name'),
     admin.from('redemptions').select('*').order('redeemed_at', { ascending: false }),
     admin.from('app_settings').select('*'),
+    admin.from('support_tickets').select('*').order('created_at', { ascending: false }),
   ])
 
   // Fetch auth users via the admin API
   const { data: { users: rawAuthUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
   
-  const authUsers = (rawAuthUsers || []).map(u => {
+  let authUsers = (rawAuthUsers || []).map(u => {
     const meta = u.raw_user_meta_data || {}
     let displayName = '—'
     if (meta.first_name) displayName = `${meta.first_name} ${meta.last_name || ''}`.trim()
@@ -36,6 +38,19 @@ export default async function AdminPage() {
     return {
       ...u,
       display_name: displayName
+    }
+  })
+
+  // Order users by created date (newest first)
+  authUsers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+  // Map user info to tickets
+  const enrichedTickets = (tickets || []).map(t => {
+    const user = authUsers.find(u => u.id === t.user_id)
+    return {
+      ...t,
+      user_email: user?.email || 'Unknown',
+      user_name: user?.display_name || 'Unknown',
     }
   })
 
@@ -122,6 +137,7 @@ export default async function AdminPage() {
       rewards={rewards || []}
       redemptions={redemptions || []}
       appSettings={appSettings || []}
+      tickets={enrichedTickets || []}
       stats={stats}
     />
   )

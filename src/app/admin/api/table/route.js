@@ -1,7 +1,7 @@
 import { createAdminClient } from '../../../../utils/supabase/admin'
 import { createClient } from '../../../../utils/supabase/server'
 
-const ALLOWED_TABLES = ['children', 'missions', 'completions', 'rewards', 'redemptions', 'app_settings', 'users']
+const ALLOWED_TABLES = ['children', 'missions', 'completions', 'rewards', 'redemptions', 'app_settings', 'users', 'support_tickets']
 
 async function verifyAdmin() {
   const supabase = await createClient()

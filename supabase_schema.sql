@@ -29,7 +29,8 @@ create table if not exists children (
   theme text default 'seedling',
   unlocked_colors text[] default ARRAY['seedling'],
   ring_style text default 'solid',
-  age_group text default 'all'
+  age_group text default 'all',
+  created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
 -- ============================================
