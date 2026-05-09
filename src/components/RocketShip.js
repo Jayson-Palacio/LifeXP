@@ -18,8 +18,8 @@ export default function RocketShip() {
       const startX = startLeft ? -100 : window.innerWidth + 100;
       const endX = startLeft ? window.innerWidth + 100 : -100;
 
-      // Randomize speed (between 5 and 10 seconds to feel floaty in space)
-      const duration = 5000 + Math.random() * 5000; 
+      // Randomize speed (between 10 and 20 seconds to feel twice as slow)
+      const duration = 10000 + Math.random() * 10000; 
 
       // Calculate the angle it should face
       const dx = endX - startX;
@@ -40,7 +40,7 @@ export default function RocketShip() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: 1,
+        opacity: 0.4,
       });
 
       // 2. Wait a couple of frames to ensure the browser registers the start position,
@@ -59,7 +59,7 @@ export default function RocketShip() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: 1,
+            opacity: 0.4,
           });
         });
       });
