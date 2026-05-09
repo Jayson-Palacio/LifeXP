@@ -36,7 +36,7 @@ export default function RocketShip() {
         transition: 'none',
         fontSize: '2rem',
         pointerEvents: 'none',
-        zIndex: 0,
+        zIndex: 50,
         opacity: 0.6,
         filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))'
       });
@@ -53,7 +53,7 @@ export default function RocketShip() {
             transition: `transform ${duration}ms linear`,
             fontSize: '2rem',
             pointerEvents: 'none',
-            zIndex: 0,
+            zIndex: 50,
             opacity: 0.6,
             filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))'
           });
