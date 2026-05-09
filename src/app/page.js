@@ -5,9 +5,9 @@ import RocketShip from '../components/RocketShip';
 export default function LandingPage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-deep)', position: 'relative', overflow: 'hidden', paddingBottom: 'var(--space-2xl)' }}>
-      <RocketShip />
       {/* Cosmic background animation re-used from home page */}
       <div className="kaeluma-bg" />
+      <RocketShip />
       
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', padding: 'var(--space-2xl) var(--space-lg)' }}>
         
