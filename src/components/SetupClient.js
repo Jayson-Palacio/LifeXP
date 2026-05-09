@@ -279,7 +279,10 @@ export default function SetupClient() {
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: '3rem', marginBottom: 8 }}>👦</div>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 6px' }}>Add Your First Kid</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Pick a fun avatar or use their real photo!</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: '0 0 8px' }}>Pick a fun avatar or use their real photo!</p>
+              <div style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', padding: '8px 12px', borderRadius: 'var(--radius-lg)', display: 'inline-block' }}>
+                <p style={{ color: '#a855f7', fontSize: '0.8rem', fontWeight: 700, margin: 0 }}>💡 You can add siblings later in Parent Mode!</p>
+              </div>
             </div>
 
             {/* Big avatar preview */}
@@ -389,9 +392,12 @@ export default function SetupClient() {
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎯</div>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 6px' }}>First Mission</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: '0 0 8px' }}>
                 What's the first task for {childName}?
               </p>
+              <div style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', padding: '8px 12px', borderRadius: 'var(--radius-lg)', display: 'inline-block' }}>
+                <p style={{ color: '#a855f7', fontSize: '0.8rem', fontWeight: 700, margin: 0 }}>💡 Add unlimited routines & chores in Parent Mode!</p>
+              </div>
             </div>
 
             {/* Quick-start templates */}
@@ -458,9 +464,12 @@ export default function SetupClient() {
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎁</div>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 6px' }}>First Reward</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: '0 0 8px' }}>
                 What is {childName} working towards?
               </p>
+              <div style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', padding: '8px 12px', borderRadius: 'var(--radius-lg)', display: 'inline-block' }}>
+                <p style={{ color: '#a855f7', fontSize: '0.8rem', fontWeight: 700, margin: 0 }}>💡 Build a full custom Reward Shop in Parent Mode!</p>
+              </div>
             </div>
 
             {/* Quick-start templates */}
@@ -570,6 +579,13 @@ export default function SetupClient() {
                   <div style={{ fontWeight: 800, fontSize: '1rem' }}>{rewardName}</div>
                 </div>
               </div>
+            </div>
+
+            <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))', border: '1px solid rgba(168,85,247,0.2)', padding: '16px', borderRadius: 'var(--radius-xl)', marginBottom: 28, textAlign: 'left' }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><span>👑</span> Inside Parent Mode</h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Switch to Parent Mode anytime using your PIN to add siblings, set up weekly allowances, approve missions, and customize your family's experience!
+              </p>
             </div>
 
             <button className="btn btn-gold btn-block btn-lg" onClick={() => router.push('/')}>
