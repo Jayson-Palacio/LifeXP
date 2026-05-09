@@ -34,11 +34,12 @@ export default function RocketShip() {
         left: 0,
         transform: `translate(${startX}px, ${startY}px) rotate(${angle}deg)`,
         transition: 'none',
-        fontSize: '2rem',
+        fontSize: '2.5rem',
         pointerEvents: 'none',
-        zIndex: 50,
-        opacity: 0.6,
-        filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))'
+        zIndex: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       });
 
       // 2. Wait a couple of frames to ensure the browser registers the start position,
@@ -51,11 +52,12 @@ export default function RocketShip() {
             left: 0,
             transform: `translate(${endX}px, ${endY}px) rotate(${angle}deg)`,
             transition: `transform ${duration}ms linear`,
-            fontSize: '2rem',
+            fontSize: '2.5rem',
             pointerEvents: 'none',
-            zIndex: 50,
-            opacity: 0.6,
-            filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))'
+            zIndex: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           });
         });
       });
@@ -71,5 +73,27 @@ export default function RocketShip() {
     return () => clearTimeout(timeoutId);
   }, []);
 
-  return <div style={style}>🚀</div>;
+  return (
+    <div style={style}>
+      {/* Intense glow layer that works on all platforms */}
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '60px',
+        height: '60px',
+        background: 'radial-gradient(circle, rgba(236,72,153,0.9) 0%, rgba(168,85,247,0.5) 40%, transparent 70%)',
+        filter: 'blur(6px)',
+        zIndex: -1
+      }} />
+      <span style={{ 
+        position: 'relative', 
+        zIndex: 1,
+        filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.6))'
+      }}>
+        🚀
+      </span>
+    </div>
+  );
 }
