@@ -1,4 +1,4 @@
--- LifeXP Complete Schema (run this in Supabase SQL Editor)
+-- Kaeluma Complete Schema (run this in Supabase SQL Editor)
 -- Safe to run on a fresh project
 
 create extension if not exists "uuid-ossp";

@@ -20,7 +20,7 @@ export async function renderRoleSelect() {
   app.innerHTML = `
     <div class="role-select-page page-enter">
       <div class="role-select-logo">⚡</div>
-      <h1 class="role-select-title">LifeXP</h1>
+      <h1 class="role-select-title">Kaeluma</h1>
       <p class="role-select-subtitle">Turn real life into a game</p>
 
       <div class="role-select-buttons">
