@@ -22,14 +22,6 @@ export const metadata = {
     title: "Kaeluma — Turn Real Life Into a Game",
     description: "Kaeluma — Turn your kid's daily tasks into a magical game they actually enjoy. Earn XP, level up, and redeem rewards!",
     siteName: "Kaeluma",
-    images: [
-      {
-        url: "/opengraph-image.png",
-        width: 1024,
-        height: 1024,
-        alt: "Kaeluma Logo",
-      },
-    ],
     locale: "en_US",
     type: "website",
   },
@@ -37,12 +29,6 @@ export const metadata = {
     card: "summary_large_image",
     title: "Kaeluma — Turn Real Life Into a Game",
     description: "Kaeluma — Turn your kid's daily tasks into a magical game they actually enjoy. Earn XP, level up, and redeem rewards!",
-    images: ["/twitter-image.png"],
-  },
-  icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
   },
 };
 
