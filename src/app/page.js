@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import RocketShip from '../components/RocketShip';
 
 export default function LandingPage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-deep)', position: 'relative', overflow: 'hidden', paddingBottom: 'var(--space-2xl)' }}>
+      <RocketShip />
       {/* Cosmic background animation re-used from home page */}
       <div className="kaeluma-bg" />
       
