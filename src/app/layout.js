@@ -17,6 +17,33 @@ const outfit = Outfit({
 export const metadata = {
   title: "Kaeluma — Turn Real Life Into a Game",
   description: "Kaeluma — Turn your kid's daily tasks into a magical game they actually enjoy. Earn XP, level up, and redeem rewards!",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  openGraph: {
+    title: "Kaeluma — Turn Real Life Into a Game",
+    description: "Kaeluma — Turn your kid's daily tasks into a magical game they actually enjoy. Earn XP, level up, and redeem rewards!",
+    siteName: "Kaeluma",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1024,
+        height: 1024,
+        alt: "Kaeluma Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kaeluma — Turn Real Life Into a Game",
+    description: "Kaeluma — Turn your kid's daily tasks into a magical game they actually enjoy. Earn XP, level up, and redeem rewards!",
+    images: ["/twitter-image.png"],
+  },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }) {
