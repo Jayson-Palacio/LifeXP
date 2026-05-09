@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import AvatarDisplay from './AvatarDisplay';
+import RocketShip from './RocketShip';
 import { playClick, playPop } from '../lib/sounds';
 
 export default function RoleSelectClient({ childrenData, missions, completions, parentPin }) {
@@ -126,6 +127,7 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
       
       {/* Ambient energetic cosmic background for Kaeluma */}
       <div className="kaeluma-bg" />
+      <RocketShip />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: 1000, margin: '0 auto', zIndex: 1 }}>
         <div className="kaeluma-logo-spin">☀</div>
