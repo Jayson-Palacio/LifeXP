@@ -3,8 +3,6 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const BRANDING_DIR = path.join(__dirname, '..', 'branding');
-const BRAND_GUIDE_MD = path.join(BRANDING_DIR, 'brand_guide.md');
-const BRAND_GUIDE_PDF = path.join(BRANDING_DIR, 'brand_guide.pdf');
 const TEMP_DIR = path.join(__dirname, 'temp_branding_html');
 
 // Create temp directory
@@ -28,7 +26,7 @@ marked.setOptions({
   breaks: true,
 });
 
-// Premium Dark Mode CSS for Kaeluma Brand Guide PDF (Screen/Digital reading layout)
+// Premium Dark Mode CSS for Kaeluma Brand Documents PDF (Screen/Digital reading layout)
 const CSS_STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap');
 
@@ -357,11 +355,25 @@ function parseAlerts(html) {
   });
 }
 
-function generateBrandingPdf() {
-  if (!fs.existsSync(BRAND_GUIDE_MD)) {
-    console.error(`Source file not found: ${BRAND_GUIDE_MD}`);
-    process.exit(1);
-  }
+function generatePdfs() {
+  const filesToCompile = [
+    {
+      md: 'brand_guide.md',
+      pdf: 'brand_guide.pdf',
+      title: 'Kaeluma - Brand Style Guide',
+      subtitle: 'Brand Style & Design System',
+      meta: 'A Gamified Quest Dashboard for Family Chores',
+      version: 'Version 1.0 (Official Guide)'
+    },
+    {
+      md: 'brand_deck.md',
+      pdf: 'brand_deck.pdf',
+      title: 'Kaeluma - Pitch Deck',
+      subtitle: 'Creative Vision & Market Pitch',
+      meta: 'Turning Real Life Duties Into RPG Quests',
+      version: 'Interactive Partner Presentation'
+    }
+  ];
 
   const msEdgePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
   if (!fs.existsSync(msEdgePath)) {
@@ -369,31 +381,43 @@ function generateBrandingPdf() {
     process.exit(1);
   }
 
-  console.log(`\n📖 Compiling: ${BRAND_GUIDE_MD}`);
-  const mdContent = fs.readFileSync(BRAND_GUIDE_MD, 'utf8');
+  console.log(`\n🚀 Starting Kaeluma PDF Export Loop...\n`);
 
-  // Convert Markdown to HTML
-  let bodyHtml = marked.parse(mdContent);
-  bodyHtml = parseAlerts(bodyHtml);
+  for (const doc of filesToCompile) {
+    const mdPath = path.join(BRANDING_DIR, doc.md);
+    const pdfPath = path.join(BRANDING_DIR, doc.pdf);
+    const tempHtmlPath = path.join(TEMP_DIR, doc.md.replace('.md', '.html'));
+    
+    if (!fs.existsSync(mdPath)) {
+      console.log(`⚠️ Skipping ${doc.md} (file not found)`);
+      continue;
+    }
 
-  // Inject beautiful Cover Page
-  const coverHtml = `
-  <div class="cover-page">
-    <div class="cover-logo-icon">☀️</div>
-    <h1 class="cover-title">Kaeluma</h1>
-    <div class="cover-divider"></div>
-    <div class="cover-subtitle">Brand Style & Design System</div>
-    <p class="cover-meta">A Gamified Quest Dashboard for Family Chores</p>
-    <div class="cover-version">Version 1.0 (Official Guide)</div>
-  </div>
-  `;
+    console.log(`📖 Compiling: ${doc.md} -> ${doc.pdf}`);
+    const mdContent = fs.readFileSync(mdPath, 'utf8');
 
-  // Create full HTML string
-  const fullHtml = `<!DOCTYPE html>
+    // Convert Markdown to HTML
+    let bodyHtml = marked.parse(mdContent);
+    bodyHtml = parseAlerts(bodyHtml);
+
+    // Inject beautiful Cover Page
+    const coverHtml = `
+    <div class="cover-page">
+      <div class="cover-logo-icon">☀️</div>
+      <h1 class="cover-title">Kaeluma</h1>
+      <div class="cover-divider"></div>
+      <div class="cover-subtitle">${doc.subtitle}</div>
+      <p class="cover-meta">${doc.meta}</p>
+      <div class="cover-version">${doc.version}</div>
+    </div>
+    `;
+
+    // Create full HTML string
+    const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Kaeluma - Brand Style Guide</title>
+  <title>${doc.title}</title>
   <style>${CSS_STYLE}</style>
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <script>
@@ -417,30 +441,26 @@ function generateBrandingPdf() {
 </body>
 </html>`;
 
-  const tempHtmlPath = path.join(TEMP_DIR, 'brand_guide.html');
-  fs.writeFileSync(tempHtmlPath, fullHtml, 'utf8');
+    fs.writeFileSync(tempHtmlPath, fullHtml, 'utf8');
 
-  console.log(`📄 Generated temporary HTML at: ${tempHtmlPath}`);
-  console.log(`🖨️ Printing PDF via Microsoft Edge Headless...`);
-
-  try {
-    // Add small delay to let mermaid render
-    const edgeCmd = `"${msEdgePath}" --headless --disable-gpu --no-pdf-header-footer --user-data-dir="${path.join(TEMP_DIR, 'EdgeProfile')}" --print-to-pdf="${BRAND_GUIDE_PDF}" "file:///${tempHtmlPath.replace(/\\/g, '/')}"`;
-    
-    console.log('Running print command...');
-    execSync(edgeCmd, { stdio: 'pipe' });
-    console.log(`\n🎉 Success! Generated: ${BRAND_GUIDE_PDF}`);
-  } catch (err) {
-    console.error('❌ Failed to export brand guide to PDF:', err.message);
+    try {
+      const edgeCmd = `"${msEdgePath}" --headless --disable-gpu --no-pdf-header-footer --user-data-dir="${path.join(TEMP_DIR, doc.md.replace('.md', '_EdgeProfile'))}" --print-to-pdf="${pdfPath}" "file:///${tempHtmlPath.replace(/\\/g, '/')}"`;
+      execSync(edgeCmd, { stdio: 'pipe' });
+      console.log(`  ✅ Successfully printed ${doc.pdf}`);
+    } catch (err) {
+      console.error(`  ❌ Failed to export ${doc.md}:`, err.message);
+    }
   }
 
   // Cleanup temp files
   try {
     fs.rmSync(TEMP_DIR, { recursive: true, force: true });
-    console.log('🧹 Cleaned up temporary directory.');
+    console.log('\n🧹 Cleaned up temporary directory.');
   } catch (err) {
     console.error('Temp directory cleanup failed:', err.message);
   }
+
+  console.log('\n🎉 All PDF exports completed!');
 }
 
-generateBrandingPdf();
+generatePdfs();

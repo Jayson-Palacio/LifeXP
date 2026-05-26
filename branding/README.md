@@ -16,6 +16,11 @@ For a complete breakdown of brand colors, typography scales, dynamic tier themes
 
 👉 **[Kaeluma Adobe Creative Suite Asset Guide (Photoshop/Illustrator/Premiere)](adobe_assets_guide.md)**
 
+👉 **[Kaeluma Brand Pitch Presentation Deck (Markdown)](brand_deck.md)**
+
+👉 **[Kaeluma Brand Pitch Presentation Deck (Print-Ready PDF)](brand_deck.pdf)**
+
+
 ---
 
 ## 📁 Brand Assets Directory
