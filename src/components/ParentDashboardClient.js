@@ -13,14 +13,16 @@ import KidDrawer from './KidDrawer';
 import MissionModal from './MissionModal';
 import RewardModal from './RewardModal';
 import ChildModal from './ChildModal';
+import ContactForm from './ContactForm';
 import { playClick, playPop } from '../lib/sounds';
 
-export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings }) {
+export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings, parentEmail = '' }) {
   const router = useRouter();
   
   // AppShell state
   const [activeTab, setActiveTab] = useState('overview');
   const [isExiting, setIsExiting] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   
   // Data State
   const [children, setChildren] = useState(initialChildren || []);
@@ -93,8 +95,18 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
        }
     }
     
-    await supabase.from('completions').update({ status: 'approved', reviewed_at: now.toISOString() }).eq('id', comp.id);
-    await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
+    const { error: compError } = await supabase.from('completions').update({ status: 'approved', reviewed_at: now.toISOString() }).eq('id', comp.id);
+    if (compError) {
+      showToast('Error approving mission: ' + compError.message, 'error');
+      return;
+    }
+    const { error: childError } = await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
+    if (childError) {
+      showToast('Error updating child rewards: ' + childError.message, 'error');
+      // Rollback completion status
+      await supabase.from('completions').update({ status: 'pending', reviewed_at: null }).eq('id', comp.id);
+      return;
+    }
 
     setPending(prev => prev.filter(p => p.id !== comp.id));
     setChildren(prev => prev.map(c => c.id === child.id ? { ...c, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() } : c));
@@ -121,14 +133,22 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleReject = async (comp, e) => {
     e.stopPropagation();
-    await supabase.from('completions').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', comp.id);
+    const { error } = await supabase.from('completions').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', comp.id);
+    if (error) {
+      showToast('Error rejecting: ' + error.message, 'error');
+      return;
+    }
     setPending(prev => prev.filter(p => p.id !== comp.id));
   };
 
   const handleFulfillReward = async (red, e) => {
     e.stopPropagation();
     if (playPop) playPop();
-    await supabase.from('redemptions').update({ status: 'fulfilled' }).eq('id', red.id);
+    const { error } = await supabase.from('redemptions').update({ status: 'fulfilled' }).eq('id', red.id);
+    if (error) {
+      showToast('Error fulfilling: ' + error.message, 'error');
+      return;
+    }
     setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
     showToast('Reward marked as given!');
   };
@@ -141,8 +161,18 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
     const newCoins = child.coins + reward.cost;
     if (playClick) playClick();
-    await supabase.from('redemptions').update({ status: 'refunded' }).eq('id', red.id);
-    await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
+    const { error: redError } = await supabase.from('redemptions').update({ status: 'refunded' }).eq('id', red.id);
+    if (redError) {
+      showToast('Error refunding: ' + redError.message, 'error');
+      return;
+    }
+    const { error: childError } = await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
+    if (childError) {
+      showToast('Error refunding coins: ' + childError.message, 'error');
+      // Rollback redemption
+      await supabase.from('redemptions').update({ status: 'pending' }).eq('id', red.id);
+      return;
+    }
     
     setChildren(prev => prev.map(c => c.id === child.id ? { ...c, coins: newCoins } : c));
     setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
@@ -151,38 +181,58 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleDeleteMission = async (id) => {
     if (!confirm('Delete this mission?')) return;
-    await supabase.from('missions').delete().eq('id', id);
+    const { error } = await supabase.from('missions').delete().eq('id', id);
+    if (error) {
+      showToast('Error deleting mission: ' + error.message, 'error');
+      return;
+    }
     setMissions(prev => prev.filter(m => m.id !== id));
     showToast('Mission deleted.');
   };
 
   const handleToggleActiveMission = async (m) => {
     const newStatus = m.is_active === false ? true : false;
-    await supabase.from('missions').update({ is_active: newStatus }).eq('id', m.id);
+    const { error } = await supabase.from('missions').update({ is_active: newStatus }).eq('id', m.id);
+    if (error) {
+      showToast('Error toggling mission: ' + error.message, 'error');
+      return;
+    }
     setMissions(prev => prev.map(mission => mission.id === m.id ? { ...mission, is_active: newStatus } : mission));
     showToast(newStatus ? 'Mission activated!' : 'Mission saved for later.');
   };
 
   const handleDeleteReward = async (id) => {
     if (!confirm('Delete this reward?')) return;
-    await supabase.from('rewards').delete().eq('id', id);
+    const { error } = await supabase.from('rewards').delete().eq('id', id);
+    if (error) {
+      showToast('Error deleting reward: ' + error.message, 'error');
+      return;
+    }
     setRewards(prev => prev.filter(r => r.id !== id));
     showToast('Reward deleted.');
   };
 
   const handleToggleActiveReward = async (r) => {
     const newStatus = r.is_active === false ? true : false;
-    await supabase.from('rewards').update({ is_active: newStatus }).eq('id', r.id);
+    const { error } = await supabase.from('rewards').update({ is_active: newStatus }).eq('id', r.id);
+    if (error) {
+      showToast('Error toggling reward: ' + error.message, 'error');
+      return;
+    }
     setRewards(prev => prev.map(reward => reward.id === r.id ? { ...reward, is_active: newStatus } : reward));
     showToast(newStatus ? 'Reward activated!' : 'Reward saved for later.');
   };
 
   const handleDeleteChild = async (id) => {
-    if (!confirm('Delete this kid and all progress? This cannot be undone.')) return;
-    await supabase.from('children').delete().eq('id', id);
+    if (!confirm('Delete this player and all progress? This cannot be undone.')) return;
+    const { error } = await supabase.from('children').delete().eq('id', id);
+    if (error) {
+      showToast('Error deleting player: ' + error.message, 'error');
+      return;
+    }
     setChildren(prev => prev.filter(c => c.id !== id));
     if (inspectChildId === id) setInspectChildId(null);
-    showToast('Kid removed from app.');
+    showToast('Player removed from app.');
   };
 
   const handleAdjustCoins = async (childId, amount, e) => {
@@ -192,7 +242,11 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     
     const newCoins = Math.max(0, child.coins + amount); 
     if (playClick) playClick();
-    await supabase.from('children').update({ coins: newCoins }).eq('id', childId);
+    const { error } = await supabase.from('children').update({ coins: newCoins }).eq('id', childId);
+    if (error) {
+      showToast('Error adjusting coins: ' + error.message, 'error');
+      return;
+    }
     setChildren(prev => prev.map(c => c.id === childId ? { ...c, coins: newCoins } : c));
     
     if (amount > 0) {
@@ -227,6 +281,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             handleReject={handleReject}
             handleFulfillReward={handleFulfillReward}
             handleRefundReward={handleRefundReward}
+            onOpenSupport={() => setShowSupportModal(true)}
           />
         )}
         {activeTab === 'manage' && (
@@ -242,9 +297,10 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             handleToggleActiveMission={handleToggleActiveMission}
             handleDeleteReward={handleDeleteReward}
             handleToggleActiveReward={handleToggleActiveReward}
+            onOpenSupport={() => setShowSupportModal(true)}
           />
         )}
-        {activeTab === 'settings' && <SettingsTab initialSettings={settings} />}
+        {activeTab === 'settings' && <SettingsTab initialSettings={settings} onOpenSupport={() => setShowSupportModal(true)} />}
       </AppShell>
 
       {/* Slide-Up Drawer for Kid Inspect Mode */}
@@ -265,7 +321,7 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             <h3 className="modal-title" style={{ textAlign: 'center', fontSize: '1.5rem' }}>
               {modal.type === 'mission' ? (modal.data ? 'Edit Mission' : 'New Mission') :
                modal.type === 'reward' ? (modal.data ? 'Edit Reward' : 'New Reward') :
-               (modal.data ? 'Edit Kid Profile' : 'Add Kid to Family')}
+               (modal.data ? 'Edit Player Profile' : 'Add Player to Family')}
             </h3>
             {modal.type === 'mission' && 
               <MissionModal 
@@ -298,10 +354,74 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
                 onSuccess={(data, isEdit) => {
                   if (isEdit) setChildren(prev => prev.map(c => c.id === data.id ? data : c));
                   else setChildren(prev => [...prev, data]);
-                  showToast(isEdit ? 'Kid profile updated!' : `Welcome ${data.name}! 🎉`);
+                  showToast(isEdit ? 'Player profile updated!' : `Welcome ${data.name}! 🎉`);
                 }}
               />
             }
+          </div>
+        </div>
+      )}
+
+      {/* Support Modal Overlay */}
+      {showSupportModal && (
+        <div 
+          className="modal-overlay" 
+          onPointerDown={(e) => { if (e.target === e.currentTarget) setShowSupportModal(false); }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(10, 13, 22, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div 
+            className="modal-content" 
+            style={{ 
+              maxWidth: 500, 
+              width: '100%',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--bg-glass-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 'var(--space-lg)',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+              position: 'relative',
+              animation: 'scaleIn 0.3s var(--ease-bounce)'
+            }}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowSupportModal(false)}
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: '1.25rem',
+                cursor: 'pointer',
+                transition: 'color 0.2s',
+                zIndex: 10
+              }}
+              onMouseOver={e => e.currentTarget.style.color = 'var(--text-bright)'}
+              onMouseOut={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              ✕
+            </button>
+
+            <ContactForm 
+              isModal={true} 
+              initialEmail={parentEmail}
+              onSuccess={() => setTimeout(() => setShowSupportModal(false), 2000)} 
+            />
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { getLevelForXP, getXPProgress, getXPDisplay } from '../lib/levels';
 import { getStreakIcon } from '../lib/streaks';
 import AvatarDisplay from './AvatarDisplay';
 import AnalyticsTab from './AnalyticsTab';
+import GoldCoin from './GoldCoin';
 
 export default function KidDrawer({
   inspectChildId, setInspectChildId,
@@ -93,7 +94,7 @@ export default function KidDrawer({
 
            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)', marginBottom: 'var(--space-2xl)' }}>
                <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                  <span className="stat-icon" style={{ fontSize: '2rem' }}>🪙</span>
+                  <span className="stat-icon" style={{ fontSize: '2rem' }}><GoldCoin size="2rem" /></span>
                   <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: 8 }}>{child.coins} Coins</div>
 
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
@@ -123,7 +124,7 @@ export default function KidDrawer({
                           </div>
                           <div style={{ display: 'flex', gap: 6, flexDirection: 'column', alignItems: 'flex-end' }}>
                             <span className="badge badge-gold" style={{ fontSize: '0.75rem', padding: '2px 6px' }}>⭐ {m.xp_reward}</span>
-                            <span className="badge badge-amber" style={{ fontSize: '0.75rem', padding: '2px 6px' }}>🪙 {m.coin_reward}</span>
+                            <span className="badge badge-amber" style={{ fontSize: '0.75rem', padding: '2px 6px' }}><GoldCoin /> {m.coin_reward}</span>
                           </div>
                        </div>
                     ))}
@@ -239,9 +240,9 @@ export default function KidDrawer({
              </div>
            </div>
 
-           <div style={{ borderTop: '1px solid var(--bg-glass-border)', paddingTop: 'var(--space-xl)', display: 'flex', justifyContent: 'center' }}>
-               <button className="btn btn-ghost" style={{ padding: '8px 24px', color: 'var(--red)', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={() => handleDeleteChild(child.id)}>🗑 Remove Kid</button>
-           </div>
+            <div style={{ borderTop: '1px solid var(--bg-glass-border)', paddingTop: 'var(--space-xl)', display: 'flex', justifyContent: 'center' }}>
+                <button className="btn btn-ghost" style={{ padding: '8px 24px', color: 'var(--red)', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={() => handleDeleteChild(child.id)}>🗑 Remove Player</button>
+            </div>
        </div>
     </div>
   );

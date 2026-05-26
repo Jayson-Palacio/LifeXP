@@ -118,7 +118,7 @@
   .kaeluma-title            { font-size: 3rem !important; }
   .role-select-subtitle     { font-size: 0.85rem !important; margin-bottom: 6px !important; }
   .kaeluma-grid             { gap: 14px !important; margin-top: 10px !important; padding-bottom: 16px !important; }
-  .kaeluma-card             { padding: 16px 14px !important; gap: 8px !important; }
+  .kaeluma-card             { padding: 24px 14px !important; gap: 8px !important; }
   .kaeluma-card-avatar      { width: 84px !important; height: 84px !important; margin-bottom: 6px !important; }
   .kaeluma-card-name        { font-size: 1rem !important; }
   .kaeluma-card-level       { font-size: 0.72rem !important; }
@@ -200,6 +200,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  width: 100%;
+  text-align: center;
 }
 
 @media (min-width: 540px) {
@@ -252,7 +254,7 @@
   border-bottom-color: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 12px 30px rgba(0, 0, 0, 0.3);
   border-radius: var(--radius-xl);
-  padding: var(--space-lg) var(--space-md);
+  padding: 36px var(--space-md);
   min-width: 0;
   gap: 10px;
   cursor: pointer;
@@ -264,11 +266,11 @@
 }
 
 @media (min-width: 540px) {
-  .kaeluma-card { padding: var(--space-xl) var(--space-lg); gap: 12px; }
+  .kaeluma-card { padding: 46px var(--space-lg); gap: 12px; }
 }
 
 @media (min-width: 860px) {
-  .kaeluma-card { padding: 32px 24px; gap: 16px; }
+  .kaeluma-card { padding: 48px 24px; gap: 16px; }
 }
 
 .kaeluma-card::before {
@@ -318,7 +320,10 @@
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   z-index: 100;
   margin-top: auto;
-  margin-bottom: var(--space-xl);
+  margin-bottom: 40px; /* Brought up just a tad from var(--space-xl) */
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sleek-parent-btn:hover {
@@ -328,11 +333,61 @@
   box-shadow: 0 10px 30px rgba(0,0,0,0.4), var(--glow-primary);
 }
 
+.sleek-parent-btn:active {
+  transform: translateY(1px) scale(0.96);
+}
+
 .sleek-parent-btn-text {
   background: linear-gradient(135deg, #a855f7, #6366f1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: 0.02em;
+}
+
+/* Mobile Phone Scaling (Vertical Fit) */
+@media (max-width: 480px) {
+  .role-select-page {
+    padding: 16px 12px !important;
+  }
+  .kaeluma-logo-spin {
+    font-size: 2.2rem !important;
+    margin-bottom: -4px !important;
+  }
+  .kaeluma-title {
+    font-size: 2.2rem !important;
+  }
+  .role-select-subtitle {
+    margin-bottom: 6px !important;
+    font-size: 0.8rem !important;
+  }
+  .kaeluma-grid {
+    margin-top: 8px !important;
+    gap: 10px !important;
+    padding-bottom: 30px !important;
+  }
+  .kaeluma-card {
+    padding: 24px 12px !important;
+    border-radius: var(--radius-md) !important;
+    gap: 8px !important;
+  }
+  .kaeluma-card-avatar {
+    width: 76px !important;
+    height: 76px !important;
+    margin-bottom: 4px !important;
+  }
+  .kaeluma-card-name {
+    font-size: 1rem !important;
+  }
+  .kaeluma-card-stats {
+    font-size: 0.74rem !important;
+    gap: 8px !important;
+  }
+  .sleek-parent-btn {
+    padding: 10px 24px !important;
+    font-size: 0.88rem !important;
+    margin-top: auto !important;
+    margin-bottom: 32px !important; /* Brought up from bottom of phone to avoid home indicator */
+  }
 }
 
 /* Very Cool Home Button */

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { REWARD_EMOJI_GROUPS, REWARD_EMOJIS } from '../lib/ui';
+import { REWARD_EMOJI_GROUPS, REWARD_EMOJIS, showToast } from '../lib/ui';
 import GroupedEmojiPicker from './GroupedEmojiPicker';
 import InlineCrop from './CropOverlay';
 
@@ -53,10 +53,18 @@ export default function RewardModal({ modal, childrenList = [], closeModal, onSu
       };
 
       if (isEdit) {
-        await supabase.from('rewards').update(newObj).eq('id', modal.data.id);
+        const { error } = await supabase.from('rewards').update(newObj).eq('id', modal.data.id);
+        if (error) {
+          showToast('Error updating reward: ' + error.message, 'error');
+          return;
+        }
         onSuccess({ ...modal.data, ...newObj }, true);
       } else {
-        const { data } = await supabase.from('rewards').insert([newObj]).select().single();
+        const { data, error } = await supabase.from('rewards').insert([newObj]).select().single();
+        if (error) {
+          showToast('Error creating reward: ' + error.message, 'error');
+          return;
+        }
         if (data) onSuccess(data, false);
       }
       closeModal();
@@ -86,7 +94,7 @@ export default function RewardModal({ modal, childrenList = [], closeModal, onSu
                 }}
                 style={{ accentColor: 'var(--primary)', width: 16, height: 16 }}
               />
-              <span style={{ fontWeight: assignAll ? 'bold' : 'normal' }}>All Kids</span>
+              <span style={{ fontWeight: assignAll ? 'bold' : 'normal' }}>All Players</span>
             </label>
             
             {!assignAll && (

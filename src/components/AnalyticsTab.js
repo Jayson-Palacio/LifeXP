@@ -4,22 +4,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLevelForXP } from '../lib/levels';
 import AvatarDisplay from './AvatarDisplay';
+import { getStreakIcon, getStreakColor } from '../lib/streaks';
+import GoldCoin from './GoldCoin';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const getStreakIcon = (streak) => {
-  if (streak >= 100) return '🌌';
-  if (streak >= 30) return '💎';
-  if (streak >= 7) return '⚡';
-  return '🔥';
-};
-
-const getStreakColor = (streak) => {
-  if (streak >= 100) return '#d946ef';
-  if (streak >= 30) return '#06b6d4';
-  if (streak >= 7) return '#3b82f6';
-  return '#fb923c';
-};
 
 function StatCard({ icon, label, value, sub, color = 'var(--primary)' }) {
   return (
@@ -270,12 +258,12 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
         <>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 4 }}>📊 Analytics</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--space-xl)' }}>
-            Behavioural insights for each child
+            Behavioural insights for each player
           </p>
         </>
       )}
 
-      {/* Child Selector */}
+      {/* Player Selector */}
       {!singleChildId && (
         <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginBottom: 'var(--space-xl)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {(children || []).map(c => {
@@ -351,7 +339,7 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 'var(--space-xl)' }}>
             <StatCard icon="✅" label="Missions Done" value={stats.totalApproved} sub={`${stats.totalPending} pending · ${stats.totalRejected} rejected`} color="var(--green)" />
             <StatCard icon="🎯" label="Approval Rate" value={`${approvalRate}%`} sub="of all submissions" color={approvalRate > 80 ? 'var(--green)' : approvalRate > 50 ? 'var(--amber)' : 'var(--red)'} />
-            <StatCard icon="🪙" label="Coins Earned" value={stats.coinsEarned} sub={`${stats.coinsSpent} spent · ${stats.currentCoins} held`} color="var(--amber)" />
+            <StatCard icon={<GoldCoin size="1.6rem" />} label="Coins Earned" value={stats.coinsEarned} sub={`${stats.coinsSpent} spent · ${stats.currentCoins} held`} color="var(--amber)" />
             <StatCard icon={getStreakIcon(stats.currentStreak)} label="Day Streak" value={stats.currentStreak} sub={`Lv ${level} · ${stats.totalXp} XP total`} color={getStreakColor(stats.currentStreak)} />
           </div>
 
@@ -456,7 +444,7 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
                     <div style={{ fontSize: '1.4rem', flexShrink: 0 }}>{r.icon}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{r.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>🪙 {r.spent} total spent</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}><GoldCoin size="0.72rem" /> {r.spent} total spent</div>
                     </div>
                     <MiniBar value={r.count} max={stats.topRewards[0].count} color="var(--amber)" />
                     <div style={{ width: 28, fontSize: '0.85rem', fontWeight: 800, color: 'var(--amber)', flexShrink: 0, textAlign: 'right' }}>{r.count}×</div>

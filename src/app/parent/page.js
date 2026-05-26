@@ -13,7 +13,7 @@ export default async function ParentDashboardPage() {
     { data: completions },
     { data: redemptions }
   ] = await Promise.all([
-    supabase.from('app_settings').select('setup_complete, parent_pin, require_approval, family_name').order('setup_complete', { ascending: false }).limit(1).single(),
+    supabase.from('app_settings').select('setup_complete, require_approval, family_name').order('setup_complete', { ascending: false }).limit(1).single(),
     supabase.from('children').select('*').order('name'),
     supabase.from('missions').select('*').order('name'),
     supabase.from('rewards').select('*').order('cost'),
@@ -25,6 +25,9 @@ export default async function ParentDashboardPage() {
     redirect('/setup');
   }
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const parentEmail = user?.email || '';
+
   return (
     <ParentDashboardClient 
       initialChildren={children || []}
@@ -32,7 +35,8 @@ export default async function ParentDashboardPage() {
       initialRewards={rewards || []}
       initialPending={completions || []}
       initialPendingRedemptions={redemptions || []}
-      initialSettings={appSettings}
+      initialSettings={appSettings || {}}
+      parentEmail={parentEmail}
     />
   );
 }

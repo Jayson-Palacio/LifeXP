@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { getRelativeTimeString } from '../utils/time'
 
 const S = {
   wrap: { padding: '0 24px 40px' },
@@ -34,13 +35,61 @@ function ExpandableText({ text }) {
   )
 }
 
-function fmt(val) {
+function isImageUrl(val) {
+  if (typeof val !== 'string') return false
+  const s = val.trim()
+  if (s.startsWith('data:image/')) return true
+  return (
+    s.startsWith('http://') || 
+    s.startsWith('https://') || 
+    s.startsWith('/')
+  ) && (
+    s.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i) || 
+    s.includes('/avatars/') || 
+    s.includes('/rewards/')
+  )
+}
+
+function fmt(val, mounted) {
   if (val === null || val === undefined) return <span style={{ color: '#475569' }}>—</span>
   if (typeof val === 'boolean') return val ? '✅' : '❌'
   if (typeof val === 'object') return <ExpandableText text={JSON.stringify(val)} />
   const s = String(val)
-  if (s.match(/^\d{4}-\d{2}-\d{2}T/)) return new Date(s).toLocaleString()
-  if (s.length > 10) return <ExpandableText text={s} />
+  
+  if (isImageUrl(s)) {
+    return (
+      <a href={s} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }} title="Click to view full size">
+        <div 
+          style={{ 
+            position: 'relative', 
+            width: 40, 
+            height: 40, 
+            borderRadius: 8, 
+            overflow: 'hidden', 
+            border: '1px solid #2d3148',
+            background: '#0d0d14',
+            transition: 'transform 0.15s var(--ease-out)',
+            cursor: 'pointer'
+          }}
+          onMouseOver={e => e.currentTarget.style.transform = 'scale(1.15)'}
+          onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <img src={s} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      </a>
+    )
+  }
+
+  if (s.match(/^\d{4}-\d{2}-\d{2}T/)) {
+    const rel = getRelativeTimeString(s, mounted)
+    const abs = new Date(s).toLocaleString()
+    return (
+      <span title={abs} style={{ cursor: 'help', borderBottom: '1px dotted #475569' }}>
+        {rel}
+      </span>
+    )
+  }
+  if (s.length > 15) return <ExpandableText text={s} />
   return s
 }
 
@@ -50,6 +99,11 @@ export default function AdminTableTab({ rows = [], columns, statusField, onDelet
   const [editData, setEditData] = useState({})
   const [saving, setSaving] = useState(false)
   const [page, setPage] = useState(0)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const filtered = rows.filter(r => !q || JSON.stringify(r).toLowerCase().includes(q.toLowerCase()))
   const pages = Math.ceil(filtered.length / PAGE_SIZE)
@@ -65,10 +119,49 @@ export default function AdminTableTab({ rows = [], columns, statusField, onDelet
   const editableCols = columns.filter(c => c.editable)
 
   return (
-    <div className="admin-content" style={S.wrap}>
-      <input style={S.search} placeholder="Search…" value={q} onChange={e => { setQ(e.target.value); setPage(0) }} />
+    <div className="admin-content admin-table-wrap" style={S.wrap}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .admin-table-search {
+          width: 100%;
+          max-width: 340px;
+          background: #1e2130;
+          border: 1px solid #2d3148;
+          border-radius: 8px;
+          color: #e2e8f0;
+          padding: 8px 14px;
+          font-size: 14px;
+          margin-bottom: 18px;
+          outline: none;
+        }
+        @media (max-width: 640px) {
+          .admin-table-search {
+            max-width: 100%;
+            font-size: 13px;
+            padding: 6px 10px;
+            margin-bottom: 12px;
+          }
+          .admin-table th {
+            padding: 6px 4px !important;
+            font-size: 9px !important;
+            letter-spacing: 0.5px !important;
+          }
+          .admin-table td {
+            padding: 6px 4px !important;
+            font-size: 11px !important;
+          }
+          .admin-table-wrap {
+            padding: 0 12px 24px !important;
+          }
+        }
+      `}} />
+      <input 
+        className="admin-table-search" 
+        placeholder="Search…" 
+        value={q} 
+        onChange={e => { setQ(e.target.value); setPage(0) }} 
+      />
       <div style={{ overflowX: 'auto' }}>
-        <table style={S.table}>
+        <table className="admin-table" style={S.table}>
           <thead>
             <tr>{columns.map(c => <th key={c.key} style={S.th}>{c.label}</th>)}
               <th style={S.th}>Actions</th>
@@ -82,7 +175,7 @@ export default function AdminTableTab({ rows = [], columns, statusField, onDelet
                     <td key={c.key} style={S.td}>
                       {c.key === statusField
                         ? <span style={S.badge(STATUS_COLORS[row[c.key]] || '#94a3b8')}>{row[c.key]}</span>
-                        : fmt(row[c.key])}
+                        : fmt(row[c.key], mounted)}
                     </td>
                   ))}
                   <td style={S.td}>
@@ -110,7 +203,11 @@ export default function AdminTableTab({ rows = [], columns, statusField, onDelet
                           {editableCols.map(c => (
                             <div key={c.key}>
                               <label style={S.label}>{c.label}</label>
-                              <input style={S.input} value={editData[c.key] ?? ''} onChange={e => setEditData(p => ({ ...p, [c.key]: e.target.value }))} />
+                              <input 
+                                style={S.input} 
+                                value={editData[c.key] ?? ''} 
+                                onChange={e => setEditData(p => ({ ...p, [c.key]: e.target.value }))} 
+                              />
                             </div>
                           ))}
                         </div>

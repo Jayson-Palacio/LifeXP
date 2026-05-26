@@ -9,6 +9,8 @@ import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } fro
 import { showToast, showFloat } from '../lib/ui';
 import { playRandomSuccessSound, playKaChing, playPop, playClick } from '../lib/sounds';
 import AvatarDisplay from './AvatarDisplay';
+import GoldCoin from './GoldCoin';
+import { getStreakIcon, getStreakStyles } from '../lib/streaks';
 
 export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true, familyName }) {
   const router = useRouter();
@@ -45,19 +47,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     }
   }, [avatarTaps]);
 
-  const getStreakIcon = (streak) => {
-    if (streak >= 100) return '🌌';
-    if (streak >= 30) return '💎';
-    if (streak >= 7) return '⚡';
-    return '🔥';
-  };
-
-  const getStreakStyles = (streak) => {
-    if (streak >= 100) return { color: '#d946ef', border: '1px solid #d946ef', background: 'rgba(217, 70, 239, 0.12)', boxShadow: '0 0 10px rgba(217, 70, 239, 0.5)' };
-    if (streak >= 30) return { color: '#06b6d4', border: '1px solid #06b6d4', background: 'rgba(6, 182, 212, 0.12)', boxShadow: '0 0 10px rgba(6, 182, 212, 0.5)' };
-    if (streak >= 7) return { color: '#3b82f6', border: '1px solid #3b82f6', background: 'rgba(59, 130, 246, 0.12)', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' };
-    return { color: '#fb923c', border: '1px solid rgba(251,146,60,0.25)', background: 'rgba(251,146,60,0.12)' };
-  };
+  // Streak helpers imported from lib/streaks
 
   const handleAvatarTap = () => {
     if (playPop) playPop();
@@ -242,14 +232,28 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
          }
       }
 
-      const { data } = await supabase.from('completions').insert([{
+      const { data, error: compError } = await supabase.from('completions').insert([{
         mission_id: mission.id,
         child_id: child.id,
         status: 'approved',
       }]).select().single();
 
+      if (compError) {
+        showToast('Error completing mission: ' + compError.message, 'error');
+        setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
+        return;
+      }
+
       if (data) {
-        await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
+        const { error: childError } = await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
+        if (childError) {
+          showToast('Error updating rewards: ' + childError.message, 'error');
+          // Rollback the completion insert to prevent desync
+          await supabase.from('completions').delete().eq('id', data.id);
+          setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
+          return;
+        }
+
         setChild(prev => ({ ...prev, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }));
         setCompletions(prev => [...prev, data]);
 
@@ -278,12 +282,18 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       }
     } else {
       // Require approval path: just insert as pending
-      const { data } = await supabase.from('completions').insert([{
+      const { data, error: compError } = await supabase.from('completions').insert([{
         mission_id: mission.id,
         child_id: child.id,
         status: 'pending',
       }]).select().single();
       
+      if (compError) {
+        showToast('Error submitting mission: ' + compError.message, 'error');
+        setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
+        return;
+      }
+
       if (data) {
         setCompletions(prev => [...prev, data]);
         showToast('Done! ⏳ Waiting for parent approval');
@@ -301,9 +311,13 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       // Find the pending completion for this exact mission
       const pendingComp = completions.find(c => c.mission_id === mission.id && c.status === 'pending');
       if (pendingComp) {
-        await supabase.from('completions').delete().eq('id', pendingComp.id);
-        setCompletions(prev => prev.filter(c => c.id !== pendingComp.id));
-        showToast('Mission unmarked. You can do it again!');
+        const { error } = await supabase.from('completions').delete().eq('id', pendingComp.id);
+        if (error) {
+          showToast('Error undoing mission: ' + error.message, 'error');
+        } else {
+          setCompletions(prev => prev.filter(c => c.id !== pendingComp.id));
+          showToast('Mission unmarked. You can do it again!');
+        }
       }
     } catch (err) {
       showToast('Error undoing', 'error');
@@ -351,11 +365,30 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       }
 
       const newCoins = child.coins - r.cost;
-      const { data: inserted } = await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id, status: 'pending' }]).select().single();
+      const { data: inserted, error: redeemError } = await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id, status: 'pending' }]).select().single();
+      
+      if (redeemError) {
+        showToast('Error redeeming: ' + redeemError.message, 'error');
+        e.target.disabled = false;
+        e.target.textContent = 'Redeem!';
+        return;
+      }
+
+      const { error: childError } = await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
+      if (childError) {
+        showToast('Error updating coins: ' + childError.message, 'error');
+        // Rollback the redemption insert
+        if (inserted) {
+          await supabase.from('redemptions').delete().eq('id', inserted.id);
+        }
+        e.target.disabled = false;
+        e.target.textContent = 'Redeem!';
+        return;
+      }
+
       if (inserted) {
         setAllRedemptions(prev => [inserted, ...prev]);
       }
-      await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
       setChild({ ...child, coins: newCoins });
       if (playKaChing) playKaChing();
       const rect = e.target.getBoundingClientRect();
@@ -370,14 +403,23 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   };
 
   const handleChangeTheme = async (t) => {
-    await supabase.from('children').update({ theme: t.id }).eq('id', child.id);
+    const { error } = await supabase.from('children').update({ theme: t.id }).eq('id', child.id);
+    if (error) {
+      showToast('Error changing theme: ' + error.message, 'error');
+      return;
+    }
+    try { localStorage.setItem('kaeluma_kid_theme', t.id); } catch {}
     setChild({ ...child, theme: t.id });
     setShowThemePicker(false);
     showToast(`🎨 ${t.name}`);
   };
 
   const handleChangeRing = async (r) => {
-    await supabase.from('children').update({ ring_style: r.id }).eq('id', child.id);
+    const { error } = await supabase.from('children').update({ ring_style: r.id }).eq('id', child.id);
+    if (error) {
+      showToast('Error equipping ring: ' + error.message, 'error');
+      return;
+    }
     setChild(prev => ({ ...prev, ring_style: r.id }));
     setShowRingPicker(false);
     showToast(`💍 ${r.name} ring equipped!`);
@@ -601,7 +643,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
           {/* Stat pills — centered row */}
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <div className={isShakingCoins ? 'shake-coin' : ''} onClick={handleCoinTap} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(251,191,36,0.12)', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(251,191,36,0.25)', transition: 'transform 0.1s' }}>
-              <span style={{ fontSize: '0.9rem' }}>🪙</span>
+              <GoldCoin size="0.95rem" />
               <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fbbf24' }}>{child.coins}</span>
             </div>
             
@@ -662,7 +704,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                       <div className="mission-name" style={{ fontSize: '1.05rem', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
                       <div className="mission-rewards">
                         <span className="badge badge-gold" style={{ fontSize: '0.82rem' }}>⭐ {m.xp_reward} XP</span>
-                        <span className="badge badge-amber" style={{ fontSize: '0.82rem' }}>🪙 {m.coin_reward}</span>
+                        <span className="badge badge-amber" style={{ fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 3 }}><GoldCoin size="0.82rem" /> {m.coin_reward}</span>
                       </div>
                     </div>
 
@@ -750,8 +792,8 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
       <div style={{ padding: '0 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <h3 style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.01em' }}>🛒 Reward Shop</h3>
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--amber-dim)', borderRadius: 'var(--radius-full)', padding: '6px 14px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--amber)' }}>
-            🪙 {child.coins}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--amber-dim)', borderRadius: 'var(--radius-full)', padding: '6px 14px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <GoldCoin size="0.9rem" /> {child.coins}
           </div>
         </div>
 
@@ -811,7 +853,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                     )}
 
                     <div className="reward-name" style={{ fontSize: '1rem', marginTop: 4 }}>{r.name}</div>
-                    <div className="reward-cost" style={{ fontSize: '1rem', margin: '8px 0' }}>🪙 {r.cost}</div>
+                    <div className="reward-cost" style={{ fontSize: '1rem', margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><GoldCoin size="1rem" /> {r.cost}</div>
                     <button
                       className={`btn ${canProceed ? 'btn-primary' : 'btn-ghost'} btn-block`}
                       style={{ padding: '10px' }}

@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS, REWARD_EMOJI_GROUPS } from '../lib/ui';
 import { submitSetupData } from '../app/actions/setup';
 import GroupedEmojiPicker from './GroupedEmojiPicker';
+import GoldCoin from './GoldCoin';
 import InlineCrop from './CropOverlay';
 import { showConfetti } from '../lib/ui';
 
-const TOTAL_STEPS = 7; // 0=Welcome, 1=FamilyName, 2=PIN, 3=Kid, 4=Mission, 5=Reward, 6=Done
+const TOTAL_STEPS = 7; // 0=Welcome, 1=FamilyName, 2=PIN, 3=Player, 4=Mission, 5=Reward, 6=Done
 
-const STEP_LABELS = ['Welcome', 'Family', 'PIN', 'Kid', 'Mission', 'Reward', 'Done!'];
+const STEP_LABELS = ['Welcome', 'Family', 'PIN', 'Player', 'Mission', 'Reward', 'Done!'];
 
 const AGE_GROUPS = ['3-5', '6-8', '9-12', '13+'];
 
@@ -273,15 +274,15 @@ export default function SetupClient() {
           </div>
         )}
 
-        {/* ── STEP 3: Add First Kid ── */}
+        {/* ── STEP 3: Add First Player ── */}
         {step === 3 && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: '3rem', marginBottom: 8 }}>👦</div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 6px' }}>Add Your First Kid</h2>
+              <div style={{ fontSize: '3rem', marginBottom: 8 }}>👥</div>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 6px' }}>Add Your First Player</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: '0 0 8px' }}>Pick a fun avatar or use their real photo!</p>
               <div style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', padding: '8px 12px', borderRadius: 'var(--radius-lg)', display: 'inline-block' }}>
-                <p style={{ color: '#a855f7', fontSize: '0.8rem', fontWeight: 700, margin: 0 }}>💡 You can add siblings later in Parent Mode!</p>
+                <p style={{ color: '#a855f7', fontSize: '0.8rem', fontWeight: 700, margin: 0 }}>💡 You can add more players later in Parent Mode!</p>
               </div>
             </div>
 
@@ -324,7 +325,7 @@ export default function SetupClient() {
                     ref={nameInputRef}
                     type="text"
                     className="input"
-                    placeholder="Kid's first name"
+                    placeholder="Player's name"
                     value={childName}
                     onChange={e => setChildName(e.target.value)}
                     maxLength={20}
@@ -445,7 +446,7 @@ export default function SetupClient() {
             </div>
 
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 20, textAlign: 'center' }}>
-              Reward: ⭐ 10 XP &nbsp; 🪙 5 Coins — customize anytime
+              Reward: ⭐ 10 XP &nbsp; <GoldCoin /> 5 Coins — customize anytime
             </p>
 
             <button
@@ -517,7 +518,7 @@ export default function SetupClient() {
             </div>
 
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 20, textAlign: 'center' }}>
-              Cost: 🪙 {rewardCost} Coins — customize anytime
+              Cost: <GoldCoin /> {rewardCost} Coins — customize anytime
             </p>
 
             <button
@@ -561,7 +562,7 @@ export default function SetupClient() {
                     : childAvatar}
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>First Kid</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>First Player</div>
                   <div style={{ fontWeight: 800, fontSize: '1rem' }}>{childName}</div>
                 </div>
               </div>
@@ -584,7 +585,7 @@ export default function SetupClient() {
             <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))', border: '1px solid rgba(168,85,247,0.2)', padding: '16px', borderRadius: 'var(--radius-xl)', marginBottom: 28, textAlign: 'left' }}>
               <h3 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><span>👑</span> Inside Parent Mode</h3>
               <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                Switch to Parent Mode anytime using your PIN to add siblings, set up weekly allowances, approve missions, and customize your family's experience!
+                Switch to Parent Mode anytime using your PIN to add players, set up weekly allowances, approve missions, and customize your family's experience!
               </p>
             </div>
 

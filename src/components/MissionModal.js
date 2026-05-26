@@ -79,10 +79,18 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
       };
       
       if (isEdit) {
-        await supabase.from('missions').update(newObj).eq('id', modal.data.id);
+        const { error } = await supabase.from('missions').update(newObj).eq('id', modal.data.id);
+        if (error) {
+          showToast('Error updating mission: ' + error.message, 'error');
+          return;
+        }
         onSuccess({ ...modal.data, ...newObj }, true);
       } else {
-        const { data } = await supabase.from('missions').insert([newObj]).select().single();
+        const { data, error } = await supabase.from('missions').insert([newObj]).select().single();
+        if (error) {
+          showToast('Error creating mission: ' + error.message, 'error');
+          return;
+        }
         if (data) onSuccess(data, false);
       }
       closeModal();
@@ -176,7 +184,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
                 }}
                 style={{ accentColor: 'var(--primary)', width: 16, height: 16 }}
               />
-              <span style={{ fontWeight: assignAll ? 'bold' : 'normal' }}>All Kids</span>
+              <span style={{ fontWeight: assignAll ? 'bold' : 'normal' }}>All Players</span>
             </label>
             
             {!assignAll && (

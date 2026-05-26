@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { AVATAR_EMOJI_GROUPS, AVATAR_EMOJIS } from '../lib/ui';
+import { AVATAR_EMOJI_GROUPS, AVATAR_EMOJIS, showToast } from '../lib/ui';
 import GroupedEmojiPicker from './GroupedEmojiPicker';
 import InlineCrop from './CropOverlay';
 
@@ -29,13 +29,21 @@ export default function ChildModal({ modal, closeModal, onSuccess }) {
       const newObj = { name: fd.get('name'), avatar: finalAvatar };
       
       if (isEdit) {
-        await supabase.from('children').update(newObj).eq('id', modal.data.id);
+        const { error } = await supabase.from('children').update(newObj).eq('id', modal.data.id);
+        if (error) {
+          showToast('Error updating player: ' + error.message, 'error');
+          return;
+        }
         onSuccess({ ...modal.data, ...newObj }, true);
       } else {
         const { data, error } = await supabase.from('children').insert([{
           ...newObj, xp: 0, total_xp_earned: 0, coins: 0, theme: 'seedling'
         }]).select().single();
-        if (!error && data) {
+        if (error) {
+          showToast('Error creating player: ' + error.message, 'error');
+          return;
+        }
+        if (data) {
           onSuccess(data, false);
         }
       }
@@ -45,7 +53,7 @@ export default function ChildModal({ modal, closeModal, onSuccess }) {
 
       <div className="input-group" style={{ marginBottom: 16 }}>
         <label>Name</label>
-        <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="Kid's First Name" />
+        <input name="name" className="input" defaultValue={modal.data?.name || ''} required placeholder="Player's Name" />
       </div>
 
       <div className="input-group" style={{ marginBottom: 16 }}>
@@ -100,7 +108,7 @@ export default function ChildModal({ modal, closeModal, onSuccess }) {
       {!cropSrc && (
         <div className="modal-actions">
           <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
-          <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Add Kid'}</button>
+          <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Add Player'}</button>
         </div>
       )}
     </form>

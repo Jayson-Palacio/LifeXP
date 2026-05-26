@@ -142,59 +142,67 @@ function playSoftBloom(ctx, time) {
 
 // Epic Orchestral Swell for Tier-Up
 export function playTierUpSwell() {
-  const ctx = getContext();
-  if (!ctx) return;
-  const time = ctx.currentTime;
-  
-  // A vast C Major 7 chord building up
-  const chord = [261.63, 329.63, 392.00, 493.88, 523.25]; // C4, E4, G4, B4, C5
-  
-  chord.forEach((freq, idx) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
+    const time = ctx.currentTime;
+    
+    // A vast C Major 7 chord building up
+    const chord = [261.63, 329.63, 392.00, 493.88, 523.25]; // C4, E4, G4, B4, C5
+    
+    chord.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-    // Use triangle for a slightly richer horn/string hybrid tone
-    osc.type = 'triangle'; 
-    osc.frequency.setValueAtTime(freq, time);
+      // Use triangle for a slightly richer horn/string hybrid tone
+      osc.type = 'triangle'; 
+      osc.frequency.setValueAtTime(freq, time);
 
-    // Filter to make it swell from muffled to bright
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(300, time);
-    filter.frequency.exponentialRampToValueAtTime(2000, time + 1.5);
+      // Filter to make it swell from muffled to bright
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(300, time);
+      filter.frequency.exponentialRampToValueAtTime(2000, time + 1.5);
 
-    gain.gain.setValueAtTime(0, time);
-    // Swell up slowly
-    gain.gain.linearRampToValueAtTime(0.12, time + 1.5);
-    // Hold and decay
-    gain.gain.exponentialRampToValueAtTime(0.01, time + 3.5);
+      gain.gain.setValueAtTime(0, time);
+      // Swell up slowly
+      gain.gain.linearRampToValueAtTime(0.12, time + 1.5);
+      // Hold and decay
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 3.5);
 
-    // slight detune for richness
-    osc.detune.setValueAtTime(Math.random() * 10 - 5, time); 
+      // slight detune for richness
+      osc.detune.setValueAtTime(Math.random() * 10 - 5, time); 
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
 
-    osc.start(time);
-    osc.stop(time + 3.5);
-  });
+      osc.start(time);
+      osc.stop(time + 3.5);
+    });
+  } catch (err) {
+    console.warn("playTierUpSwell failed:", err);
+  }
 }
 
 // Randomizer for standard completions
 export function playRandomSuccessSound() {
-  const ctx = getContext();
-  if (!ctx) return;
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
 
-  const time = ctx.currentTime;
-  const roll = Math.floor(Math.random() * 5);
+    const time = ctx.currentTime;
+    const roll = Math.floor(Math.random() * 5);
 
-  switch (roll) {
-    case 0: playChimeRise(ctx, time); break;
-    case 1: playPowerPulse(ctx, time); break;
-    case 2: playSparkleFall(ctx, time); break;
-    case 3: playCoinPing(ctx, time); break;
-    case 4: playSoftBloom(ctx, time); break;
+    switch (roll) {
+      case 0: playChimeRise(ctx, time); break;
+      case 1: playPowerPulse(ctx, time); break;
+      case 2: playSparkleFall(ctx, time); break;
+      case 3: playCoinPing(ctx, time); break;
+      case 4: playSoftBloom(ctx, time); break;
+    }
+  } catch (err) {
+    console.warn("playRandomSuccessSound failed:", err);
   }
 }
 
@@ -204,87 +212,99 @@ export function playRandomSuccessSound() {
 
 // Subtle Click (Very fast, very quiet, good for tabs/buttons)
 export function playClick() {
-  const ctx = getContext();
-  if (!ctx) return;
-  const time = ctx.currentTime;
-  
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
+    const time = ctx.currentTime;
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
 
-  osc.type = 'triangle';
-  filter.type = 'lowpass';
-  
-  osc.frequency.setValueAtTime(800, time);
-  osc.frequency.exponentialRampToValueAtTime(100, time + 0.03);
-  
-  filter.frequency.setValueAtTime(2000, time);
-  filter.frequency.exponentialRampToValueAtTime(500, time + 0.03);
+    osc.type = 'triangle';
+    filter.type = 'lowpass';
+    
+    osc.frequency.setValueAtTime(800, time);
+    osc.frequency.exponentialRampToValueAtTime(100, time + 0.03);
+    
+    filter.frequency.setValueAtTime(2000, time);
+    filter.frequency.exponentialRampToValueAtTime(500, time + 0.03);
 
-  gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(0.1, time + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.01, time + 0.04);
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(0.1, time + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.04);
 
-  osc.connect(filter);
-  filter.connect(gain);
-  gain.connect(ctx.destination);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
 
-  osc.start(time);
-  osc.stop(time + 0.04);
+    osc.start(time);
+    osc.stop(time + 0.04);
+  } catch (err) {
+    console.warn("playClick failed:", err);
+  }
 }
 
 // Satisfying Pop (Slightly more resonant, good for opening modals or expanding items)
 export function playPop() {
-  const ctx = getContext();
-  if (!ctx) return;
-  const time = ctx.currentTime;
-  
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = 'sine';
-  
-  // Start high, drop fast to give a "bloop" or "pop" sound
-  osc.frequency.setValueAtTime(600, time);
-  osc.frequency.exponentialRampToValueAtTime(200, time + 0.1);
-
-  gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(0.2, time + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.start(time);
-  osc.stop(time + 0.15);
-}
-
-// Ka-ching! (Multiple rapid high rings, mimics coins hitting each other - good for rewards)
-export function playKaChing() {
-  const ctx = getContext();
-  if (!ctx) return;
-  const time = ctx.currentTime;
-  
-  const notes = [1200, 1500, 2000]; // Very high frequencies
-  
-  notes.forEach((freq, i) => {
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
+    const time = ctx.currentTime;
+    
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    const hitTime = time + (i * 0.08); // Rapid succession
-    
+
     osc.type = 'sine';
     
-    osc.frequency.setValueAtTime(freq, hitTime);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.8, hitTime + 0.3); // Slight bend
+    // Start high, drop fast to give a "bloop" or "pop" sound
+    osc.frequency.setValueAtTime(600, time);
+    osc.frequency.exponentialRampToValueAtTime(200, time + 0.1);
 
-    gain.gain.setValueAtTime(0, hitTime);
-    gain.gain.linearRampToValueAtTime(0.15, hitTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.01, hitTime + 0.4);
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(0.2, time + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.start(hitTime);
-    osc.stop(hitTime + 0.4);
-  });
+    osc.start(time);
+    osc.stop(time + 0.15);
+  } catch (err) {
+    console.warn("playPop failed:", err);
+  }
+}
+
+// Ka-ching! (Multiple rapid high rings, mimics coins hitting each other - good for rewards)
+export function playKaChing() {
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
+    const time = ctx.currentTime;
+    
+    const notes = [1200, 1500, 2000]; // Very high frequencies
+    
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const hitTime = time + (i * 0.08); // Rapid succession
+      
+      osc.type = 'sine';
+      
+      osc.frequency.setValueAtTime(freq, hitTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.8, hitTime + 0.3); // Slight bend
+
+      gain.gain.setValueAtTime(0, hitTime);
+      gain.gain.linearRampToValueAtTime(0.15, hitTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, hitTime + 0.4);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(hitTime);
+      osc.stop(hitTime + 0.4);
+    });
+  } catch (err) {
+    console.warn("playKaChing failed:", err);
+  }
 } 

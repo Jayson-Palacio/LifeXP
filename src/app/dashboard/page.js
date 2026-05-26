@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function RoleSelectPage() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session) {
+  if (!user) {
     redirect('/login');
   }
 
@@ -16,7 +16,7 @@ export default async function RoleSelectPage() {
   // and any family owner's rows. Prioritise setup_complete = true.
   const { data: settingsArray } = await supabase
     .from('app_settings')
-    .select('setup_complete, parent_pin')
+    .select('setup_complete')
     .order('setup_complete', { ascending: false })
     .limit(1);
 
@@ -30,5 +30,5 @@ export default async function RoleSelectPage() {
   const { data: missions } = await supabase.from('missions').select('*').eq('is_active', true);
   const { data: completions } = await supabase.from('completions').select('*');
 
-  return <RoleSelectClient childrenData={children} missions={missions} completions={completions} parentPin={settings?.parent_pin} />;
+  return <RoleSelectClient childrenData={children} missions={missions} completions={completions} />;
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NavLink from './NavLink';
+import GoldCoin from './GoldCoin';
 import { supabase } from '../lib/supabase';
 import { showToast, showConfetti, showFloat } from '../lib/ui';
 
@@ -56,7 +57,7 @@ export default function RewardShopClient({ initialChild, rewards }) {
         <NavLink href={`/kid/${child.id}`} className="back-btn">←</NavLink>
         <h1 className="page-title">Reward Shop</h1>
         <div className="stat-item" style={{ marginLeft: 'auto' }}>
-          <span className="stat-icon">🪙</span>
+          <span className="stat-icon"><GoldCoin size="2rem" /></span>
           <span className="stat-value-amber" id="coin-count">{child.coins}</span>
         </div>
       </div>
@@ -74,7 +75,7 @@ export default function RewardShopClient({ initialChild, rewards }) {
               <div key={r.id} className="reward-card" style={{ borderTop: `2px solid ${canAfford ? 'var(--primary)' : 'transparent'}` }}>
                 <div className="reward-icon">{r.icon}</div>
                 <div className="reward-name">{r.name}</div>
-                <div className="reward-cost">🪙 {r.cost}</div>
+                <div className="reward-cost"><GoldCoin /> {r.cost}</div>
                 <button 
                   className={`btn ${canAfford ? 'btn-gold' : 'btn-ghost'} btn-sm btn-block`}
                   disabled={!canAfford}

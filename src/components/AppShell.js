@@ -21,7 +21,7 @@ export default function AppShell({
 
   const parentTabs = [
     { id: 'overview',   label: 'Overview',   icon: '🏠', badge: notifications.approvals },
-    { id: 'manage',     label: 'Manage',     icon: '🎯' },
+    { id: 'manage',     label: 'Missions & Rewards', icon: '🎯' },
     { id: 'settings',   label: 'Settings',   icon: '⚙️' }
   ];
 

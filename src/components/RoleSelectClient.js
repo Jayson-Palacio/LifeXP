@@ -6,15 +6,19 @@ import { getLevelForXP, getXPProgress } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
 import AvatarDisplay from './AvatarDisplay';
 import RocketShip from './RocketShip';
+import GoldCoin from './GoldCoin';
 import { playClick, playPop } from '../lib/sounds';
+import { verifyParentPin, verifyAccountPassword, resetParentPinWithPassword } from '../app/actions/auth';
 
-export default function RoleSelectClient({ childrenData, missions, completions, parentPin }) {
+export default function RoleSelectClient({ childrenData, missions, completions }) {
   const router = useRouter();
   const [view, setView] = useState('select'); // 'select' | 'pin'
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [accountPassword, setAccountPassword] = useState('');
 
   // Pre-warm all kid pages and parent page so navigation feels instant
   useEffect(() => {
@@ -74,7 +78,8 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
     setError('');
   };
 
-  const handleKeyClick = (val) => {
+  const handleKeyClick = async (val) => {
+    if (isVerifying) return;
     if (playClick) playClick();
     if (val === 'del') {
       setPin(prev => prev.slice(0, -1));
@@ -83,27 +88,96 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
       setPin(newPin);
       
       if (newPin.length === 4) {
-        // Compare locally — no server round trip needed
-        if (newPin === parentPin) {
-          setIsExiting(true);
-          setTimeout(() => router.push('/parent'), 250);
-        } else {
-          setIsShaking(true);
-          setError('Wrong PIN. Try again.');
-          setTimeout(() => {
-            setPin('');
-            setIsShaking(false);
-          }, 600);
+        setIsVerifying(true);
+        if (view === 'pin') {
+          // Standard PIN verification
+          const isCorrect = await verifyParentPin(newPin);
+          setIsVerifying(false);
+          if (isCorrect) {
+            setIsExiting(true);
+            setTimeout(() => router.push('/parent'), 250);
+          } else {
+            setIsShaking(true);
+            setError('Wrong PIN. Try again.');
+            setTimeout(() => {
+              setPin('');
+              setIsShaking(false);
+            }, 600);
+          }
+        } else if (view === 'forgot-pin-new') {
+          // Setting new PIN after password verification
+          const res = await resetParentPinWithPassword(accountPassword, newPin);
+          setIsVerifying(false);
+          if (res.success) {
+            setIsExiting(true);
+            setTimeout(() => router.push('/parent'), 250);
+          } else {
+            setIsShaking(true);
+            setError(res.error || 'Failed to reset PIN.');
+            setTimeout(() => {
+              setPin('');
+              setIsShaking(false);
+            }, 600);
+          }
         }
       }
     }
   };
 
-  if (view === 'pin') {
+  if (view === 'forgot-pin-password') {
     return (
-      <div className={`pin-page ${isExiting ? 'page-exit' : 'page-enter'}`}>
-        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView('select'); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
-        <h2 className="pin-title">🔒 Parent Mode</h2>
+      <div className={`pin-page ${isExiting ? 'page-exit' : 'page-enter'}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', padding: 'var(--space-md)' }}>
+        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView('pin'); setError(''); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
+        
+        <div style={{ background: 'rgba(10, 8, 20, 0.7)', backdropFilter: 'blur(16px)', padding: 'var(--space-xl)', borderRadius: 'var(--radius-xl)', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, marginBottom: 'var(--space-sm)', background: 'linear-gradient(135deg, #a855f7, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Reset PIN
+          </h2>
+          
+          <p style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-lg)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+            Enter your Kaeluma account password to verify your identity:
+          </p>
+
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setIsVerifying(true);
+            setError('');
+            const form = e.currentTarget;
+            const pwd = form.elements.password.value;
+            
+            const res = await verifyAccountPassword(pwd);
+            setIsVerifying(false);
+            if (res.success) {
+              setAccountPassword(pwd);
+              setView('forgot-pin-new');
+              setPin('');
+              setError('');
+            } else {
+              setError(res.error || 'Incorrect password.');
+            }
+          }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            <div className="input-group" style={{ textAlign: 'left' }}>
+              <label htmlFor="password">Account Password</label>
+              <input className="input" id="password" name="password" type="password" required disabled={isVerifying} style={{ background: 'var(--bg-deep)' }} />
+            </div>
+
+            {error && <p style={{ color: 'var(--red)', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
+
+            <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={isVerifying} style={{ height: '50px' }}>
+              {isVerifying ? 'Verifying...' : 'Verify Password'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'pin' || view === 'forgot-pin-new') {
+    const isReset = view === 'forgot-pin-new';
+    return (
+      <div className={`pin-page ${isExiting ? 'page-exit' : 'page-enter'}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView(isReset ? 'forgot-pin-password' : 'select'); setError(''); setPin(''); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
+        <h2 className="pin-title" style={{ marginBottom: 'var(--space-lg)' }}>{isReset ? '🔒 Set New PIN' : '🔒 Parent Mode'}</h2>
         <div className={`pin-display ${isShaking ? 'shake' : ''}`}>
           {[0, 1, 2, 3].map(i => (
             <div key={i} className={`pin-dot ${i < pin.length ? 'filled' : ''}`}></div>
@@ -111,13 +185,36 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
         </div>
         <div className="pin-pad">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-            <button key={n} className="pin-key" onClick={() => handleKeyClick(n.toString())}>{n}</button>
+            <button key={n} className="pin-key" onClick={() => handleKeyClick(n.toString())} disabled={isVerifying}>{n}</button>
           ))}
-          <button className="pin-key pin-key-empty"></button>
-          <button className="pin-key" onClick={() => handleKeyClick('0')}>0</button>
-          <button className="pin-key pin-key-delete" onClick={() => handleKeyClick('del')}>←</button>
+          <button className="pin-key pin-key-empty" disabled={isVerifying}></button>
+          <button className="pin-key" onClick={() => handleKeyClick('0')} disabled={isVerifying}>0</button>
+          <button className="pin-key pin-key-delete" onClick={() => handleKeyClick('del')} disabled={isVerifying}>←</button>
         </div>
-        <div className="pin-error">{error}</div>
+        <div className="pin-error">{isVerifying ? 'Checking…' : error}</div>
+
+        {!isReset && (
+          <button 
+            onClick={() => {
+              if (playClick) playClick();
+              setView('forgot-pin-password');
+              setError('');
+              setPin('');
+            }} 
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'var(--primary)', 
+              cursor: 'pointer', 
+              fontSize: '0.9rem', 
+              marginTop: 'var(--space-md)', 
+              textDecoration: 'underline',
+              fontFamily: 'var(--font-outfit)'
+            }}
+          >
+            Forgot PIN?
+          </button>
+        )}
       </div>
     );
   }
@@ -176,11 +273,11 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
                     </div>
                   </div>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 1 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minWidth: 0, zIndex: 1 }}>
                     <div className="kaeluma-card-name">{child.name}</div>
                     <div className="kaeluma-card-level">Lv {level}</div>
                     <div className="kaeluma-card-stats">
-                      <span style={{ color: 'var(--amber)' }}>🪙 {child.coins}</span>
+                      <span style={{ color: 'var(--amber)' }}><GoldCoin /> {child.coins}</span>
                       {stats && (
                         <span style={{ color: stats.done >= stats.total && stats.total > 0 ? 'var(--green)' : 'var(--text-muted)' }}>
                           🎯 {stats.done}/{stats.total}
@@ -199,11 +296,11 @@ export default function RoleSelectClient({ childrenData, missions, completions, 
           </div>
           );
         })() : (
-          <p style={{ color: 'var(--text-muted)' }}>No players found. Please add a kid in Parent Mode.</p>
+          <p style={{ color: 'var(--text-muted)' }}>No players found. Please add a player in Parent Mode.</p>
         )}
       </div>
 
-      {/* Sleek Parent Lock pushed to the bottom */}
+      {/* Sleek Parent Lock centered at the bottom */}
       <button 
         className="sleek-parent-btn"
         onClick={handleParentClick}

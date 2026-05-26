@@ -1,4 +1,5 @@
 'use client'
+import GoldCoin from './GoldCoin'
 
 const S = {
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 32 },
@@ -86,10 +87,10 @@ function TopList({ items, color, label }) {
 export default function AdminOverviewTab({ stats }) {
   const cards = [
     { label: 'Total Users', value: stats.totalUsers, color: '#3b82f6', icon: '👤' },
-    { label: 'Total Children', value: stats.totalChildren, color: '#a855f7', icon: '👶' },
+    { label: 'Total Players', value: stats.totalChildren, color: '#a855f7', icon: '👥' },
     { label: 'Missions Created', value: stats.totalMissions, color: '#f59e0b', icon: '🎯' },
     { label: 'Completions', value: stats.totalCompletions, color: '#22c55e', icon: '✅' },
-    { label: 'Coins Spent', value: stats.totalCoinsSpent, color: '#f97316', icon: '🪙' },
+    { label: 'Coins Spent', value: stats.totalCoinsSpent, color: '#f97316', icon: <GoldCoin size="12px" /> },
     { label: 'Pending Reviews', value: stats.pendingApprovals, color: '#ef4444', icon: '⏳' },
   ]
 

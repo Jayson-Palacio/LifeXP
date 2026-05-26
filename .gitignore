@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# scratch / debug scripts
+scratch_*.mjs
+scratch_db.mjs
+

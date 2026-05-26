@@ -102,5 +102,60 @@ export const MISSION_LIBRARY = [
       { name: 'Apologize First', icon: '🤝', category: 'Behavior', coins: 10 },
       { name: 'Pick Up 3 Trash', icon: '🌍', category: 'Behavior', coins: 10 },
     ]
+  },
+  {
+    category: '👑 Parents Lead by Example',
+    ideas: [
+      { name: 'Drink 8 Glasses Water', icon: '💧', category: 'Parent Habits', coins: 10 },
+      { name: '20 Min Quiet Reading', icon: '📖', category: 'Parent Habits', coins: 10 },
+      { name: 'Exercise / 30m Walk', icon: '🏃‍♂️', category: 'Parent Habits', coins: 15 },
+      { name: 'No Screen After 9:30 PM', icon: '📵', category: 'Parent Habits', coins: 15 },
+      { name: 'Unplugged Family Hour', icon: '📵', category: 'Parent Habits', coins: 20 },
+      { name: 'Tidy Kitchen Before Bed', icon: '🧼', category: 'Parent Habits', coins: 15 },
+      { name: '5m Mindfulness / Breathing', icon: '🧘‍♀️', category: 'Parent Habits', coins: 10 },
+      { name: 'Plan Weekly Meals', icon: '🗓️', category: 'Parent Habits', coins: 15 },
+      { name: 'Organize One Hotspot / Drawer', icon: '🗄️', category: 'Parent Habits', coins: 15 },
+      { name: 'Say 3 Things Grateful For', icon: '🙏', category: 'Parent Habits', coins: 10 },
+      { name: 'Tackle a Put-Off Task', icon: '⚡', category: 'Parent Habits', coins: 20 },
+    ]
+  }
+];
+
+export const REWARD_LIBRARY = [
+  {
+    category: '📺 Screen Time & Tech',
+    ideas: [
+      { name: '30 Mins Screen Time', icon: '📺', cost: 15 },
+      { name: 'Play Video Game (30m)', icon: '🎮', cost: 20 },
+      { name: 'Choose Movie Night', icon: '🍿', cost: 15 },
+      { name: 'Buy Small App/Game', icon: '📱', cost: 60 }
+    ]
+  },
+  {
+    category: '🍦 Sweet Treats & Food',
+    ideas: [
+      { name: 'Ice Cream Treat', icon: '🍦', cost: 25 },
+      { name: 'Special Dessert', icon: '🍰', cost: 10 },
+      { name: 'Fancy Donut', icon: '🍩', cost: 15 },
+      { name: 'Choose Dinner Menu', icon: '🍕', cost: 20 }
+    ]
+  },
+  {
+    category: '👑 Privileges & Fun',
+    ideas: [
+      { name: 'Stay Up 15m Late', icon: '⏰', cost: 10 },
+      { name: 'No Chores for a Day', icon: '🛌', cost: 30 },
+      { name: 'Sleepover in Living Room', icon: '🏕️', cost: 40 },
+      { name: 'Double Coins Tomorrow', icon: '🪙', cost: 50 }
+    ]
+  },
+  {
+    category: '🧸 Toys & Outings',
+    ideas: [
+      { name: 'One-on-One Play Time', icon: '🧸', cost: 20 },
+      { name: 'Trip to the Park', icon: '🛝', cost: 25 },
+      { name: 'New Toy Book', icon: '📖', cost: 50 },
+      { name: 'Family Game Night Choice', icon: '🎲', cost: 15 }
+    ]
   }
 ];
