@@ -20,6 +20,11 @@ For a complete breakdown of brand colors, typography scales, dynamic tier themes
 
 👉 **[Kaeluma Brand Pitch Presentation Deck (Print-Ready PDF)](brand_deck.pdf)**
 
+👉 **[Kaeluma Parent Sharing & Community Toolkit (Markdown)](parent_launch_kit.md)**
+
+👉 **[Kaeluma Parent Sharing & Community Toolkit (Print-Ready PDF)](parent_launch_kit.pdf)**
+
+
 
 ---
 

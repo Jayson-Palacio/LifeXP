@@ -372,8 +372,17 @@ function generatePdfs() {
       subtitle: 'Creative Vision & Market Pitch',
       meta: 'Turning Real Life Duties Into RPG Quests',
       version: 'Interactive Partner Presentation'
+    },
+    {
+      md: 'parent_launch_kit.md',
+      pdf: 'parent_launch_kit.pdf',
+      title: 'Kaeluma - Parent Sharing & Community Toolkit',
+      subtitle: 'Parent Sharing & Community Toolkit',
+      meta: 'Empower Families to Turn Routines into Adventures',
+      version: 'Community Growth Pack'
     }
   ];
+
 
   const msEdgePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
   if (!fs.existsSync(msEdgePath)) {
