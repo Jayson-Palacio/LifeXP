@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 160" fill="none">
+  <defs>
+    <!-- Outfit Font Import -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@800&amp;display=swap');
+      .brand-text {
+        font-family: 'Outfit', -apple-system, sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        fill: url(#brand-gradient);
+      }
+    </style>
+    <!-- Purple-to-Cyan Brand Gradient -->
+    <linearGradient id="brand-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Left: White Sun Icon (Scaled 0.6x, 120x120px) -->
+  <g transform="translate(20, 20) scale(0.6)" fill="#ffffff">
+    <rect x="85" y="10" width="30" height="180" rx="15" />
+    <rect x="10" y="85" width="180" height="30" rx="15" />
+    <rect x="85" y="10" width="30" height="180" rx="15" transform="rotate(45 100 100)" />
+    <rect x="85" y="10" width="30" height="180" rx="15" transform="rotate(-45 100 100)" />
+    <circle cx="100" cy="100" r="50" />
+  </g>
+
+  <!-- Right: Kaeluma Gradient Text -->
+  <text x="165" y="112" font-size="100" class="brand-text">Kaeluma</text>
+</svg>

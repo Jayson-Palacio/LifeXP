@@ -14,6 +14,7 @@ For a complete breakdown of brand colors, typography scales, dynamic tier themes
 
 👉 **[Kaeluma Brand Style & Design System Guide (Print-Ready PDF)](brand_guide.pdf)**
 
+👉 **[Kaeluma Adobe Creative Suite Asset Guide (Photoshop/Illustrator/Premiere)](adobe_assets_guide.md)**
 
 ---
 
@@ -21,8 +22,10 @@ For a complete breakdown of brand colors, typography scales, dynamic tier themes
 
 All branding assets are placed in this folder and duplicated to the `public/` directory for static rendering within the Next.js app:
 
-*   **[logo_main.png](logo_main.png)**: The primary horizontal brand logo (white sun icon next to the gradient text "Kaeluma").
-*   **[logo_icon.png](logo_icon.png)**: The square 1:1 branding icon containing the white sun on a solid deep navy background. Useful for product images (Stripe, App Store), favicons, and social avatar profiles.
+*   **[logo_main.png](logo_main.png)** / **[logo_main.svg](logo_main.svg)**: The primary horizontal brand logo (white sun icon next to the gradient text "Kaeluma").
+*   **[logo_icon.png](logo_icon.png)** / **[logo_icon.svg](logo_icon.svg)**: The square 1:1 branding icon containing the white sun on a solid deep navy background. Useful for product images (Stripe, App Store), favicons, and social avatar profiles.
+*   **[logo_main_vertical.svg](logo_main_vertical.svg)**: Stacked vertical logo layout, ideal for mobile interfaces or vertical banner headers.
+*   **[logo_sun_icon.svg](logo_sun_icon.svg)**: Scalable vector version of the core geometric sun emblem.
 *   **[banner.png](banner.png)**: A landscape (16:9) branding banner featuring the Kaeluma logo surrounded by floating glassmorphic coins and stars. Ideal for README files or Stripe billing portal headers.
 *   **[coin.png](coin.png)**: High-resolution standalone 3D metallic Gold Coin graphic.
 *   **[social_square_post.png](social_square_post.png)**: 1:1 post layout for Instagram or Facebook.
@@ -33,6 +36,7 @@ All branding assets are placed in this folder and duplicated to the `public/` di
 *   **[og_share_card.png](og_share_card.png)**: 1200×630 Open Graph card for website preview links.
 *   **[email_hero.png](email_hero.png)**: 600×300 newsletter header.
 *   **[video_bg.png](video_bg.png)**: vertical transparent gaming backdrop for Shorts/Reels video creation.
+
 
 ---
 
