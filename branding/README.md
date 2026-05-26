@@ -1,34 +1,36 @@
-# Kaeluma Brand Style Guide
+# Kaeluma Brand Assets & Identity
 
-Welcome to the Kaeluma Brand Style Guide! This document provides information on Kaeluma's core branding assets, color schemes, and design guidelines to maintain consistency across the app, website, and marketing materials.
+Welcome to the branding directory for **Kaeluma** (formerly "LifeXP"). Kaeluma is a 100% free, ad-free gamified chore application designed to turn real-life tasks into fun game quests for kids.
 
----
-
-## 📁 Brand Assets
-
-All branding assets are placed in the `branding/` folder and duplicated to the `public/` directory for static rendering in Next.js:
-
-* **[logo_main.png](logo_main.png)**: The primary horizontal brand logo (white sun icon next to the gradient text "Kaeluma").
-* **[logo_icon.png](logo_icon.png)**: The square 1:1 branding icon containing the white sun on a solid deep navy background. Useful for product images (Stripe, App Store), favicons, and social avatar profiles.
-* **[banner.png](banner.png)**: A landscape (16:9) branding banner featuring the Kaeluma logo surrounded by floating glassmorphic coins and stars. Ideal for README files or Stripe billing portal headers.
+This directory houses the core graphic elements and marketing media templates.
 
 ---
 
-## 🎨 Color Palette
+## 📖 Style & Design System Guide
 
-Kaeluma uses a vibrant, high-fidelity dark-mode scheme matching its premium glassmorphic interface:
+For a complete breakdown of brand colors, typography scales, dynamic tier themes, component design specs, and motion guidelines, please refer to the main brand guide:
 
-| Color | Role | Hex Value | RGB Value |
-| :--- | :--- | :--- | :--- |
-| **Deep Navy** | Base Background | `#1E1B4B` | `rgb(30, 27, 75)` |
-| **Glowing Purple** | Brand Primary (Text Gradient Start) | `#A855F7` | `rgb(168, 85, 247)` |
-| **Vivid Blue** | Brand Secondary (Text Gradient End) | `#3B82F6` | `rgb(59, 130, 246)` |
-| **Vibrant Green** | Success / Supporter Badge | `#22C55E` | `rgb(34, 197, 94)` |
-| **Amber Gold** | Coins / Streaks | `#F59E0B` | `rgb(245, 158, 11)` |
+👉 **[Kaeluma Brand Style & Design System Guide](brand_guide.md)**
 
 ---
 
-## ✍️ Typography
+## 📁 Brand Assets Directory
 
-* **Headings:** Bold, rounded sans-serif (e.g., *Outfit*, *Inter*, or *Roboto* with heavy weights like `900` or `800`).
-* **Body Text:** Standard legible sans-serif (e.g., *Inter* or *system-ui*) with clean letter-spacing.
+All branding assets are placed in this folder and duplicated to the `public/` directory for static rendering within the Next.js app:
+
+*   **[logo_main.png](logo_main.png)**: The primary horizontal brand logo (white sun icon next to the gradient text "Kaeluma").
+*   **[logo_icon.png](logo_icon.png)**: The square 1:1 branding icon containing the white sun on a solid deep navy background. Useful for product images (Stripe, App Store), favicons, and social avatar profiles.
+*   **[banner.png](banner.png)**: A landscape (16:9) branding banner featuring the Kaeluma logo surrounded by floating glassmorphic coins and stars. Ideal for README files or Stripe billing portal headers.
+*   **[coin.png](coin.png)**: High-resolution standalone 3D metallic Gold Coin graphic.
+*   **[social_square_post.png](social_square_post.png)**: 1:1 post layout for Instagram or Facebook.
+*   **[twitter_header.png](twitter_header.png)**: 1500×500 Twitter/X header illustration.
+*   **[facebook_cover.png](facebook_cover.png)**: 820×312 cover graphic.
+*   **[story_missions.png](story_missions.png)** and **[story_rewards.png](story_rewards.png)**: 9:16 vertical storytelling layouts for Instagram/TikTok.
+*   **[app_store_feature.png](app_store_feature.png)**: Play Store/App Store promo graphic (1280×720).
+*   **[og_share_card.png](og_share_card.png)**: 1200×630 Open Graph card for website preview links.
+*   **[email_hero.png](email_hero.png)**: 600×300 newsletter header.
+*   **[video_bg.png](video_bg.png)**: vertical transparent gaming backdrop for Shorts/Reels video creation.
+
+---
+
+*Note: For production campaigns, import these assets into Adobe Creative Suite applications (Photoshop/Illustrator) to customize layouts, overlay promo texts, and output final files.*
