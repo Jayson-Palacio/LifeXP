@@ -24,6 +24,11 @@ For a complete breakdown of brand colors, typography scales, dynamic tier themes
 
 👉 **[Kaeluma Parent Sharing & Community Toolkit (Print-Ready PDF)](parent_launch_kit.pdf)**
 
+👉 **[Kaeluma App Store Optimization (ASO) Pack (Markdown)](app_store_metadata.md)**
+
+👉 **[Kaeluma App Store Optimization (ASO) Pack (Print-Ready PDF)](app_store_metadata.pdf)**
+
+
 
 
 ---

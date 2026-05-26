@@ -380,8 +380,17 @@ function generatePdfs() {
       subtitle: 'Parent Sharing & Community Toolkit',
       meta: 'Empower Families to Turn Routines into Adventures',
       version: 'Community Growth Pack'
+    },
+    {
+      md: 'app_store_metadata.md',
+      pdf: 'app_store_metadata.pdf',
+      title: 'Kaeluma - App Store Optimization (ASO) Pack',
+      subtitle: 'App Store Optimization & Metadata Spec',
+      meta: 'Maximize Organic Downloads and Parenting Engagement',
+      version: 'ASO Release Package'
     }
   ];
+
 
 
   const msEdgePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
