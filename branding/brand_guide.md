@@ -279,8 +279,9 @@ Kaeluma uses Stripe for voluntary, community-supported donations (`https://donat
 *   **Brand Color:** `#A855F7` (Glowing Purple)
 *   **Accent Color:** `#3B82F6` (Vivid Blue)
 *   **Background Color:** `#1E1B4B` (Deep Navy) or `#0d0d14` (Deep Black)
-*   **Checkout Logo Icon:** Use [logo_icon.png](logo_icon.png) (Square 512×512 Sun logo on dark backdrop).
-*   **Billing Header Logo/Banner:** Use [logo_main.png](logo_main.png) or [banner.png](banner.png) (16:9 Banner).
+*   **Checkout Logo Icon:** Use [logo_icon.png](logos/logo_icon.png) (Square 512×512 Sun logo on dark backdrop).
+*   **Billing Header Logo/Banner:** Use [logo_main.png](logos/logo_main.png) or [banner.png](promo/banner.png) (16:9 Banner).
+
 
 ---
 
@@ -295,19 +296,20 @@ The `branding/` folder contains generated PNG graphics for launches, store front
 
 | Asset Filename | Dimensions | Aspect Ratio | Primary Use Case |
 | :--- | :--- | :--- | :--- |
-| **[logo_main.png](logo_main.png)** | *Vector-aligned* | Variable | Main horizontal branding header. Includes the sun icon with the "Kaeluma" gradient logotype. |
-| **[logo_icon.png](logo_icon.png)** | 512×512 | 1:1 | App Icon, favicon, avatar, Stripe checkout, or App Store logo badge. |
-| **[banner.png](banner.png)** | 1920×1080 | 16:9 | Launch banner, website hero backgrounds, blog post banners. |
-| **[social_square_post.png](social_square_post.png)** | 1080×1080 | 1:1 | Instagram post feed, Facebook update, LinkedIn project preview. |
-| **[twitter_header.png](twitter_header.png)** | 1500×500 | 3:1 | Twitter/X Profile header illustration. |
-| **[facebook_cover.png](facebook_cover.png)** | 820×312 | 2.63:1 | Facebook page banner. |
-| **[story_missions.png](story_missions.png)** | 1080×1920 | 9:16 | Vertical mobile showcase focusing on Child Questing/Missions. |
-| **[story_rewards.png](story_rewards.png)** | 1080×1920 | 9:16 | Vertical mobile showcase focusing on the Reward Shop. |
-| **[app_store_feature.png](app_store_feature.png)** | 1280×720 | 16:9 | Google Play Feature Graphic, App Store preview cover, or Product Hunt card. |
-| **[og_share_card.png](og_share_card.png)** | 1200×630 | 1.91:1 | Dynamic Open Graph preview card for Slack, Discord, Facebook messenger. |
-| **[email_hero.png](email_hero.png)** | 600×300 | 2:1 | Newsletter welcome banner. |
-| **[coin.png](coin.png)** | 512×512 | 1:1 | Isolated 3D high-fidelity Gold Coin graphic. |
-| **[video_bg.png](video_bg.png)** | 1080×1920 | 9:16 | Video backdrop overlay for TikTok/YouTube Shorts. Import into Premiere Pro or After Effects. |
+| **[logo_main.png](logos/logo_main.png)** | *Vector-aligned* | Variable | Main horizontal branding header. Includes the sun icon with the "Kaeluma" gradient logotype. |
+| **[logo_icon.png](logos/logo_icon.png)** | 512×512 | 1:1 | App Icon, favicon, avatar, Stripe checkout, or App Store logo badge. |
+| **[banner.png](promo/banner.png)** | 1920×1080 | 16:9 | Launch banner, website hero backgrounds, blog post banners. |
+| **[social_square_post.png](social/social_square_post.png)** | 1080×1080 | 1:1 | Instagram post feed, Facebook update, LinkedIn project preview. |
+| **[twitter_header.png](social/twitter_header.png)** | 1500×500 | 3:1 | Twitter/X Profile header illustration. |
+| **[facebook_cover.png](social/facebook_cover.png)** | 820×312 | 2.63:1 | Facebook page banner. |
+| **[story_missions.png](social/story_missions.png)** | 1080×1920 | 9:16 | Vertical mobile showcase focusing on Child Questing/Missions. |
+| **[story_rewards.png](social/story_rewards.png)** | 1080×1920 | 9:16 | Vertical mobile showcase focusing on the Reward Shop. |
+| **[app_store_feature.png](promo/app_store_feature.png)** | 1280×720 | 16:9 | Google Play Feature Graphic, App Store preview cover, or Product Hunt card. |
+| **[og_share_card.png](promo/og_share_card.png)** | 1200×630 | 1.91:1 | Dynamic Open Graph preview card for Slack, Discord, Facebook messenger. |
+| **[email_hero.png](promo/email_hero.png)** | 600×300 | 2:1 | Newsletter welcome banner. |
+| **[coin.png](promo/coin.png)** | 512×512 | 1:1 | Isolated 3D high-fidelity Gold Coin graphic. |
+| **[video_bg.png](social/video_bg.png)** | 1080×1920 | 9:16 | Video backdrop overlay for TikTok/YouTube Shorts. Import into Premiere Pro or After Effects. |
+
 
 ---
 
