@@ -26,18 +26,18 @@ marked.setOptions({
   breaks: true,
 });
 
-// Premium Dark Mode CSS for Kaeluma Brand Documents PDF (Screen/Digital reading layout)
+// Premium Light/Executive Style CSS for Kaeluma Brand Documents PDF
 const CSS_STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap');
 
 @page {
   size: letter;
-  margin: 15mm;
+  margin: 20mm 15mm 20mm 15mm;
   @bottom-right {
     content: counter(page);
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Outfit', 'Segoe UI', system-ui, sans-serif;
     font-size: 8pt;
-    color: #94a3b8;
+    color: #9CA3AF;
   }
 }
 
@@ -46,81 +46,92 @@ const CSS_STYLE = `
 }
 
 body {
-  font-family: 'Inter', -apple-system, sans-serif;
-  background-color: #0d0d14; /* Deep Space Canvas */
-  color: #f8fafc; /* Bright Text */
+  font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+  background-color: #FFFFFF;
+  color: #111827; /* Dark Charcoal */
   line-height: 1.6;
-  font-size: 10.5pt;
+  font-size: 10pt;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
-/* Beautiful Title Page */
+/* Elegant Cover Page */
 .cover-page {
-  height: 90vh;
+  height: 9.0in; /* Safe height to prevent letter overflow */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   position: relative;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: radial-gradient(circle at center, #1e1b4b 0%, #0d0d14 70%);
-  border-radius: 16px;
+  border: 1px solid #E5E7EB;
+  background-color: #F9FAFB;
+  border-radius: 12px;
   padding: 40px;
   page-break-after: always;
   margin-bottom: 40px;
 }
 
+.cover-border-line {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border: 1px dashed #A855F7;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
 .cover-logo-icon {
-  font-size: 56pt;
-  margin-bottom: 10px;
+  font-size: 48pt;
+  margin-bottom: 15px;
 }
 
 .cover-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 42pt;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  font-size: 38pt;
   font-weight: 900;
   margin: 0;
-  background: linear-gradient(135deg, #a855f7, #38bdf8);
+  background: linear-gradient(135deg, #1E1B4B, #A855F7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.03em;
 }
 
 .cover-divider {
-  width: 120px;
+  width: 100px;
   height: 4px;
-  background: linear-gradient(90deg, #facc15, #f59e0b);
-  margin: 24px 0;
+  background: linear-gradient(90deg, #A855F7, #3B82F6);
+  margin: 20px 0;
   border-radius: 2px;
 }
 
 .cover-subtitle {
-  font-family: 'Outfit', sans-serif;
-  font-size: 18pt;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  font-size: 15pt;
   font-weight: 700;
-  color: #f8fafc;
+  color: #4B5563;
   margin: 0 0 10px 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .cover-meta {
-  font-size: 11pt;
-  color: #94a3b8;
-  margin: 0 0 40px 0;
+  font-size: 10.5pt;
+  color: #6B7280;
+  margin: 0 0 30px 0;
 }
 
 .cover-version {
-  font-family: 'Outfit', sans-serif;
-  font-size: 9pt;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  font-size: 8.5pt;
   font-weight: 600;
-  color: #a855f7;
-  border: 1px solid rgba(168,85,247,0.3);
-  padding: 6px 16px;
+  color: #A855F7;
+  border: 1px solid rgba(168,85,247,0.2);
+  padding: 5px 14px;
   border-radius: 9999px;
-  background: rgba(168,85,247,0.1);
+  background: rgba(168,85,247,0.04);
 }
 
 .page-break {
@@ -128,43 +139,49 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Outfit', sans-serif;
-  color: #f8fafc;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  color: #1E1B4B;
   font-weight: 800;
   page-break-after: avoid;
 }
 
 h1 {
-  font-size: 20pt;
+  font-size: 18pt;
   margin-top: 2.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid rgba(255,255,255,0.08);
-  padding-bottom: 8px;
+  margin-bottom: 1.2rem;
+  border-bottom: 2px solid #E5E7EB;
+  padding-bottom: 6px;
+  page-break-before: always;
+}
+
+.cover-page + h1 {
+  page-break-before: avoid; /* No page break immediately after cover */
 }
 
 h2 {
-  font-size: 14pt;
-  color: #a855f7; /* Brand Purple */
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 13.5pt;
+  color: #A855F7; /* Purple */
+  margin-top: 1.8rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid #F3F4F6;
   padding-bottom: 4px;
 }
 
 h3 {
-  font-size: 11.5pt;
-  color: #38bdf8; /* Ocean Blue */
-  margin-top: 1.5rem;
+  font-size: 11pt;
+  color: #3B82F6; /* Blue */
+  margin-top: 1.4rem;
+  margin-bottom: 0.6rem;
 }
 
 p {
   margin-top: 0;
   margin-bottom: 1rem;
-  color: #cbd5e1; /* Text muted */
+  color: #374151; /* Dark Grey body copy */
 }
 
 a {
-  color: #38bdf8;
+  color: #3B82F6;
   text-decoration: none;
   font-weight: 500;
 }
@@ -173,7 +190,7 @@ ul, ol {
   margin-top: 0;
   margin-bottom: 1.2rem;
   padding-left: 20px;
-  color: #cbd5e1;
+  color: #374151;
 }
 
 li {
@@ -182,22 +199,22 @@ li {
 
 code {
   font-family: 'Consolas', 'Courier New', monospace;
-  background-color: #171723;
-  color: #f472b6;
+  background-color: #F3F4F6;
+  color: #B45309; /* Dark Amber Code */
   padding: 2px 5px;
   border-radius: 4px;
-  font-size: 9pt;
-  border: 1px solid rgba(255,255,255,0.05);
+  font-size: 8.5pt;
+  border: 1px solid #E5E7EB;
 }
 
 pre {
-  background-color: #171723;
-  color: #f8fafc;
+  background-color: #1F2937;
+  color: #F9FAFB;
   padding: 14px;
   border-radius: 8px;
   overflow-x: auto;
   margin: 1.2rem 0;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid #E5E7EB;
   page-break-inside: avoid;
 }
 
@@ -205,7 +222,7 @@ pre code {
   background-color: transparent;
   color: inherit;
   padding: 0;
-  font-size: 8.5pt;
+  font-size: 8pt;
   border: none;
 }
 
@@ -216,32 +233,31 @@ table {
   page-break-inside: avoid;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid #E5E7EB;
 }
 
 th, td {
-  padding: 10px 12px;
+  padding: 8px 10px;
   text-align: left;
-  font-size: 9.5pt;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 9pt;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 th {
-  background-color: #171723;
-  color: #f8fafc;
+  background-color: #1E1B4B;
+  color: #FFFFFF;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 8.5pt;
+  font-size: 8pt;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 tr {
-  background-color: #0d0d14;
+  background-color: #FFFFFF;
 }
 
 tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: #F9FAFB;
 }
 
 /* Callout Box / Alert Styling */
@@ -251,44 +267,48 @@ tr:nth-child(even) {
   border-radius: 8px;
   border-left: 4px solid;
   page-break-inside: avoid;
-  background-color: #171723;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  border-right: 1px solid rgba(255,255,255,0.05);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background-color: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+  border-right: 1px solid #E5E7EB;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .alert-note {
-  border-left-color: #38bdf8;
-  color: #cbd5e1;
+  border-left-color: #3B82F6;
+  color: #1E3A8A;
+  background-color: #EFF6FF;
 }
 
 .alert-tip {
-  border-left-color: #4ade80;
-  color: #cbd5e1;
+  border-left-color: #10B981;
+  color: #065F46;
+  background-color: #ECFDF5;
 }
 
 .alert-important {
-  border-left-color: #a855f7;
-  color: #cbd5e1;
+  border-left-color: #A855F7;
+  color: #581C87;
+  background-color: #FAF5FF;
 }
 
 .alert-warning {
-  border-left-color: #fbbf24;
-  color: #cbd5e1;
+  border-left-color: #F59E0B;
+  color: #78350F;
+  background-color: #FFFBEB;
 }
 
 .alert-title {
   font-weight: 700;
   margin-bottom: 4px;
   text-transform: uppercase;
-  font-size: 8.5pt;
+  font-size: 8pt;
   letter-spacing: 0.05em;
-  color: #f8fafc;
+  color: #111827;
 }
 
 blockquote {
-  border-left: 4px solid #a855f7;
-  background-color: rgba(168, 85, 247, 0.06);
+  border-left: 4px solid #A855F7;
+  background-color: #FAF5FF;
   padding: 10px 16px;
   margin: 1.2rem 0;
   border-radius: 0 8px 8px 0;
@@ -297,29 +317,21 @@ blockquote {
 blockquote p {
   margin: 0;
   font-style: italic;
-  color: #e2e8f0;
+  color: #4B5563;
 }
 
 hr {
   border: 0;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid #E5E7EB;
   margin: 2rem 0;
-}
-
-/* Keep page breaks clean before main section headers */
-h1 {
-  page-break-before: always;
-}
-.cover-page + h1 {
-  page-break-before: avoid; /* Don't page break immediately after cover */
 }
 
 /* Render Mermaid properly */
 .mermaid {
-  background-color: #171723;
+  background-color: #F9FAFB;
   padding: 20px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid #E5E7EB;
   margin: 1.5rem 0;
   text-align: center;
 }
@@ -399,9 +411,6 @@ function generatePdfs() {
     }
   ];
 
-
-
-
   const msEdgePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
   if (!fs.existsSync(msEdgePath)) {
     console.error("Microsoft Edge was not found at: ", msEdgePath);
@@ -430,6 +439,7 @@ function generatePdfs() {
     // Inject beautiful Cover Page
     const coverHtml = `
     <div class="cover-page">
+      <div class="cover-border-line"></div>
       <div class="cover-logo-icon">☀️</div>
       <h1 class="cover-title">Kaeluma</h1>
       <div class="cover-divider"></div>
@@ -451,12 +461,12 @@ function generatePdfs() {
     document.addEventListener("DOMContentLoaded", () => {
       mermaid.initialize({
         startOnLoad: true,
-        theme: 'dark',
+        theme: 'default',
         themeVariables: {
-          background: '#171723',
-          primaryColor: '#a855f7',
-          primaryTextColor: '#f8fafc',
-          lineColor: '#cbd5e1'
+          background: '#F9FAFB',
+          primaryColor: '#FAF5FF',
+          primaryTextColor: '#1E1B4B',
+          lineColor: '#CBD5E1'
         }
       });
     });
