@@ -388,8 +388,17 @@ function generatePdfs() {
       subtitle: 'App Store Optimization & Metadata Spec',
       meta: 'Maximize Organic Downloads and Parenting Engagement',
       version: 'ASO Release Package'
+    },
+    {
+      md: 'brand_messaging_playbook.md',
+      pdf: 'brand_messaging_playbook.pdf',
+      title: 'Kaeluma - Brand Messaging Playbook',
+      subtitle: 'Brand Messaging & Copywriting Playbook',
+      meta: 'Crafting a Consistent Voice across Parent Sanctuaries and Kid Guilds',
+      version: 'Messaging Core Spec'
     }
   ];
+
 
 
 

@@ -28,6 +28,11 @@ For a complete breakdown of brand colors, typography scales, dynamic tier themes
 
 👉 **[Kaeluma App Store Optimization (ASO) Pack (Print-Ready PDF)](app_store_metadata.pdf)**
 
+👉 **[Kaeluma Brand Messaging Playbook (Markdown)](brand_messaging_playbook.md)**
+
+👉 **[Kaeluma Brand Messaging Playbook (Print-Ready PDF)](brand_messaging_playbook.pdf)**
+
+
 
 
 
