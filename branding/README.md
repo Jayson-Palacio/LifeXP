@@ -10,7 +10,10 @@ This directory houses the core graphic elements and marketing media templates.
 
 For a complete breakdown of brand colors, typography scales, dynamic tier themes, component design specs, and motion guidelines, please refer to the main brand guide:
 
-👉 **[Kaeluma Brand Style & Design System Guide](brand_guide.md)**
+👉 **[Kaeluma Brand Style & Design System Guide (Markdown)](brand_guide.md)**
+
+👉 **[Kaeluma Brand Style & Design System Guide (Print-Ready PDF)](brand_guide.pdf)**
+
 
 ---
 

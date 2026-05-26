@@ -87,12 +87,12 @@ One of Kaeluma's core gamification loops is unlockable interface themes based on
 | **Level 12 - 25** | `.theme-coral` <br> `.theme-sunny` <br> `.theme-forest-deep` <br> `.theme-sky` <br> `.theme-violet` | `#fb7185` <br> `#facc15` <br> `#059669` <br> `#0ea5e9` <br> `#8b5cf6` | **Vivid Realms:** Grounded nature tones combined with cosmic deep sky blues. |
 | **Level 30 - 45** | `.theme-crimson` <br> `.theme-teal` <br> `.theme-stone` <br> `.theme-candle-flame` | `#e11d48` <br> `#14b8a6` <br> `#94a3b8` <br> `#f59e0b` | **Ember & Stone:** Industrial, magma-based fires and metallic dark accents. |
 | **Level 50 - 70** | `.theme-indigo` <br> `.theme-ruby` <br> `.theme-emerald` <br> `.theme-sapphire` <br> `.theme-amethyst` | `#6366f1` <br> `#be123c` <br> `#10b981` <br> `#1d4ed8` <br> `#7e22ce` | **Precious Gemstones:** Deep jewel-like glows representing mastery. |
-| **Level 75 - 90** | `.theme-neon-pink` <br> `.theme-neon-cyan` <br> `.theme-electric-blue` <br> `.theme-plasma` | `#ff00ff` <br> `#00ffff` <br> `#2563eb` <br> `#39ff14` | **Cyberpunk Neon:** 50% opacity intense glows for extreme contrast. |
-| **Level 92 - 100** | `.theme-sunset-split` <br> `.theme-midnight-split` <br> `.theme-galactic` <br> `.theme-magma` <br> `.theme-rainbow` <br> `.theme-everlight` | `#f97316` <br> `#4338ca` <br> `#9d174d` <br> `#ea580c` <br> `#00ffcc` <br> `#fbbf24` | **Epic Splashes:** Deep space nebula gradients and high-end aura pulses. |
+| **Level 75 - 90 (Neon)** | `.theme-neon-pink` <br> `.theme-neon-cyan` <br> `.theme-electric-blue` <br> `.theme-plasma` | `#ff00ff` <br> `#00ffff` <br> `#2563eb` <br> `#39ff14` | **Cyberpunk Neon:** Intense 50% opacity glows for extreme visual energy. |
+| **Level 92 - 100 (Epic)**| `.theme-sunset-split` <br> `.theme-midnight-split` <br> `.theme-galactic` <br> `.theme-magma` <br> `.theme-rainbow` <br> `.theme-everlight` | `#f97316` <br> `#4338ca` <br> `#9d174d` <br> `#ea580c` <br> `#00ffcc` <br> `#fbbf24` | **Epic Masterclasses:** Multi-color complex gradients and animated high-end auras. |
 
 ---
 
-## 🔤 4. Typography
+## 🔤 4. Typography & Type-Scale
 
 Typography in Kaeluma uses clean lines and heavy weights to evoke a modern arcade/dashboard appearance.
 
@@ -112,6 +112,19 @@ Typography in Kaeluma uses clean lines and heavy weights to evoke a modern arcad
 | `--text-bright` | `#f8fafc` | Main readable text, headings, white symbols. |
 | `--text-muted` | `#94a3b8` | Subheadings, card body text, secondary details. |
 | `--text-dim` | `#475569` | Unfocused inputs, placeholders, locked features. |
+
+### Layout Type Scale
+
+| Element Class / Style | Font Weight | Desktop Size | Mobile Size | Line Height | Case Style |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Grand Title / Hero** | 900 | `3.5rem` | `2.5rem` | 1.1 | Uppercase |
+| **Page Title (`.page-title`)**| 800 | `2.0rem` | `1.35rem`| 1.2 | Normal |
+| **Modal Title (`.modal-title`)**| 700 | `1.5rem` | `1.25rem`| 1.3 | Normal |
+| **Card Header (`.mission-name`)**| 600 | `1.0rem` | `0.95rem`| 1.4 | Normal |
+| **Button Text (`.btn`)** | 600 | `1.0rem` | `0.875rem`| 1.0 | Normal |
+| **Section Header Title** | 700 | `1.0rem` | `0.9rem` | 1.0 | Uppercase (spaced) |
+| **Body / Description** | 400 | `0.95rem`| `0.9rem` | 1.6 | Normal |
+| **Badges / Pill Labels** | 700 | `0.75rem`| `0.7rem` | 1.0 | Uppercase |
 
 ---
 
@@ -135,6 +148,12 @@ Rounder corners create a kid-friendly but sleek digital environment.
 *   `--radius-lg: 24px` — Cards, containers, modals.
 *   `--radius-xl: 32px` — Outermost panel cards, overlays.
 *   `--radius-full: 9999px` — XP bar tracks, badges, pill buttons.
+
+### Responsive Grid Breakpoints
+
+*   **Mobile Portrait (`< 480px`):** Stack cards vertically, scale padding to `--space-sm`, maximize modal width.
+*   **Tablet / iPad (`< 768px`):** Maximize space via compact inputs (`.input-sm`), utilize 2-column grids for rewards.
+*   **Desktop (`>= 1024px`):** Full 3-column structures, `--space-lg` spacing defaults, full glassmorphic side navigation layouts.
 
 ---
 
@@ -242,7 +261,30 @@ export default function GoldCoin({ className = "w-5 h-5 inline-block" }) {
 
 ---
 
-## 🗄️ 9. Marketing & Social Asset Directory
+## 📧 9. Email Brand Standards
+
+Email communications are built using React Email guidelines, styled to represent Kaeluma's premium identity in recipient inboxes (source found in [BaseTemplate.jsx](file:///c:/Users/jayso/Projects/Kaeluma/marketing/email_templates/BaseTemplate.jsx)).
+
+*   **Outer Envelope:** Light grey `#f3f4f6` container holding a card style block to provide high readability.
+*   **Header Brand Bar:** Solid deep navy `#1E1B4B` with the inline branding text and Sun icon.
+*   **Primary Call to Actions:** Custom glowing purple `#A855F7` flat-buttons with white bold text.
+*   **Support Footer:** Value-for-value alert box tinted with a soft Indigo backdrop (`rgba(99, 102, 241, 0.05)`) directing parents to Stripe Checkout.
+
+---
+
+## 💳 10. Stripe Donation Interface Customization
+
+Kaeluma uses Stripe for voluntary, community-supported donations (`https://donate.stripe.com/28EfZg6aG81Of5zd8ggQE00`). The Stripe customer portal and payment checkout pages must be configured in the Stripe Dashboard with the following branding options to match Kaeluma's look:
+
+*   **Brand Color:** `#A855F7` (Glowing Purple)
+*   **Accent Color:** `#3B82F6` (Vivid Blue)
+*   **Background Color:** `#1E1B4B` (Deep Navy) or `#0d0d14` (Deep Black)
+*   **Checkout Logo Icon:** Use [logo_icon.png](logo_icon.png) (Square 512×512 Sun logo on dark backdrop).
+*   **Billing Header Logo/Banner:** Use [logo_main.png](logo_main.png) or [banner.png](banner.png) (16:9 Banner).
+
+---
+
+## 🗄️ 11. Marketing & Social Asset Directory
 
 The `branding/` folder contains generated PNG graphics for launches, store fronts, and social campaigns. 
 
@@ -262,14 +304,14 @@ The `branding/` folder contains generated PNG graphics for launches, store front
 | **[story_missions.png](story_missions.png)** | 1080×1920 | 9:16 | Vertical mobile showcase focusing on Child Questing/Missions. |
 | **[story_rewards.png](story_rewards.png)** | 1080×1920 | 9:16 | Vertical mobile showcase focusing on the Reward Shop. |
 | **[app_store_feature.png](app_store_feature.png)** | 1280×720 | 16:9 | Google Play Feature Graphic, App Store preview cover, or Product Hunt card. |
-| **[og_share_card.png](og_share_card.png)** | 1200×630 | 1.91:1 | Open Graph preview card for Slack, Discord, Facebook messenger. |
+| **[og_share_card.png](og_share_card.png)** | 1200×630 | 1.91:1 | Dynamic Open Graph preview card for Slack, Discord, Facebook messenger. |
 | **[email_hero.png](email_hero.png)** | 600×300 | 2:1 | Newsletter welcome banner. |
 | **[coin.png](coin.png)** | 512×512 | 1:1 | Isolated 3D high-fidelity Gold Coin graphic. |
 | **[video_bg.png](video_bg.png)** | 1080×1920 | 9:16 | Video backdrop overlay for TikTok/YouTube Shorts. Import into Premiere Pro or After Effects. |
 
 ---
 
-## 🚫 10. Design Do's & Don'ts
+## 🚫 12. Design Do's & Don'ts
 
 To ensure the Kaeluma brand retains its high-fidelity appearance, follow these simple rules:
 
