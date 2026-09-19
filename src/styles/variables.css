@@ -33,10 +33,10 @@
   --text-muted:     #94a3b8;
   --text-dim:       #475569;
 
-  /* Themes Dynamic — Default to Seedling */
-  --primary:        #4ade80;
-  --primary-dim:    rgba(74, 222, 128, 0.15);
-  --glow-primary:   0 0 20px rgba(74, 222, 128, 0.25);
+  /* Themes Dynamic — Family brand default. Kid dashboards override via .theme-* */
+  --primary:        #a855f7;
+  --primary-dim:    rgba(168, 85, 247, 0.15);
+  --glow-primary:   0 0 20px rgba(168, 85, 247, 0.25);
 
   /* Radius */
   --radius-sm:      12px;

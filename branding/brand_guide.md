@@ -6,35 +6,35 @@ Welcome to the comprehensive branding and design guide for **Kaeluma**. This doc
 
 ## 🌌 1. Brand Essence & Positioning
 
-Kaeluma is a **100% free, ad-free gamified chore application** designed to help children turn everyday household responsibilities into rewarding adventure quests.
+Kaeluma is a **100% free, ad-free family of apps** that help a household live well together. Quests covers kids' routines. Vital covers adult health. More apps join the same login over time.
 
 ```mermaid
 graph TD
-    A[Kaeluma Brand Philosophy] --> B[Child-Centric Engagement]
-    A --> C[Parental Control & Trust]
+    A[Kaeluma Brand Philosophy] --> B[Whole-Family Use]
+    A --> C[Trust & Boundaries]
     A --> D[Community-Supported Integrity]
     
-    B --> B1[Cosmic / Gaming Aesthetics]
-    B --> B2[Micro-Animations & Delighters]
-    B --> B3[Leveling & Reward Shop]
+    B --> B1[Calm, premium home software]
+    B --> B2[Quests for kids' routines]
+    B --> B3[Vital for adult health]
     
     C --> C1[PIN Protection Systems]
-    C --> C2[Intuitive Approvals Flow]
+    C --> C2[Parent-controlled rewards]
     
     D --> D1[100% Free & Ad-Free]
     D --> D2[Stripe Donations Model]
 ```
 
 ### Brand Pillars
-*   **Gamified Adventure:** Life is a quest. Chores are not tasks; they are "Missions" that award gold coins and XP.
-*   **Premium Quality:** Kaeluma is styled like a premium video game console dashboard. It avoids the cheap "kids-app" cartoonish tropes in favor of deep space colors, glowing controls, and modern typography.
-*   **Safety & Simplicity:** Built with robust parental boundaries, family-level settings, and strict pin security, ensuring a safe digital space for children.
-*   **Open & Altruistic:** By remaining 100% free with no ads, trackers, or subscription paywalls, Kaeluma runs on trust and voluntary support.
+*   **The household, not a kids' toy:** Kaeluma is software for everyone under the roof. Playfulness belongs inside Quests. The brand itself is calm, adult, and useful.
+*   **Premium Quality:** Deep space colors, the sun wordmark, Outfit typography. No cartoon mascots, no candy palettes on marketing or the family hub.
+*   **Safety & Simplicity:** Parental PIN, family-level settings, no ads or trackers.
+*   **Open & Altruistic:** Free, no subscriptions. Voluntary support keeps the servers running.
 
 ### Voice & Tone
-*   **Encouraging:** Celebrates child achievements with visual rewards, level-up milestones, and dynamic effects.
-*   **Sleek & Clean:** Minimal copy, highly visual, clean interface spacing.
-*   **Friendly but Sophisticated:** Appeals to kids aged 6-14 who crave a more adult-like "gaming hub" rather than a childish cartoon look.
+*   **Warm and direct:** Speak like a capable parent, not a cartoon sidekick.
+*   **Sleek & Clean:** Short copy. Room to breathe.
+*   **Family-first:** Default language is household, home, and together. Save "quests / XP / loot" for the Quests product, not for Kaeluma as a whole.
 
 ---
 

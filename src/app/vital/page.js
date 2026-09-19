@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Vital — Kaeluma',
+  description: 'Household health: meals, weight, and a calm plan for everyone under your roof.',
 };
 
 export default async function VitalPage() {
@@ -17,24 +18,35 @@ export default async function VitalPage() {
   since.setDate(since.getDate() - 60);
   const sinceDay = since.toISOString().slice(0, 10);
 
-  const [profileRes, goalsRes, foodsRes, weightsRes] = await Promise.all([
-    supabase.from('vital_profiles').select('*').maybeSingle(),
-    supabase.from('vital_goals').select('*').maybeSingle(),
-    supabase.from('vital_food_logs').select('*').gte('logged_on', sinceDay).order('created_at', { ascending: false }),
-    supabase.from('vital_weigh_ins').select('*').gte('logged_on', sinceDay).order('logged_on', { ascending: true }),
+  const [membersRes, plansRes, foodsRes, weightsRes, childrenRes, kitchenRes] = await Promise.all([
+    supabase.from('vital_members').select('*').order('created_at', { ascending: true }),
+    supabase.from('vital_plans').select('*'),
+    supabase.from('vital_foods').select('*').gte('logged_on', sinceDay).order('created_at', { ascending: false }),
+    supabase.from('vital_weights').select('*').gte('logged_on', sinceDay).order('logged_on', { ascending: true }),
+    supabase.from('children').select('id, name').order('name'),
+    supabase.from('vital_kitchen').select('*').order('times_logged', { ascending: false }),
   ]);
 
-  const tableMissing = [profileRes, goalsRes, foodsRes, weightsRes].some(
-    (res) => res.error && /does not exist|schema cache/i.test(res.error.message || '')
+  const isMissing = (res) => res.error && /does not exist|schema cache/i.test(res.error.message || '');
+  const tableMissing = [membersRes, plansRes, foodsRes, weightsRes].some(isMissing);
+  const kitchenMissing = isMissing(kitchenRes);
+
+  const members = membersRes.data || [];
+  const known = new Set(members.map((row) => row.display_name.trim().toLowerCase()));
+  const suggestedKids = (childrenRes.data || []).filter(
+    (child) => child.name && !known.has(child.name.trim().toLowerCase())
   );
 
   return (
     <VitalDashboardClient
-      profile={profileRes.data}
-      goals={goalsRes.data}
+      members={members}
+      plans={plansRes.data || []}
       foods={foodsRes.data || []}
       weighIns={weightsRes.data || []}
+      kitchen={kitchenRes.error ? [] : (kitchenRes.data || [])}
+      suggestedKids={suggestedKids}
       tableMissing={tableMissing}
+      kitchenMissing={kitchenMissing && !tableMissing}
     />
   );
 }

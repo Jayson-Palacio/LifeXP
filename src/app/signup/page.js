@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import BrandLogo from '../../components/BrandLogo'
+import SiteAuth from '../../components/SiteAuth'
 import { signup } from '../login/actions'
 
 const BLOCKED_DOMAINS = new Set([
@@ -61,73 +61,66 @@ export default function SignupPage() {
     else if (result?.message) { setMessage(result.message); setIsLoading(false); }
   }
 
-
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="kaeluma-bg" />
-      
-      <div style={{ zIndex: 1, background: 'rgba(10, 8, 20, 0.7)', backdropFilter: 'blur(16px)', padding: 'var(--space-2xl)', borderRadius: 'var(--radius-2xl)', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-lg)' }}>
-          <BrandLogo href="/" size="md" />
-        </div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, textAlign: 'center', marginBottom: 'var(--space-xl)', color: 'var(--text-bright)' }}>
-          Create Account
-        </h1>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-            <div className="input-group" style={{ flex: 1 }}>
-              <label htmlFor="first_name">First Name</label>
-              <input className="input" id="first_name" name="first_name" type="text" required />
-            </div>
-            <div className="input-group" style={{ flex: 1 }}>
-              <label htmlFor="last_name">Last Name</label>
-              <input className="input" id="last_name" name="last_name" type="text" required />
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="email">Email</label>
-            <input className="input" id="email" name="email" type="email" required />
-          </div>
-          
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <input className="input" id="password" name="password" type="password" required />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="confirm_password" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              Confirm Password
-              {passwordMismatch && <span style={{ color: 'var(--red)', fontSize: '0.8rem', fontWeight: 600 }}>Passwords don't match</span>}
-            </label>
-            <input
-              className="input"
-              id="confirm_password"
-              name="confirm_password"
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={e => {
-                setConfirmPassword(e.target.value)
-                setPasswordMismatch(false)
-              }}
-              style={passwordMismatch ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(239,68,68,0.25)' } : {}}
-            />
-          </div>
-
-          {error && <p style={{ color: 'var(--red)', fontSize: '0.9rem', textAlign: 'center' }}>{error}</p>}
-          {message && <p style={{ color: 'var(--green, #10b981)', fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center' }}>{message}</p>}
-
-          <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={isLoading} style={{ background: 'linear-gradient(135deg, #ec4899, #a855f7)' }}>
-            {isLoading ? 'Creating account...' : 'Sign up'}
-          </button>
-        </form>
-
-        <p style={{ textAlign: 'center', marginTop: 'var(--space-xl)', color: 'var(--text-muted)' }}>
-          Already have an account? <Link href="/login" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Log in</Link>
+    <SiteAuth
+      title="Create your account"
+      subtitle="One login for the whole household."
+      footer={
+        <p>
+          Already have an account? <Link href="/login">Sign in</Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="site-form">
+        <div className="site-form-row">
+          <div className="input-group">
+            <label htmlFor="first_name">First name</label>
+            <input className="input" id="first_name" name="first_name" type="text" autoComplete="given-name" required />
+          </div>
+          <div className="input-group">
+            <label htmlFor="last_name">Last name</label>
+            <input className="input" id="last_name" name="last_name" type="text" autoComplete="family-name" required />
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label htmlFor="email">Email</label>
+          <input className="input" id="email" name="email" type="email" autoComplete="email" required />
+        </div>
+
+        <div className="input-group">
+          <label htmlFor="password">Password</label>
+          <input className="input" id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+        </div>
+
+        <div className="input-group">
+          <div className="site-label-row">
+            <label htmlFor="confirm_password">Confirm password</label>
+            {passwordMismatch && <span className="site-err">Doesn’t match</span>}
+          </div>
+          <input
+            className="input"
+            id="confirm_password"
+            name="confirm_password"
+            type="password"
+            autoComplete="new-password"
+            required
+            value={confirmPassword}
+            onChange={e => {
+              setConfirmPassword(e.target.value)
+              setPasswordMismatch(false)
+            }}
+            aria-invalid={passwordMismatch}
+          />
+        </div>
+
+        {error && <p className="site-err">{error}</p>}
+        {message && <p className="site-ok">{message}</p>}
+
+        <button type="submit" className="site-btn site-btn-block" disabled={isLoading}>
+          {isLoading ? 'Creating account…' : 'Continue'}
+        </button>
+      </form>
+    </SiteAuth>
   )
 }

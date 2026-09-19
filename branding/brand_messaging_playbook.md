@@ -1,33 +1,33 @@
 # Kaeluma Brand Messaging & Copywriting Playbook
-### Crafting a Consistent Voice across Parent Sanctuaries and Kid Guilds
+### Voice for the household — not a kids' game wrapper
 
-This messaging playbook is the definitive copy guide for Kaeluma. It defines our voice, core taglines, vocabulary limits, and targeted messaging strategies to ensure that Kaeluma speaks with consistent clarity to parents, partners, and children.
+This playbook is the copy guide for **Kaeluma the family platform**. Quests may still use game language inside that app. Public brand, hub, and adult apps should not.
 
 ---
 
 ## 📢 1. Core Slogans & Taglines
 
 ### The Primary Slogan (Hero Title)
-> "Turn chore time into an epic adventure."
-*Use cases: Website hero banners, app store headers, email footers, and press kit titles.*
+> "Live well, together."
+*Use cases: Website hero, app store headers, press titles.*
 
 ### The Action Tagline
-> "Gamify household routines. Empower childhood autonomy."
-*Use cases: Meta descriptions, social media bios, and corporate summaries.*
+> "Software for the whole family."
+*Use cases: Meta descriptions, social bios, summaries.*
 
-### The Parent-Centric Hook
-> "Ditch the nagging. Welcome the harmony."
-*Use cases: Ad copy, parent onboarding screens, and PTA flyers.*
+### The Household Hook
+> "Routines, health, and home — one login."
+*Use cases: Ad copy, onboarding, hub subtitle.*
 
 ---
 
 ## ⚡ 2. The Elevator Pitches
 
-### The 10-Second Pitch (The Headline)
-> "Kaeluma is a 100% free, game-console-inspired task dashboard that turns routine household chores into rewarding adventure quests, replacing parental nagging with self-directed child autonomy."
+### The 10-Second Pitch
+> "Kaeluma is a free family of apps for the household: Quests for kids' routines, Vital for adult health, more on the way."
 
-### The 30-Second Pitch (The Detail)
-> "Kaeluma gamifies childhood routines by transforming household responsibilities into interactive quests. Children log into their own gaming-style dashboard to select tasks, earn gold coins, and level up their avatars. Parents maintain complete boundary control in a PIN-protected sanctuary, configuring their own reward shops where children can redeem coins for screen time, outings, or allowances. Built by a parent, Kaeluma is completely free, has no ads or trackers, and runs entirely on voluntary community support."
+### The 30-Second Pitch
+> "Kaeluma started as a way to get through the morning without a fight. It is now a home for family software — one login, no ads, no subscriptions. Parents keep adult tools behind a PIN. Kids get a dashboard they will actually use. Grown-ups get Vital for calories, macros, and weight goals. Built by a parent, funded by people who want it to stay free."
 
 ---
 

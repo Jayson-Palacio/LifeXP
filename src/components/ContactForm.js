@@ -78,8 +78,8 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
 
   const faqs = [
     {
-      q: "How does Kaeluma work?",
-      a: "Kaeluma is a family of apps under one login. Quests turns chores into a game for kids. Vital tracks calories, macros, and weight-loss goals for the grown-ups. After you sign in, you choose which app to open."
+      q: "What is Kaeluma?",
+      a: "Kaeluma is a family of apps under one login. Quests helps with kids' routines. Vital helps adults track nutrition and weight goals. After you sign in, you choose the app you need."
     },
     {
       q: "Is there a mobile app?",

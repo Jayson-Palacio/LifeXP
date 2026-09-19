@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import BrandLogo from '../../components/BrandLogo'
+import SiteAuth from '../../components/SiteAuth'
 import { login } from './actions'
 
 export default function LoginPage() {
@@ -22,44 +22,50 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="kaeluma-bg" />
-      
-      <div style={{ zIndex: 1, background: 'rgba(10, 8, 20, 0.7)', backdropFilter: 'blur(16px)', padding: 'var(--space-2xl)', borderRadius: 'var(--radius-2xl)', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-lg)' }}>
-          <BrandLogo href="/" size="md" />
-        </div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, textAlign: 'center', marginBottom: 'var(--space-xl)', color: 'var(--text-bright)' }}>
-          Welcome Back
-        </h1>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-          <div className="input-group">
-            <label htmlFor="email">Email</label>
-            <input className="input" id="email" name="email" type="email" required />
-          </div>
-          
-          <div className="input-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label htmlFor="password" style={{ margin: 0 }}>Password</label>
-              <Link href="/forgot-password" style={{ fontSize: '0.85rem', color: 'var(--primary)', textDecoration: 'none' }}>
-                Forgot password?
-              </Link>
-            </div>
-            <input className="input" id="password" name="password" type="password" required />
-          </div>
-
-          {error && <p style={{ color: 'var(--red)', fontSize: '0.9rem', textAlign: 'center' }}>{error}</p>}
-
-          <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Log in'}
-          </button>
-        </form>
-
-        <p style={{ textAlign: 'center', marginTop: 'var(--space-xl)', color: 'var(--text-muted)' }}>
-          Don't have an account? <Link href="/signup" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Sign up</Link>
+    <SiteAuth
+      title="Sign in"
+      subtitle="Use your family account."
+      footer={
+        <p>
+          Don&apos;t have an account? <Link href="/signup">Create one</Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="site-form">
+        <div className="input-group">
+          <label htmlFor="email">Email</label>
+          <input
+            className="input"
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            autoFocus
+            required
+          />
+        </div>
+
+        <div className="input-group">
+          <div className="site-label-row">
+            <label htmlFor="password">Password</label>
+            <Link href="/forgot-password">Forgot password?</Link>
+          </div>
+          <input
+            className="input"
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+        </div>
+
+        {error && <p className="site-err">{error}</p>}
+
+        <button type="submit" className="site-btn site-btn-block" disabled={isLoading}>
+          {isLoading ? 'Signing in…' : 'Continue'}
+        </button>
+      </form>
+    </SiteAuth>
   )
 }

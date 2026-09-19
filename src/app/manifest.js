@@ -2,11 +2,11 @@ export default function manifest() {
   return {
     name: 'Kaeluma',
     short_name: 'Kaeluma',
-    description: 'Turn real-life family routines into a game kids actually enjoy.',
+    description: 'Software for the whole family — routines, health, and home, under one login.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0d0d14',
-    theme_color: '#1E1B4B',
+    background_color: '#f5f5f7',
+    theme_color: '#f5f5f7',
     icons: [
       {
         src: '/logo_icon.svg',

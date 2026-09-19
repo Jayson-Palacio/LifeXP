@@ -1,4 +1,4 @@
-import { Outfit } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 
 import "../styles/variables.css";
 import "../styles/base.css";
@@ -14,13 +14,19 @@ const outfit = Outfit({
   variable: "--font-outfit",
 });
 
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+});
+
 export const viewport = {
-  themeColor: "#1E1B4B",
+  themeColor: "#f5f5f7",
 };
 
 export const metadata = {
-  title: "Kaeluma — Turn Real Life Into a Game",
-  description: "Kaeluma is a family of apps that help households live their best lives — Quests for chores, Vital for nutrition and fitness.",
+  title: "Kaeluma — Software for the whole family",
+  description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, one login for everyone. Free and ad-free.",
   applicationName: "Kaeluma",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   appleWebApp: {
@@ -29,16 +35,16 @@ export const metadata = {
     statusBarStyle: "black-translucent",
   },
   openGraph: {
-    title: "Kaeluma — Turn Real Life Into a Game",
-    description: "Kaeluma is a family of apps that help households live their best lives — Quests for chores, Vital for nutrition and fitness.",
+    title: "Kaeluma — Software for the whole family",
+    description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, one login for everyone. Free and ad-free.",
     siteName: "Kaeluma",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kaeluma — Turn Real Life Into a Game",
-    description: "Kaeluma is a family of apps that help households live their best lives — Quests for chores, Vital for nutrition and fitness.",
+    title: "Kaeluma — Software for the whole family",
+    description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, one login for everyone. Free and ad-free.",
   },
 };
 
@@ -48,7 +54,7 @@ export default function RootLayout({ children }) {
     "@type": "SoftwareApplication",
     "name": "Kaeluma",
     "operatingSystem": "All (Web-Based)",
-    "applicationCategory": "ParentingApplication, GameApplication",
+    "applicationCategory": "LifestyleApplication",
     "offers": {
       "@type": "Offer",
       "price": "0.00",
@@ -58,20 +64,18 @@ export default function RootLayout({ children }) {
       "@type": "Person",
       "name": "Jayson Palacio"
     },
-    "description": "Kaeluma is a family of free apps that help households live their best lives — Quests for chores and Vital for nutrition and fitness.",
+    "description": "Kaeluma is a family of free apps for the household — Quests for routines and Vital for household health.",
     "featureList": [
       "Family app hub after login",
-      "RPG Quest Dashboard for chores",
-      "Experience Points (XP) and Level Up themes",
+      "Quests for household routines",
       "Parent PIN Verification System",
-      "Custom Reward Loot Shop",
-      "Vital nutrition, calorie, and weight-loss tracking",
-      "Stripe Value-for-Value Donations"
+      "Vital household health: meals, weight, and plans for every person",
+      "Voluntary donations, no subscriptions"
     ]
   };
 
   return (
-    <html lang="en" className={outfit.variable}>
+    <html lang="en" className={`${outfit.variable} ${inter.variable}`}>
       <head>
         <script
           type="application/ld+json"

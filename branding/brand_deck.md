@@ -1,5 +1,5 @@
 # Kaeluma Brand Pitch Deck
-### Turn Real Life Into an Epic Adventure
+### Software for the whole family
 
 ---
 
@@ -27,9 +27,9 @@ Kaeluma replaces the friction of parental control with the pull of **self-direct
 ---
 
 ## ☀️ Slide 3: Meet Kaeluma
-### The Premium Gaming Hub for Family Harmony
+### Software for the whole household
 
-Kaeluma is a sleek, game-console-inspired task dashboard that transforms real-life chores into epic family quests.
+Kaeluma is a calm, premium home for family apps: Quests for kids' routines, Vital for adult health, one login, no ads.
 
 ```
                   ┌──────────────────────┐

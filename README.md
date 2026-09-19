@@ -1,9 +1,9 @@
 # Kaeluma
 
-**Kaeluma** is a family of apps that help households live their best lives. After login you pick an app:
+**Kaeluma** is software for the whole family. After login you pick an app:
 
-- **Quests** — kids complete missions for XP, coins, and rewards
-- **Vital** — nutrition, calories, macros, and weight-loss goals
+- **Quests** — kids' routines, with parent approvals and rewards
+- **Vital** — nutrition, calories, macros, and weight goals
 
 Built with **Next.js 16** (App Router) + **React 19** + **Supabase** (auth, Postgres, RLS). No backend of its own — mutations go through narrowly-scoped Postgres functions (Quests) or row-level-secured tables (Vital).
 

@@ -5,28 +5,28 @@ import { playPop } from '../lib/sounds';
 
 const faqs = [
   {
-    question: "How does Kaeluma work?",
-    answer: "Kaeluma is a family of apps under one login. Quests turns chores into an RPG for kids — missions, XP, gold, and a parent-run reward shop. Vital helps adults set weight-loss goals and track calories and macros. After you sign in, you pick the app you want."
+    question: "What is Kaeluma?",
+    answer: "Kaeluma is a family of apps under one login. Quests helps kids own chores and habits. Vital helps the whole household track meals, weight, and health. After you sign in, you choose the app you need."
+  },
+  {
+    question: "Who is it for?",
+    answer: "The whole household. Parents run the account. Kids use Quests. Everyone can use Vital for health. More apps will join the same family hub over time."
   },
   {
     question: "What is Vital?",
-    answer: "Vital is Kaeluma's nutrition and fitness app. You set a starting weight, a goal weight, and a weekly pace. We estimate daily calories and protein/carbs/fat using the Mifflin–St Jeor formula, then you log meals and weigh-ins as you go."
+    answer: "Vital is household health. Add each person, then log meals in a tap from a kitchen list. Adults can set a weight plan with research-based calorie and protein targets. Kids are treated as growing — we track meals, not diets."
   },
   {
-    question: "What age range is Kaeluma suitable for?",
-    answer: "It is designed primarily for kids aged 4 to 15. The system scale is flexible: younger children love checking off simple tasks and unlocking colorful themes, while older kids enjoy the independence of managing their own routine and saving up coins for larger rewards."
+    question: "Do I need to download anything?",
+    answer: "No. Kaeluma is a Progressive Web App. Open it in your browser, and on a phone you can add it to the home screen."
   },
   {
-    question: "Is it a mobile app I have to download?",
-    answer: "Kaeluma is a Progressive Web App (PWA). You don't need to visit the App Store or Google Play Store. Simply open Kaeluma in your mobile browser, tap 'Add to Home Screen', and it will install as a full-screen, native-feeling app on your device!"
+    question: "Is our family data private?",
+    answer: "Yes. We do not sell your data, run ads, or collect extra personal information. Household data stays on your account."
   },
   {
-    question: "Is our family data safe and private?",
-    answer: "Absolutely. Privacy is our top priority. We do not sell your family's data, host third-party advertisements, or collect any unnecessary personal information. All dashboard data and family interactions are private and securely stored."
-  },
-  {
-    question: "How much does Kaeluma cost?",
-    answer: "All core gamification features are 100% free to use. There are no paid lockouts or mandatory monthly subscriptions. If Kaeluma helps bring harmony to your household, you can choose to send a voluntary tip to support our hosting costs under the Parent Settings."
+    question: "How much does it cost?",
+    answer: "Kaeluma is free. No subscriptions and no feature lockouts. If it helps your home, you can leave a voluntary tip to cover hosting."
   }
 ];
 
@@ -44,17 +44,17 @@ export default function FAQSection() {
 
   return (
     <section className="faq-section">
-      <h2 className="faq-title">Frequently Asked Questions</h2>
+      <h2 className="faq-title">Questions. Answers.</h2>
       <div className="faq-container">
         {faqs.map((faq, index) => {
           const isActive = activeIndex === index;
           return (
-            <div 
-              key={`faq-${index}`} 
+            <div
+              key={`faq-${index}`}
               className={`faq-item ${isActive ? 'active' : ''}`}
             >
-              <button 
-                className="faq-trigger" 
+              <button
+                className="faq-trigger"
                 onClick={() => toggleFAQ(index)}
                 aria-expanded={isActive}
               >

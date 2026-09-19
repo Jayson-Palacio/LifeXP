@@ -190,13 +190,13 @@ export default function SetupClient() {
               <BrandLogo size="hero" />
             </div>
             <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: 8 }}>
-              Turn everyday moments into<br /><strong style={{ color: 'var(--text-bright)' }}>epic adventures.</strong>
+              Set up Quests for<br /><strong style={{ color: 'var(--text-bright)' }}>your household.</strong>
             </p>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: 36 }}>
-              Let's get your family set up in under 2 minutes!
+              About two minutes. You can change everything later.
             </p>
             <button className="btn btn-primary btn-block btn-lg" onClick={() => setStep(1)}>
-              Let's Build Your Family →
+              Continue
             </button>
           </div>
         )}

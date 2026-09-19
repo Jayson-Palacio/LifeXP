@@ -20,14 +20,10 @@ export default async function AppsPage() {
     .limit(1)
     .maybeSingle();
 
-  const vital = await supabase.from('vital_profiles').select('id').maybeSingle();
-  const vitalReady = Boolean(vital.data) && !vital.error;
-
   return (
     <AppLauncherClient
       familyName={settings?.family_name || 'your family'}
       questsReady={Boolean(settings?.setup_complete)}
-      vitalReady={vitalReady}
     />
   );
 }
