@@ -6,6 +6,7 @@ import { AVATAR_EMOJI_GROUPS, MISSION_EMOJI_GROUPS, REWARD_EMOJI_GROUPS } from '
 import { submitSetupData } from '../app/actions/setup';
 import GroupedEmojiPicker from './GroupedEmojiPicker';
 import GoldCoin from './GoldCoin';
+import BrandLogo from './BrandLogo';
 import InlineCrop from './CropOverlay';
 import { showConfetti } from '../lib/ui';
 
@@ -185,10 +186,9 @@ export default function SetupClient() {
         {/* ── STEP 0: Welcome ── */}
         {step === 0 && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '5rem', marginBottom: 16, filter: 'drop-shadow(0 0 24px rgba(168,85,247,0.6))', animation: 'pulse 3s ease-in-out infinite' }}>🌟</div>
-            <h1 style={{ fontSize: '2.4rem', fontWeight: 900, margin: '0 0 8px', background: 'linear-gradient(135deg, #fff 0%, var(--primary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Kaeluma
-            </h1>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, filter: 'drop-shadow(0 0 24px rgba(168,85,247,0.6))' }}>
+              <BrandLogo size="hero" />
+            </div>
             <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: 8 }}>
               Turn everyday moments into<br /><strong style={{ color: 'var(--text-bright)' }}>epic adventures.</strong>
             </p>
@@ -589,8 +589,8 @@ export default function SetupClient() {
               </p>
             </div>
 
-            <button className="btn btn-gold btn-block btn-lg" onClick={() => router.push('/')}>
-              Open My Dashboard 🚀
+            <button className="btn btn-gold btn-block btn-lg" onClick={() => router.push('/apps')}>
+              Open Family Apps 🚀
             </button>
           </div>
         )}

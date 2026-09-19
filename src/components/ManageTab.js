@@ -11,6 +11,7 @@ export default function ManageTab({
   setModal,
   handleDeleteMission, handleToggleActiveMission,
   handleDeleteReward, handleToggleActiveReward,
+  onOpenSupport,
 }) {
   const [manageTab, setManageTab] = useState('missions');
   const [selectedChildId, setSelectedChildId] = useState('all');
@@ -215,9 +216,9 @@ export default function ManageTab({
               if (isExiting) return;
               if (playPop) playPop();
               setIsExiting(true);
-              setTimeout(() => router.push('/'), 250);
+              setTimeout(() => router.push('/apps'), 250);
           }}>
-            {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Home'}</span>
+            {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Apps'}</span>
           </button>
         </div>
       </div>

@@ -42,7 +42,7 @@ These search terms are curated to capture high-intent parents searching for beha
 
 Tired of nagging your children to brush their teeth, do their homework, or clean their rooms? Welcome to **Kaeluma**—the ultimate gamified chore app designed to trade routine power struggles for family guild collaboration. 
 
-Kaeluma (formerly "LifeXP") takes the psychological hooks of premium video games and applies them to real-life household responsibilities. By turning chores into "Quests" and rewards into "Loot," Kaeluma empowers children to build self-directed independence and routine autonomy.
+Kaeluma takes the psychological hooks of premium video games and applies them to real-life household responsibilities. By turning chores into "Quests" and rewards into "Loot," Kaeluma empowers children to build self-directed independence and routine autonomy.
 
 #### 🎮 Why Kids Love Kaeluma:
 *   **The Quest Log:** View daily responsibilities as exciting gaming quests.

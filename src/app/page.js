@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import BrandLogo from '../components/BrandLogo';
 import RocketShip from '../components/RocketShip';
 import InteractiveHeroMockup from '../components/InteractiveHeroMockup';
 import FAQSection from '../components/FAQSection';
@@ -21,10 +21,7 @@ export default function LandingPage() {
         
         {/* Navigation */}
         <header style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8vh' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: '2.5rem' }}>☀</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, background: 'linear-gradient(135deg, #a855f7, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Kaeluma</div>
-          </div>
+          <BrandLogo href="/" size="lg" />
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button 
               onClick={() => setShowContactModal(true)} 
@@ -51,15 +48,34 @@ export default function LandingPage() {
             Turn Real Life <br />
             <span style={{ background: 'linear-gradient(135deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Into a Game.</span>
           </h1>
-          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', maxWidth: 600, margin: '0 auto var(--space-2xl)', lineHeight: 1.6 }}>
-            Kaeluma is the gamified chore manager that kids actually love. 
-            Reward good habits, track missions, and let your family level up together in a magical shared universe.
+          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', maxWidth: 640, margin: '0 auto var(--space-2xl)', lineHeight: 1.6 }}>
+            Kaeluma is where software and a little AI line up to help families live their best lives.
+            Start with Quests for the kids, Vital for your health — more family apps are on the way.
           </p>
           
           <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center', marginBottom: '10vh' }}>
             <Link href="/signup" className="btn btn-primary btn-lg" style={{ fontSize: '1.2rem', padding: '16px 32px', boxShadow: '0 10px 30px rgba(168, 85, 247, 0.4)' }}>
               Start Playing Now
             </Link>
+          </div>
+
+          {/* Family app fleet */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-lg)', textAlign: 'left', marginBottom: '10vh' }}>
+            <div className="landing-feature">
+              <div style={{ fontSize: '2rem', marginBottom: 8 }}>🎯</div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 6 }}>Quests</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>The original Kaeluma: chores become missions, gold, and a parent-run loot shop.</p>
+            </div>
+            <div className="landing-feature">
+              <div style={{ fontSize: '2rem', marginBottom: 8 }}>💪</div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 6 }}>Vital</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>Weight-loss goals, daily calories, and macros — so the grown-ups get a dashboard too.</p>
+            </div>
+            <div className="landing-feature">
+              <div style={{ fontSize: '2rem', marginBottom: 8 }}>✨</div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 6 }}>The fleet</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>One login. One family hub. New apps drop here as we take on more of real life.</p>
+            </div>
           </div>
 
           {/* Hero Mockup (Child Dashboard Simulator) */}
@@ -149,7 +165,7 @@ export default function LandingPage() {
               maxWidth: 680, 
               margin: '0 auto' 
             }}>
-              Kaeluma was born out of a simple need: we wanted an easy and fun way for our 5-year-old to understand his morning to-do list. By turning routines into a game, we went from reminding him 5+ times to do basic things like brush his teeth and make his bed, to watching him look forward to completing his missions and collecting rewards. We built Kaeluma to bring that same morning magic to your family.
+              Kaeluma started as a morning-routine game for our 5-year-old. It worked — so it is growing into a fleet of apps for the whole family: Quests for kids, Vital for nutrition and fitness, and more as we take on the rest of real life. Same login. Same promise. Built to help families live their best lives.
             </p>
           </div>
 
@@ -177,7 +193,10 @@ export default function LandingPage() {
             color: 'var(--text-dim)', 
             fontSize: '0.85rem' 
           }}>
-            <div>© {new Date().getFullYear()} Kaeluma. Made with ❤️ for families.</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <BrandLogo variant="icon" size="sm" href="/" />
+              <span>© {new Date().getFullYear()} Kaeluma. Made with ❤️ for families.</span>
+            </div>
             <div style={{ display: 'flex', gap: 20 }}>
               <a 
                 href="https://donate.stripe.com/28EfZg6aG81Of5zd8ggQE00" 

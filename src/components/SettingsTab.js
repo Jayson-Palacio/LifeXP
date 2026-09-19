@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import GoldCoin from './GoldCoin';
 import { showToast } from '../lib/ui';
 import { changeParentPin, updateAppSettings } from '../app/actions/auth';
+import { submitTicket } from '../app/actions/support';
+import { logout } from '../app/login/actions';
 
 // Support & Donation Configuration
 const STRIPE_DONATION_URL = 'https://donate.stripe.com/28EfZg6aG81Of5zd8ggQE00';
@@ -328,6 +331,7 @@ function AboutSection() {
 }
 
 export default function SettingsTab({ initialSettings, onOpenSupport }) {
+  const router = useRouter();
   const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
   const [subTab, setSubTab] = useState('preferences'); // 'preferences' | 'guide'
   
@@ -734,7 +738,6 @@ export default function SettingsTab({ initialSettings, onOpenSupport }) {
               disabled={isSubmittingTicket || !ticketMessage.trim()}
               onClick={async () => {
                 setIsSubmittingTicket(true);
-                const { submitTicket } = await import('../app/actions/support');
                 const res = await submitTicket(ticketType, ticketMessage);
                 setIsSubmittingTicket(false);
                 if (res.success) {
@@ -755,10 +758,16 @@ export default function SettingsTab({ initialSettings, onOpenSupport }) {
       )}
 
       {/* ACCOUNT SETTINGS (SIGN OUT) */}
-      <div style={{ marginTop: 'var(--space-2xl)', textAlign: 'center' }}>
+      <div style={{ marginTop: 'var(--space-2xl)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <button
+          onClick={() => router.push('/apps')}
+          className="btn btn-ghost"
+          style={{ marginBottom: 12 }}
+        >
+          All family apps
+        </button>
         <button 
           onClick={async () => {
-            const { logout } = await import('../app/login/actions');
             await logout();
           }}
           className="btn btn-ghost" 

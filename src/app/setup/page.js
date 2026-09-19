@@ -10,7 +10,7 @@ export default async function SetupPage() {
   const setupComplete = data?.setup_complete;
 
   if (setupComplete) {
-    redirect('/dashboard');
+    redirect('/apps');
   }
 
   return <SetupClient />;

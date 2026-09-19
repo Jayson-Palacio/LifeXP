@@ -2,8 +2,10 @@
 
 import { createClient } from '../../utils/supabase/server';
 import { verifyPin, hashPin } from '../../utils/pin';
+import { grantParentSession, hasParentSession } from '../../lib/parent-session';
 
 export async function verifyParentPin(pin) {
+  if (!/^\d{4}$/.test(pin)) return false;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
@@ -16,14 +18,17 @@ export async function verifyParentPin(pin) {
     .limit(1)
     .single();
     
-  if (error || !data) return false;
-  return verifyPin(pin, data.parent_pin);
+  if (error || !data || !verifyPin(pin, data.parent_pin)) return false;
+  await grantParentSession(user.id);
+  return true;
 }
 
 export async function changeParentPin(currentPin, newPin) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
+  if (!await hasParentSession(user.id)) return { success: false, error: 'Parent verification required.' };
+  if (!/^\d{4}$/.test(newPin)) return { success: false, error: 'PIN must be four digits.' };
 
   const { data } = await supabase
     .from('app_settings')
@@ -50,6 +55,7 @@ export async function updateAppSettings(settings) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
+  if (!await hasParentSession(user.id)) return { success: false, error: 'Parent verification required.' };
 
   // Whitelist: only these fields may be updated via this action
   const ALLOWED_FIELDS = ['require_approval', 'family_name'];
@@ -90,6 +96,7 @@ export async function resetParentPinWithPassword(password, newPin) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
+  if (!/^\d{4}$/.test(newPin)) return { success: false, error: 'PIN must be four digits.' };
 
   // Verify password again on the server (defence in depth)
   const { error: authError } = await supabase.auth.signInWithPassword({
@@ -111,5 +118,6 @@ export async function resetParentPinWithPassword(password, newPin) {
     return { success: false, error: updateError.message };
   }
 
+  await grantParentSession(user.id);
   return { success: true };
 }

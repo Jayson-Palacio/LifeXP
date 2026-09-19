@@ -148,7 +148,7 @@ Would you be open to checking it out?
 ## 9. June 2026 Master Timeline
 
 ### 🔴 PRE-LAUNCH: May 26 – May 31 (Setup & Asset Creation)
-- [ ] Claim handles: `@kaeluma_app` (TikTok), `@kaeluma.app` (Instagram), `@KaelumApp` (Twitter/X).
+- [ ] Claim handles: `@kaeluma_app` (TikTok), `@kaeluma.app` (Instagram), `@KaelumaApp` (Twitter/X).
 - [ ] Set up **Resend** and verify domain; design clean HTML/React templates.
 - [ ] Configure Stripe Donation page: `https://donate.stripe.com/28EfZg6aG81Of5zd8ggQE00`.
 - [ ] Record a 60-second screen-capture demo of Kaeluma.

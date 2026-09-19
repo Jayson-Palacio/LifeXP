@@ -11,6 +11,7 @@ import { playRandomSuccessSound, playKaChing, playPop, playClick } from '../lib/
 import AvatarDisplay from './AvatarDisplay';
 import GoldCoin from './GoldCoin';
 import { getStreakIcon, getStreakStyles } from '../lib/streaks';
+import { redeemReward, submitMission, undoMission, updateAppearance } from '../app/actions/game';
 
 export default function ChildDashboardClient({ initialChild, missions, initialCompletions, rewards, initialRedemptions, requireApproval = true, familyName }) {
   const router = useRouter();
@@ -212,220 +213,98 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
 
     if (playRandomSuccessSound) playRandomSuccessSound();
 
-    if (!requireApproval) {
-      // Auto-approve: credit XP and coins immediately
-      const currentXp = child.total_xp_earned || child.xp || 0;
-      const newXp = currentXp + mission.xp_reward;
-      const newCoins = child.coins + mission.coin_reward;
-
-      // Streak logic
-      let newStreak = child.streak || 0;
-      const now = new Date();
-      const today = now.toDateString();
-      const lastCompDate = child.last_completion_date ? new Date(child.last_completion_date) : null;
-      
-      if (!lastCompDate || lastCompDate.toDateString() !== today) {
-         if (lastCompDate && now.getTime() - lastCompDate.getTime() > 86400000 * 2) {
-             newStreak = 1;
-         } else {
-             newStreak += 1;
-         }
-      }
-
-      const { data, error: compError } = await supabase.from('completions').insert([{
-        mission_id: mission.id,
-        child_id: child.id,
-        status: 'approved',
-      }]).select().single();
-
-      if (compError) {
-        showToast('Error completing mission: ' + compError.message, 'error');
-        setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
-        return;
-      }
-
-      if (data) {
-        const { error: childError } = await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
-        if (childError) {
-          showToast('Error updating rewards: ' + childError.message, 'error');
-          // Rollback the completion insert to prevent desync
-          await supabase.from('completions').delete().eq('id', data.id);
-          setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
-          return;
-        }
-
-        setChild(prev => ({ ...prev, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }));
-        setCompletions(prev => [...prev, data]);
-
-        const { getLevelForXP: getLvl } = await import('../lib/levels');
-        const oldLevel = getLvl(currentXp);
-        const newLevel = getLvl(newXp);
-
-        // Stagger animations horizontally and vertically so they don't overlap
-        showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', clientX - 45, clientY - 10);
-        setTimeout(() => {
-          showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', clientX + 15, clientY - 10);
-        }, 150);
-
-        if (newLevel.level > oldLevel.level) {
-          justLeveledUpRef.current = true;
-          const { showLevelUp, showTierUp } = await import('../lib/ui');
-          const { checkColorUnlocks } = await import('../lib/levels');
-          if (newLevel.tierName !== oldLevel.tierName) {
-            showTierUp(newLevel.level, newLevel.tierName);
-          } else {
-            const unlocks = checkColorUnlocks(oldLevel.level, newLevel.level);
-            showLevelUp(newLevel.level, newLevel.tierName, unlocks.length > 0 ? unlocks[0] : null);
-          }
-        }
-        showToast('Mission complete! ⭐ Rewards added!');
-      }
-    } else {
-      // Require approval path: just insert as pending
-      const { data, error: compError } = await supabase.from('completions').insert([{
-        mission_id: mission.id,
-        child_id: child.id,
-        status: 'pending',
-      }]).select().single();
-      
-      if (compError) {
-        showToast('Error submitting mission: ' + compError.message, 'error');
-        setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
-        return;
-      }
-
-      if (data) {
-        setCompletions(prev => [...prev, data]);
-        showToast('Done! ⏳ Waiting for parent approval');
-      }
+    /*
+     * XP, coins, limits, and completion status are deliberately calculated in
+     * Supabase now. The previous client-side sequence could be replayed or
+     * interrupted between writes.
+     */
+    const result = await submitMission(child.id, mission.id);
+    if (!result.success) {
+      showToast('Error completing mission: ' + result.error, 'error');
+      setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
+      return;
     }
-    
+
+    const completion = result.data?.completion;
+    const updatedChild = result.data?.child || child;
+    if (completion) setCompletions(prev => [...prev, completion]);
+    setChild(updatedChild);
+
+    if (completion?.status === 'approved') {
+      const currentXp = child.total_xp_earned || child.xp || 0;
+      const newXp = updatedChild.total_xp_earned || updatedChild.xp || currentXp;
+      const { getLevelForXP: getLvl } = await import('../lib/levels');
+      const oldLevel = getLvl(currentXp);
+      const newLevel = getLvl(newXp);
+      showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', clientX - 45, clientY - 10);
+      setTimeout(() => showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', clientX + 15, clientY - 10), 150);
+      if (newLevel.level > oldLevel.level) {
+        justLeveledUpRef.current = true;
+        const { showLevelUp, showTierUp } = await import('../lib/ui');
+        const { checkColorUnlocks } = await import('../lib/levels');
+        if (newLevel.tierName !== oldLevel.tierName) showTierUp(newLevel.level, newLevel.tierName);
+        else showLevelUp(newLevel.level, newLevel.tierName, checkColorUnlocks(oldLevel.level, newLevel.level)[0] || null);
+      }
+      showToast('Mission complete! ⭐ Rewards added!');
+    } else {
+      showToast('Done! ⏳ Waiting for parent approval');
+    }
+
     setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
   };
 
   const handleUndoMission = async (mission, e) => {
     if (e) e.stopPropagation();
     setLoadingMissions(prev => ({ ...prev, [mission.id]: true }));
-
     try {
-      // Find the pending completion for this exact mission
       const pendingComp = completions.find(c => c.mission_id === mission.id && c.status === 'pending');
       if (pendingComp) {
-        const { error } = await supabase.from('completions').delete().eq('id', pendingComp.id);
-        if (error) {
-          showToast('Error undoing mission: ' + error.message, 'error');
-        } else {
+        const result = await undoMission(pendingComp.id);
+        if (!result.success) showToast('Error undoing mission: ' + result.error, 'error');
+        else {
           setCompletions(prev => prev.filter(c => c.id !== pendingComp.id));
           showToast('Mission unmarked. You can do it again!');
         }
       }
-    } catch (err) {
-      showToast('Error undoing', 'error');
     } finally {
       setLoadingMissions(prev => ({ ...prev, [mission.id]: false }));
     }
   };
 
   const handleRedeem = async (r, e) => {
-    e.target.disabled = true;
-    e.target.textContent = '...';
-
-    if (child.coins < r.cost) {
-      e.target.disabled = false;
-      e.target.textContent = 'Need coins';
-      return showToast('Not enough coins!', 'error');
-    }
-
+    const button = e.currentTarget;
+    button.disabled = true;
     try {
-      const { data: rawExisting } = await supabase.from('redemptions').select('redeemed_at, status').eq('reward_id', r.id).eq('child_id', child.id);
-      const existing = (rawExisting || []).filter(x => x.status !== 'refunded');
-      
-      const now = new Date();
-      const tz = getStoredTzOffset();
-      const startOfDay   = getStartOfDay(tz);
-      const startOfWeek  = getStartOfWeek(tz);
-      const startOfMonth = getStartOfMonth(tz);
-      const countSince = (since) => existing.filter(x => new Date(x.redeemed_at) >= since).length;
-
-      if (r.max_total_redemptions && existing.length >= r.max_total_redemptions) {
-        e.target.disabled = false; e.target.textContent = 'Limit';
-        return showToast(`🔒 Total limit reached for "${r.name}"`, 'error');
-      }
-      if (r.max_daily_redemptions && countSince(startOfDay) >= r.max_daily_redemptions) {
-        e.target.disabled = false; e.target.textContent = 'Daily limit';
-        return showToast(`⏰ Daily limit for "${r.name}"`, 'error');
-      }
-      if (r.max_weekly_redemptions && countSince(startOfWeek) >= r.max_weekly_redemptions) {
-        e.target.disabled = false; e.target.textContent = 'Weekly limit';
-        return showToast(`📆 Weekly limit for "${r.name}"`, 'error');
-      }
-      if (r.max_monthly_redemptions && countSince(startOfMonth) >= r.max_monthly_redemptions) {
-        e.target.disabled = false; e.target.textContent = 'Monthly limit';
-        return showToast(`🗓️ Monthly limit for "${r.name}"`, 'error');
-      }
-
-      const newCoins = child.coins - r.cost;
-      const { data: inserted, error: redeemError } = await supabase.from('redemptions').insert([{ reward_id: r.id, child_id: child.id, status: 'pending' }]).select().single();
-      
-      if (redeemError) {
-        showToast('Error redeeming: ' + redeemError.message, 'error');
-        e.target.disabled = false;
-        e.target.textContent = 'Redeem!';
-        return;
-      }
-
-      const { error: childError } = await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
-      if (childError) {
-        showToast('Error updating coins: ' + childError.message, 'error');
-        // Rollback the redemption insert
-        if (inserted) {
-          await supabase.from('redemptions').delete().eq('id', inserted.id);
-        }
-        e.target.disabled = false;
-        e.target.textContent = 'Redeem!';
-        return;
-      }
-
-      if (inserted) {
-        setAllRedemptions(prev => [inserted, ...prev]);
-      }
-      setChild({ ...child, coins: newCoins });
+      const result = await redeemReward(child.id, r.id);
+      if (!result.success) return showToast(result.error || 'Unable to redeem this reward.', 'error');
+      const redemption = result.data?.redemption;
+      if (redemption) setAllRedemptions(prev => [redemption, ...prev]);
+      if (result.data?.child) setChild(result.data.child);
       if (playKaChing) playKaChing();
-      const rect = e.target.getBoundingClientRect();
+      const rect = button.getBoundingClientRect();
       showFloat(`-${r.cost} 🪙`, '#f59e0b', rect.left + rect.width / 2, rect.top);
       showToast(`🎉 Redeemed: ${r.name}!`);
-    } catch (err) {
-      showToast('Error redeeming', 'error');
     } finally {
-      e.target.disabled = false;
-      e.target.textContent = 'Redeem!';
+      button.disabled = false;
     }
   };
 
   const handleChangeTheme = async (t) => {
-    const { error } = await supabase.from('children').update({ theme: t.id }).eq('id', child.id);
-    if (error) {
-      showToast('Error changing theme: ' + error.message, 'error');
-      return;
-    }
+    const result = await updateAppearance(child.id, 'theme', t.id);
+    if (!result.success) return showToast('Error changing theme: ' + result.error, 'error');
     try { localStorage.setItem('kaeluma_kid_theme', t.id); } catch {}
-    setChild({ ...child, theme: t.id });
+    setChild(prev => ({ ...prev, theme: t.id }));
     setShowThemePicker(false);
     showToast(`🎨 ${t.name}`);
   };
 
   const handleChangeRing = async (r) => {
-    const { error } = await supabase.from('children').update({ ring_style: r.id }).eq('id', child.id);
-    if (error) {
-      showToast('Error equipping ring: ' + error.message, 'error');
-      return;
-    }
+    const result = await updateAppearance(child.id, 'ring_style', r.id);
+    if (!result.success) return showToast('Error changing ring: ' + result.error, 'error');
     setChild(prev => ({ ...prev, ring_style: r.id }));
     setShowRingPicker(false);
     showToast(`💍 ${r.name} ring equipped!`);
   };
-
-
 
   const activeColor = unlockedColors.find(c => c.id === activeTheme);
 
@@ -601,7 +480,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
               if (isExiting) return;
               if (playPop) playPop();
               setIsExiting(true);
-              setTimeout(() => router.push('/'), 250);
+              setTimeout(() => router.push('/dashboard'), 250);
             }}
           >
             {isExiting ? '🚀' : '🏠'} <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isExiting ? 'Warping...' : (familyName || 'Home')}</span>

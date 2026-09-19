@@ -1,0 +1,21 @@
+/** Common foods for one-tap logging. Values are per typical serving. */
+export const QUICK_FOODS = [
+  { name: 'Eggs (2 large)', calories: 140, protein_g: 12, carbs_g: 1, fat_g: 10, meal: 'breakfast' },
+  { name: 'Greek yogurt (1 cup)', calories: 130, protein_g: 22, carbs_g: 8, fat_g: 0, meal: 'breakfast' },
+  { name: 'Oatmeal (1 cup cooked)', calories: 160, protein_g: 6, carbs_g: 28, fat_g: 3, meal: 'breakfast' },
+  { name: 'Banana', calories: 105, protein_g: 1, carbs_g: 27, fat_g: 0, meal: 'snack' },
+  { name: 'Chicken breast (4 oz)', calories: 185, protein_g: 35, carbs_g: 0, fat_g: 4, meal: 'lunch' },
+  { name: 'Salmon (4 oz)', calories: 230, protein_g: 25, carbs_g: 0, fat_g: 14, meal: 'dinner' },
+  { name: 'Lean ground beef (4 oz)', calories: 220, protein_g: 22, carbs_g: 0, fat_g: 14, meal: 'dinner' },
+  { name: 'White rice (1 cup)', calories: 205, protein_g: 4, carbs_g: 45, fat_g: 0, meal: 'lunch' },
+  { name: 'Brown rice (1 cup)', calories: 215, protein_g: 5, carbs_g: 45, fat_g: 2, meal: 'lunch' },
+  { name: 'Sweet potato (medium)', calories: 110, protein_g: 2, carbs_g: 26, fat_g: 0, meal: 'dinner' },
+  { name: 'Broccoli (1 cup)', calories: 55, protein_g: 4, carbs_g: 11, fat_g: 0, meal: 'dinner' },
+  { name: 'Mixed salad + vinaigrette', calories: 150, protein_g: 3, carbs_g: 8, fat_g: 12, meal: 'lunch' },
+  { name: 'Apple', calories: 95, protein_g: 0, carbs_g: 25, fat_g: 0, meal: 'snack' },
+  { name: 'Almonds (1 oz)', calories: 170, protein_g: 6, carbs_g: 6, fat_g: 15, meal: 'snack' },
+  { name: 'Protein shake', calories: 150, protein_g: 25, carbs_g: 6, fat_g: 2, meal: 'snack' },
+  { name: 'Whole wheat toast (2 slices)', calories: 160, protein_g: 8, carbs_g: 28, fat_g: 2, meal: 'breakfast' },
+  { name: 'Avocado (½)', calories: 120, protein_g: 1, carbs_g: 6, fat_g: 11, meal: 'breakfast' },
+  { name: 'Black coffee', calories: 5, protein_g: 0, carbs_g: 0, fat_g: 0, meal: 'breakfast' },
+];

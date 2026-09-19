@@ -104,6 +104,6 @@ High-resolution, Adobe-crafted branding assets are located in the `/branding` fo
 **Jayson Palacio**  
 Founder, Kaeluma  
 🌐 [kaeluma.com](https://kaeluma.com)  
-🐦 [@KaelumApp](https://twitter.com/KaelumApp)  
+🐦 [@KaelumaApp](https://twitter.com/KaelumaApp)  
 📧 jayson@kaeluma.com  
 *Available for email Q&As, remote interviews, and product demos.*

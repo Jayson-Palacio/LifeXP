@@ -1,6 +1,11 @@
 import { updateSession } from './utils/supabase/middleware'
 
 export async function proxy(request) {
+  // The screenshot-capture page renders live dashboards with mock data and is
+  // for App Store asset generation only. Never serve it in production.
+  if (process.env.NODE_ENV === 'production' && request.nextUrl.pathname.startsWith('/demo-screenshots')) {
+    return new Response('Not Found', { status: 404 })
+  }
   return await updateSession(request)
 }
 

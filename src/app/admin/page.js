@@ -26,9 +26,10 @@ export default async function AdminPage() {
   ])
 
   // Fetch auth users via the admin API
-  const { data: { users: rawAuthUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const rawAuthUsers = data?.users || []
   
-  let authUsers = (rawAuthUsers || []).map(u => {
+  let authUsers = rawAuthUsers.map(u => {
     const meta = u.raw_user_meta_data || {}
     let displayName = '—'
     if (meta.first_name) displayName = `${meta.first_name} ${meta.last_name || ''}`.trim()

@@ -7,6 +7,7 @@ import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } fro
 import AvatarDisplay from './AvatarDisplay';
 import RocketShip from './RocketShip';
 import GoldCoin from './GoldCoin';
+import SunIcon from './SunIcon';
 import { playClick, playPop } from '../lib/sounds';
 import { verifyParentPin, verifyAccountPassword, resetParentPinWithPassword } from '../app/actions/auth';
 
@@ -227,7 +228,9 @@ export default function RoleSelectClient({ childrenData, missions, completions }
       <RocketShip />
 
       <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: 1000, margin: '0 auto', zIndex: 1 }}>
-        <div className="kaeluma-logo-spin">☀</div>
+        <div className="kaeluma-logo-spin" aria-hidden="true">
+          <SunIcon />
+        </div>
         <h1 className="kaeluma-title">Kaeluma</h1>
         <p className="role-select-subtitle">Who's checking in?</p>
 
@@ -307,6 +310,13 @@ export default function RoleSelectClient({ childrenData, missions, completions }
         title="Parent Mode"
       >
         🔒 <span className="sleek-parent-btn-text">Parent Mode</span>
+      </button>
+      <button
+        className="btn btn-ghost"
+        style={{ marginTop: 10, marginBottom: 20, fontSize: '0.85rem' }}
+        onClick={() => router.push('/apps')}
+      >
+        ← Family apps
       </button>
 
     </div>

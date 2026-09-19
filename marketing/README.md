@@ -16,7 +16,9 @@ Kaeluma turns your family's daily routine into a living RPG — kids earn gold c
 | **[email_campaigns.md](email_campaigns.md)** | Full Resend email sequence map + 9 behavioral email scripts focusing on setup, activation, and strategic donation requests | Read before launch |
 | **[content_ideas.md](content_ideas.md)** | YouTube Shorts & long-form video plan, Premiere & After Effects editing guidelines, blog article pipeline, and a donation-centered media outreach list | Ongoing reference |
 | **[press_kit.md](press_kit.md)** | Everything a journalist needs to cover Kaeluma — one-liner, founder story with kids' creator credentials, facts, and Adobe asset lists | Send to press contacts |
+| **[aeo_playbook.md](aeo_playbook.md)** | Answer Engine Optimization playbook: how to make AI search engines (ChatGPT, Gemini, Perplexity) cite and recommend Kaeluma | Read before launch |
 | **[growth_mechanics.md](growth_mechanics.md)** | Organic word-of-mouth loops, PTA sharing, homeschool co-op advocates, and build-in-public flywheels | Read before launch |
+
 
 ---
 

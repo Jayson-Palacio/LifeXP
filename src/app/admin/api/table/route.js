@@ -67,7 +67,9 @@ async function verifyAdmin() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
   const allowed = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-  return allowed.includes(user.email.toLowerCase())
+  // Guard against accounts with no email (e.g. some OAuth logins) — never crash.
+  const email = (user.email || '').toLowerCase()
+  return !!email && allowed.includes(email)
 }
 
 export async function PATCH(request) {

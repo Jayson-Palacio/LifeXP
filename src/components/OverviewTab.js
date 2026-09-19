@@ -5,6 +5,7 @@ import { getLevelForXP, getXPProgress } from '../lib/levels';
 import { getStreakIcon, getStreakStyles } from '../lib/streaks';
 import { playPop } from '../lib/sounds';
 import GoldCoin from './GoldCoin';
+import BrandLogo from './BrandLogo';
 
 export default function OverviewTab({
   children, missions, rewards, pending, pendingRedemptions,
@@ -94,7 +95,10 @@ export default function OverviewTab({
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Family Dashboard</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <BrandLogo variant="icon" size="sm" />
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Family Dashboard</div>
+          </div>
           <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: 0 }}>{settings.family_name || 'Your Family'}</h2>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -115,9 +119,9 @@ export default function OverviewTab({
               if (isExiting) return;
               if (playPop) playPop();
               setIsExiting(true);
-              setTimeout(() => router.push('/'), 250);
+              setTimeout(() => router.push('/apps'), 250);
           }}>
-            {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Home'}</span>
+            {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Apps'}</span>
           </button>
         </div>
       </div>

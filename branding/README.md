@@ -1,6 +1,6 @@
 # Kaeluma Brand Assets & Identity
 
-Welcome to the branding directory for **Kaeluma** (formerly "LifeXP"). Kaeluma is a 100% free, ad-free gamified chore application designed to turn real-life tasks into fun game quests for kids.
+Welcome to the branding directory for **Kaeluma**. Kaeluma is a 100% free, ad-free gamified chore application designed to turn real-life tasks into fun game quests for kids.
 
 This directory houses the core graphic elements and marketing media templates.
 

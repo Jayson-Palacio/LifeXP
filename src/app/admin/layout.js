@@ -24,7 +24,8 @@ export default async function AdminLayout({ children }) {
     .map(e => e.trim().toLowerCase())
     .filter(Boolean)
 
-  if (!allowedEmails.includes(user.email.toLowerCase())) {
+  const email = (user.email || '').toLowerCase()
+  if (!email || !allowedEmails.includes(email)) {
     // Return a bare 404-style response — don't reveal admin exists
     redirect('/login')
   }

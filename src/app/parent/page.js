@@ -1,9 +1,9 @@
-import { createClient } from '../../utils/supabase/server';
 import { redirect } from 'next/navigation';
+import { requireParent } from '../../lib/authz';
 import ParentDashboardClient from '../../components/ParentDashboardClient';
 
 export default async function ParentDashboardPage() {
-  const supabase = await createClient();
+  const { supabase } = await requireParent();
   
   const [
     { data: appSettings },

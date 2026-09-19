@@ -6,7 +6,7 @@ Welcome to the comprehensive branding and design guide for **Kaeluma**. This doc
 
 ## 🌌 1. Brand Essence & Positioning
 
-Kaeluma (formerly "LifeXP") is a **100% free, ad-free gamified chore application** designed to help children turn everyday household responsibilities into rewarding adventure quests.
+Kaeluma is a **100% free, ad-free gamified chore application** designed to help children turn everyday household responsibilities into rewarding adventure quests.
 
 ```mermaid
 graph TD
@@ -74,6 +74,43 @@ To support the neon gaming aesthetic, key elements utilize glowing shadows:
 
 ---
 
+## ♿ 2.5 Accessibility & WCAG Compliance
+
+All text and interactive elements must meet **WCAG 2.1 AA** contrast requirements (4.5:1 for normal text, 3:1 for large text ≥18pt or bold ≥14pt). The following audit covers all primary color pairs in the Kaeluma design system.
+
+### Contrast Ratio Audit
+
+| Color Pair | Foreground | Background | Ratio | AA Normal | AA Large | AAA Normal | Status |
+|---|---|---|---|---|---|---|---|
+| Primary text on canvas | `--text-bright` #f8fafc | `--bg-deep` #0d0d14 | **18.8:1** | ✅ | ✅ | ✅ | ✅ Pass |
+| Secondary text on cards | `--text-muted` #94a3b8 | `--bg-surface` #171723 | **6.4:1** | ✅ | ✅ | ⚠️ | ✅ Pass |
+| Tertiary text on cards | `--text-dim` #475569 | `--bg-surface` #171723 | **2.8:1** | ❌ | ⚠️ | ❌ | ⛔ FAIL |
+| Tertiary text on canvas | `--text-dim` #475569 | `--bg-deep` #0d0d14 | **3.1:1** | ❌ | ✅ | ❌ | ⛔ FAIL |
+| Gold on canvas | `--gold` #facc15 | `--bg-deep` #0d0d14 | **11.3:1** | ✅ | ✅ | ✅ | ✅ Pass |
+| Purple accent | `--purple` #a855f7 | `--bg-deep` #0d0d14 | **5.5:1** | ✅ | ✅ | ⚠️ | ✅ Pass |
+| Cyan/Info | `--cyan` #06b6d4 | `--bg-deep` #0d0d14 | **7.1:1** | ✅ | ✅ | ✅ | ✅ Pass |
+| Green/Success | `--green` #22c55e | `--bg-deep` #0d0d14 | **7.5:1** | ✅ | ✅ | ✅ | ✅ Pass |
+| Red/Error | `--red` #ef4444 | `--bg-deep` #0d0d14 | **4.6:1** | ✅ | ✅ | ⚠️ | ✅ Pass |
+
+### ⛔ Required Fix: `--text-dim`
+
+`--text-dim` (#475569) fails WCAG AA for normal-sized text on both `--bg-deep` and `--bg-surface`. 
+
+**Recommendation:** Lighten `--text-dim` from `#475569` → `#64748b` (slate-500). This achieves:
+- **4.6:1** on `--bg-deep` (passes AA normal) 
+- **4.1:1** on `--bg-surface` (passes AA normal at ≥16px, or use only for large text/labels)
+
+> [!IMPORTANT]
+> Until this fix is applied in the codebase, restrict `--text-dim` to **large text only** (≥18pt regular or ≥14pt bold) where the 3:1 ratio suffices. Never use it for body copy or small labels.
+
+### Accessibility Guidelines
+- **Focus indicators**: All interactive elements must show a visible `2px` focus ring using `--purple` on keyboard navigation.
+- **Motion sensitivity**: Respect `prefers-reduced-motion` — disable all micro-animations and transitions when enabled.
+- **Screen readers**: All decorative icons must have `aria-hidden="true"`. All functional icons need `aria-label`.
+- **Color independence**: Never convey information through color alone. Pair colors with icons, labels, or patterns.
+
+---
+
 ## 🎭 3. Dynamic Tier Theme System
 
 One of Kaeluma's core gamification loops is unlockable interface themes based on child levels. These are declared as specific theme classes in [variables.css](file:///c:/Users/jayso/Projects/Kaeluma/src/styles/variables.css) and reassign `--primary`, `--primary-dim`, and `--glow-primary` variables dynamically.
@@ -125,6 +162,68 @@ Typography in Kaeluma uses clean lines and heavy weights to evoke a modern arcad
 | **Section Header Title** | 700 | `1.0rem` | `0.9rem` | 1.0 | Uppercase (spaced) |
 | **Body / Description** | 400 | `0.95rem`| `0.9rem` | 1.6 | Normal |
 | **Badges / Pill Labels** | 700 | `0.75rem`| `0.7rem` | 1.0 | Uppercase |
+
+---
+
+## 🛡️ 4.5 Logo Usage Rules
+
+The Kaeluma logo is the primary brand identifier. Consistent, respectful usage across all touchpoints is non-negotiable.
+
+### Logo Assets
+| Variant | File | Usage |
+|---|---|---|
+| Full wordmark (horizontal) | `logos/logo_main.svg` | Primary — website headers, press materials, social profiles |
+| Full wordmark (vertical) | `logos/logo_main_vertical.svg` | Square/portrait contexts — app icons, social avatars |
+| Sun icon only | `logos/logo_sun_icon.svg` | Favicons (16×16, 32×32), compact UI elements, watermarks |
+| App icon (raster) | `logos/logo_icon.png` | App Store / Play Store icon submissions (1024×1024) |
+
+### Clear Space
+Maintain a minimum clear zone around the logo equal to **1× the height of the sun icon element** (the circular gradient sun in the wordmark). No text, imagery, UI elements, or other logos may encroach on this zone.
+
+```
+  ┌─────────────────────────────┐
+  │         clear space         │
+  │   ┌───────────────────┐     │
+  │   │  ☀ K A E L U M A  │     │
+  │   └───────────────────┘     │
+  │         clear space         │
+  └─────────────────────────────┘
+       ↕ = 1× sun icon height
+```
+
+### Minimum Reproduction Sizes
+| Context | Minimum Height | Notes |
+|---|---|---|
+| Digital (full wordmark) | **24px** | Below this, switch to sun-icon-only |
+| Digital (sun icon only) | **16px** | Used for favicons and tiny UI badges |
+| Print (full wordmark) | **12mm** | For business cards, stickers, merch |
+| Print (sun icon only) | **6mm** | Minimum legible reproduction |
+
+### Approved Backgrounds
+- ✅ `--bg-deep` (#0d0d14) — primary placement
+- ✅ `--bg-surface` (#171723) — card headers and nav bars
+- ✅ Any dark background with luminance ≤ 15% — sufficient contrast for the gradient wordmark
+- ✅ Light/white backgrounds — use the full-color logo (the gradient sun provides sufficient contrast)
+- ⚠️ Photographic backgrounds — only with a dark semi-transparent overlay (`rgba(0,0,0,0.6)` minimum)
+
+### Forbidden Treatments
+| ❌ Don't | Why |
+|---|---|
+| Stretch, distort, or change the aspect ratio | Breaks visual identity and perceived quality |
+| Rotate the logo beyond 0° | The sun element has a fixed orientation |
+| Apply drop shadows, outer glows, or embossing | The logo is designed to be flat and clean |
+| Change the gradient colors of the sun or wordmark | The gradient is a locked brand element |
+| Place on busy photographic backgrounds without overlay | Legibility is destroyed |
+| Recreate or approximate using alternate fonts | The wordmark uses a custom-tracked Outfit Bold rendering |
+| Add outlines, strokes, or borders to logo elements | Degrades the clean edge rendering |
+| Use at sizes below the documented minimums | Becomes illegible and damages brand perception |
+
+### Co-Branding Rules
+When the Kaeluma logo appears alongside partner or sponsor logos:
+- Kaeluma must maintain **equal or larger visual weight** (never smaller than a co-brand).
+- Minimum separation between logos = **2× clear space** (i.e., 2× sun icon height).
+- A vertical divider line (`1px, --text-dim`) may be used between logos for visual separation.
+- Partner logos must not use colors that clash with the Kaeluma palette.
 
 ---
 

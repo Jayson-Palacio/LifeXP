@@ -1,4 +1,36 @@
 /* ============================================
+   BRAND LOGO
+   ============================================ */
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1;
+}
+
+.brand-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-logo-icon {
+  gap: 0;
+}
+
+.brand-wordmark {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(90deg, #a855f7, #38bdf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ============================================
    BUTTONS
    ============================================ */
 
@@ -168,6 +200,7 @@
   font-size: 1rem;
   transition: border-color var(--duration-fast) var(--ease-out);
   outline: none;
+  color-scheme: dark;
 }
 
 .input:focus {

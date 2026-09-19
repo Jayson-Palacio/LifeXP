@@ -5,6 +5,7 @@ import AdminOverviewTab from './AdminOverviewTab'
 import AdminTableTab from './AdminTableTab'
 import { getRelativeTimeString } from '../utils/time'
 import GoldCoin from './GoldCoin'
+import BrandLogo from './BrandLogo'
 
 const TABS = [
   { id: 'overview', label: '📊 Overview' },
@@ -475,8 +476,9 @@ export default function AdminDashboardClient({
       `}} />
       {/* Header */}
       <header className="admin-header" style={{ background: '#0a0d16', borderBottom: '1px solid #1e2130', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 24, height: 56, flexShrink: 0 }}>
-        <span className="admin-header-title" style={{ fontWeight: 800, fontSize: 16, background: 'linear-gradient(135deg,#3b82f6,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', whiteSpace: 'nowrap' }}>
-          Kaeluma Admin
+        <span className="admin-header-title" style={{ display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap' }}>
+          <BrandLogo size="sm" />
+          <span style={{ fontWeight: 700, fontSize: 13, color: '#94a3b8' }}>Admin</span>
         </span>
         <span className="admin-header-pipe" style={{ color: '#334155', fontSize: 12 }}>|</span>
         <span className="admin-header-subtitle" style={{ color: '#475569', fontSize: 13, whiteSpace: 'nowrap' }}>Command Center</span>

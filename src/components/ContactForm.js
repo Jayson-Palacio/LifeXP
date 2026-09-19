@@ -79,7 +79,7 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
   const faqs = [
     {
       q: "How does Kaeluma work?",
-      a: "Kaeluma turns chores and habits into a game. Parents create missions, kids check them off to earn XP and Gold Coins, and spend coins in the Reward Shop for custom real-life treats."
+      a: "Kaeluma is a family of apps under one login. Quests turns chores into a game for kids. Vital tracks calories, macros, and weight-loss goals for the grown-ups. After you sign in, you choose which app to open."
     },
     {
       q: "Is there a mobile app?",

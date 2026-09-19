@@ -39,6 +39,8 @@ export async function updateSession(request) {
                            request.nextUrl.pathname.startsWith('/kid') ||
                            request.nextUrl.pathname.startsWith('/setup') ||
                            request.nextUrl.pathname.startsWith('/admin') ||
+                           request.nextUrl.pathname.startsWith('/apps') ||
+                           request.nextUrl.pathname.startsWith('/vital') ||
                            request.nextUrl.pathname.startsWith('/update-password');
 
   if (isProtectedRoute && !user) {
@@ -54,7 +56,7 @@ export async function updateSession(request) {
 
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/apps'
     return NextResponse.redirect(url)
   }
 

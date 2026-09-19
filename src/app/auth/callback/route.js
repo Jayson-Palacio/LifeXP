@@ -5,7 +5,7 @@ export async function GET(request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const type = requestUrl.searchParams.get('type') // 'signup' or 'recovery'
-  const next = requestUrl.searchParams.get('next') || '/dashboard'
+  const next = requestUrl.searchParams.get('next') || '/apps'
   
   const supabase = await createClient()
 

@@ -27,7 +27,7 @@ This messaging playbook is the definitive copy guide for Kaeluma. It defines our
 > "Kaeluma is a 100% free, game-console-inspired task dashboard that turns routine household chores into rewarding adventure quests, replacing parental nagging with self-directed child autonomy."
 
 ### The 30-Second Pitch (The Detail)
-> "Kaeluma (formerly 'LifeXP') gamifies childhood routines by transforming household responsibilities into interactive quests. Children log into their own gaming-style dashboard to select tasks, earn gold coins, and level up their avatars. Parents maintain complete boundary control in a PIN-protected sanctuary, configuring their own reward shops where children can redeem coins for screen time, outings, or allowances. Built by a parent, Kaeluma is completely free, has no ads or trackers, and runs entirely on voluntary community support."
+> "Kaeluma gamifies childhood routines by transforming household responsibilities into interactive quests. Children log into their own gaming-style dashboard to select tasks, earn gold coins, and level up their avatars. Parents maintain complete boundary control in a PIN-protected sanctuary, configuring their own reward shops where children can redeem coins for screen time, outings, or allowances. Built by a parent, Kaeluma is completely free, has no ads or trackers, and runs entirely on voluntary community support."
 
 ---
 

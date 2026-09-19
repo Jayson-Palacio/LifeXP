@@ -15,6 +15,7 @@ import RewardModal from './RewardModal';
 import ChildModal from './ChildModal';
 import ContactForm from './ContactForm';
 import { playClick, playPop } from '../lib/sounds';
+import { adjustChildCoins, deleteParentResource, reviewCompletion, reviewRedemption, setParentResourceActive } from '../app/actions/parent';
 
 export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings, parentEmail = '' }) {
   const router = useRouter();
@@ -95,21 +96,15 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
        }
     }
     
-    const { error: compError } = await supabase.from('completions').update({ status: 'approved', reviewed_at: now.toISOString() }).eq('id', comp.id);
-    if (compError) {
-      showToast('Error approving mission: ' + compError.message, 'error');
+    const result = await reviewCompletion(comp.id, true);
+    if (!result.success) {
+      showToast('Error approving mission: ' + result.error, 'error');
       return;
     }
-    const { error: childError } = await supabase.from('children').update({ xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() }).eq('id', child.id);
-    if (childError) {
-      showToast('Error updating child rewards: ' + childError.message, 'error');
-      // Rollback completion status
-      await supabase.from('completions').update({ status: 'pending', reviewed_at: null }).eq('id', comp.id);
-      return;
-    }
+    const updatedChild = result.data?.child || { ...child, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() };
 
     setPending(prev => prev.filter(p => p.id !== comp.id));
-    setChildren(prev => prev.map(c => c.id === child.id ? { ...c, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() } : c));
+    setChildren(prev => prev.map(c => c.id === child.id ? updatedChild : c));
 
     setTimeout(async () => {
         const rTop = e.clientY - 20;
@@ -133,9 +128,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleReject = async (comp, e) => {
     e.stopPropagation();
-    const { error } = await supabase.from('completions').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', comp.id);
-    if (error) {
-      showToast('Error rejecting: ' + error.message, 'error');
+    const result = await reviewCompletion(comp.id, false);
+    if (!result.success) {
+      showToast('Error rejecting: ' + result.error, 'error');
       return;
     }
     setPending(prev => prev.filter(p => p.id !== comp.id));
@@ -144,9 +139,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   const handleFulfillReward = async (red, e) => {
     e.stopPropagation();
     if (playPop) playPop();
-    const { error } = await supabase.from('redemptions').update({ status: 'fulfilled' }).eq('id', red.id);
-    if (error) {
-      showToast('Error fulfilling: ' + error.message, 'error');
+    const result = await reviewRedemption(red.id, true);
+    if (!result.success) {
+      showToast('Error fulfilling: ' + result.error, 'error');
       return;
     }
     setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
@@ -159,31 +154,23 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     const child = children.find(c => c.id === red.child_id);
     if (!reward || !child) return;
 
-    const newCoins = child.coins + reward.cost;
     if (playClick) playClick();
-    const { error: redError } = await supabase.from('redemptions').update({ status: 'refunded' }).eq('id', red.id);
-    if (redError) {
-      showToast('Error refunding: ' + redError.message, 'error');
-      return;
-    }
-    const { error: childError } = await supabase.from('children').update({ coins: newCoins }).eq('id', child.id);
-    if (childError) {
-      showToast('Error refunding coins: ' + childError.message, 'error');
-      // Rollback redemption
-      await supabase.from('redemptions').update({ status: 'pending' }).eq('id', red.id);
+    const result = await reviewRedemption(red.id, false);
+    if (!result.success) {
+      showToast('Error refunding: ' + result.error, 'error');
       return;
     }
     
-    setChildren(prev => prev.map(c => c.id === child.id ? { ...c, coins: newCoins } : c));
+    setChildren(prev => prev.map(c => c.id === child.id ? (result.data?.child || c) : c));
     setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
     showToast(`Refunded ${reward.cost} coins!`);
   };
 
   const handleDeleteMission = async (id) => {
     if (!confirm('Delete this mission?')) return;
-    const { error } = await supabase.from('missions').delete().eq('id', id);
-    if (error) {
-      showToast('Error deleting mission: ' + error.message, 'error');
+    const result = await deleteParentResource('missions', id);
+    if (!result.success) {
+      showToast('Error deleting mission: ' + result.error, 'error');
       return;
     }
     setMissions(prev => prev.filter(m => m.id !== id));
@@ -192,9 +179,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleToggleActiveMission = async (m) => {
     const newStatus = m.is_active === false ? true : false;
-    const { error } = await supabase.from('missions').update({ is_active: newStatus }).eq('id', m.id);
-    if (error) {
-      showToast('Error toggling mission: ' + error.message, 'error');
+    const result = await setParentResourceActive('missions', m.id, newStatus);
+    if (!result.success) {
+      showToast('Error toggling mission: ' + result.error, 'error');
       return;
     }
     setMissions(prev => prev.map(mission => mission.id === m.id ? { ...mission, is_active: newStatus } : mission));
@@ -203,9 +190,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleDeleteReward = async (id) => {
     if (!confirm('Delete this reward?')) return;
-    const { error } = await supabase.from('rewards').delete().eq('id', id);
-    if (error) {
-      showToast('Error deleting reward: ' + error.message, 'error');
+    const result = await deleteParentResource('rewards', id);
+    if (!result.success) {
+      showToast('Error deleting reward: ' + result.error, 'error');
       return;
     }
     setRewards(prev => prev.filter(r => r.id !== id));
@@ -214,9 +201,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleToggleActiveReward = async (r) => {
     const newStatus = r.is_active === false ? true : false;
-    const { error } = await supabase.from('rewards').update({ is_active: newStatus }).eq('id', r.id);
-    if (error) {
-      showToast('Error toggling reward: ' + error.message, 'error');
+    const result = await setParentResourceActive('rewards', r.id, newStatus);
+    if (!result.success) {
+      showToast('Error toggling reward: ' + result.error, 'error');
       return;
     }
     setRewards(prev => prev.map(reward => reward.id === r.id ? { ...reward, is_active: newStatus } : reward));
@@ -225,9 +212,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleDeleteChild = async (id) => {
     if (!confirm('Delete this player and all progress? This cannot be undone.')) return;
-    const { error } = await supabase.from('children').delete().eq('id', id);
-    if (error) {
-      showToast('Error deleting player: ' + error.message, 'error');
+    const result = await deleteParentResource('children', id);
+    if (!result.success) {
+      showToast('Error deleting player: ' + result.error, 'error');
       return;
     }
     setChildren(prev => prev.filter(c => c.id !== id));
@@ -240,14 +227,13 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     const child = children.find(c => c.id === childId);
     if (!child) return;
     
-    const newCoins = Math.max(0, child.coins + amount); 
     if (playClick) playClick();
-    const { error } = await supabase.from('children').update({ coins: newCoins }).eq('id', childId);
-    if (error) {
-      showToast('Error adjusting coins: ' + error.message, 'error');
+    const result = await adjustChildCoins(childId, amount);
+    if (!result.success) {
+      showToast('Error adjusting coins: ' + result.error, 'error');
       return;
     }
-    setChildren(prev => prev.map(c => c.id === childId ? { ...c, coins: newCoins } : c));
+    setChildren(prev => prev.map(c => c.id === childId ? (result.data || c) : c));
     
     if (amount > 0) {
       showToast(`Granted ${amount} 🪙`);

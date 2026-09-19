@@ -30,61 +30,98 @@ marked.setOptions({
   breaks: true,
 });
 
-// Custom CSS for premium, print-friendly PDFs
+// Premium Print-Optimized CSS for Kaeluma Brand Documents
+// Engineered for clean, overlap-free, professional PDF output
 const CSS_STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap');
 
 @page {
   size: letter;
-  margin: 20mm 15mm 20mm 15mm;
+  margin: 18mm 14mm 16mm 14mm;
   @bottom-right {
     content: counter(page);
-    font-family: 'Inter', sans-serif;
-    font-size: 8pt;
-    color: #9CA3AF;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-size: 7.5pt;
+    color: #B0B7C3;
   }
 }
 
-body {
-  font-family: 'Inter', -apple-system, sans-serif;
-  color: #1F2937;
-  line-height: 1.6;
-  font-size: 10.5pt;
-  background-color: #FFFFFF;
+@page :first {
+  margin-top: 15mm;
+  margin-bottom: 15mm;
 }
 
-h1, h2, h3, h4 {
-  font-family: 'Outfit', sans-serif;
-  color: #1E1B4B; /* Deep Navy */
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #FFFFFF;
+  color: #1F2937;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  orphans: 3;
+  widows: 3;
+}
+
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════ */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  color: #1E1B4B;
   font-weight: 800;
-  margin-top: 1.8rem;
-  margin-bottom: 0.8rem;
   page-break-after: avoid;
+  orphans: 3;
+  widows: 3;
 }
 
 h1 {
-  font-size: 24pt;
-  border-bottom: 3px solid #A855F7; /* Glowing Purple */
-  padding-bottom: 6px;
+  font-size: 16pt;
+  margin: 0 0 10px 0;
+  padding: 14px 0 6px 0;
+  border-bottom: 2px solid #E5E7EB;
+  page-break-before: always;
+  line-height: 1.25;
+}
+
+body > h1:first-of-type {
+  page-break-before: avoid;
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  padding-top: 0;
 }
 
 h2 {
-  font-size: 16pt;
-  border-bottom: 1px solid #E5E7EB;
-  padding-bottom: 4px;
-  color: #312E81;
+  font-size: 12.5pt;
+  color: #7C3AED;
+  margin: 16px 0 6px 0;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #F0EDF8;
+  line-height: 1.3;
 }
 
 h3 {
-  font-size: 12.5pt;
+  font-size: 10.5pt;
   color: #4F46E5;
+  margin: 12px 0 4px 0;
+  line-height: 1.3;
+}
+
+h4 {
+  font-size: 9.5pt;
+  color: #6366F1;
+  margin: 10px 0 3px 0;
 }
 
 p {
-  margin-top: 0;
-  margin-bottom: 1rem;
+  margin: 0 0 8px 0;
+  color: #374151;
+  line-height: 1.55;
 }
 
 a {
@@ -93,133 +130,184 @@ a {
   font-weight: 500;
 }
 
+strong { color: #111827; }
+
+/* ═══════════════════════════════════════════
+   LISTS — compact, no runaway spacing
+   ═══════════════════════════════════════════ */
 ul, ol {
-  margin-top: 0;
-  margin-bottom: 1.2rem;
-  padding-left: 20px;
+  margin: 0 0 8px 0;
+  padding-left: 18px;
+  color: #374151;
 }
 
 li {
-  margin-bottom: 0.4rem;
+  margin-bottom: 2px;
+  line-height: 1.5;
 }
 
+li > ul, li > ol {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   CODE — inline & blocks
+   ═══════════════════════════════════════════ */
 code {
-  font-family: 'Consolas', 'Courier New', monospace;
+  font-family: 'Consolas', 'Cascadia Code', 'Courier New', monospace;
   background-color: #F3F4F6;
-  color: #D946EF; /* Vibrant Magenta/Pink for inline code */
-  padding: 2px 5px;
-  border-radius: 4px;
-  font-size: 9pt;
+  color: #92400E;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 8pt;
+  border: 1px solid #E5E7EB;
+  word-break: break-word;
 }
 
 pre {
-  background-color: #1F2937;
-  color: #F9FAFB;
-  padding: 14px;
+  background-color: #1E1B2E;
+  color: #E8E6F0;
+  padding: 10px 12px;
   border-radius: 6px;
   overflow-x: auto;
-  margin: 1.2rem 0;
+  margin: 8px 0;
+  border: 1px solid #312E4A;
   page-break-inside: avoid;
+  line-height: 1.45;
 }
 
 pre code {
-  background-color: transparent;
+  background: transparent;
   color: inherit;
   padding: 0;
-  font-size: 8.5pt;
+  font-size: 7.5pt;
+  border: none;
 }
 
+/* ═══════════════════════════════════════════
+   TABLES — tight rows, no overlap
+   ═══════════════════════════════════════════ */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin: 1.5rem 0;
-  page-break-inside: avoid;
-}
-
-th, td {
-  border: 1px solid #E5E7EB;
-  padding: 10px 12px;
-  text-align: left;
-  font-size: 9.5pt;
-}
-
-th {
-  background-color: #312E81;
-  color: #FFFFFF;
-  font-weight: 700;
-  text-transform: uppercase;
+  margin: 8px 0 10px 0;
   font-size: 8.5pt;
-  letter-spacing: 0.05em;
+  line-height: 1.35;
+  border: 1px solid #D1D5DB;
+  page-break-inside: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+tr {
+  page-break-inside: avoid;
+  background-color: #FFFFFF;
 }
 
 tr:nth-child(even) {
-  background-color: rgba(168, 85, 247, 0.03);
+  background-color: #FAFAFE;
 }
 
-/* Callout Box / Alert Styling */
+th {
+  background-color: #1E1B4B;
+  color: #FFFFFF;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 7pt;
+  letter-spacing: 0.06em;
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 2px solid #312E5A;
+}
+
+td {
+  padding: 5px 8px;
+  text-align: left;
+  border-bottom: 1px solid #E5E7EB;
+  vertical-align: top;
+  word-wrap: break-word;
+}
+
+/* ═══════════════════════════════════════════
+   ALERTS / CALLOUT BOXES
+   ═══════════════════════════════════════════ */
 .alert {
-  padding: 12px 16px;
-  margin: 1.5rem 0;
+  padding: 8px 12px;
+  margin: 8px 0;
   border-radius: 6px;
-  border-left: 5px solid;
+  border-left: 3px solid;
   page-break-inside: avoid;
+  font-size: 8.5pt;
+  line-height: 1.45;
 }
 
 .alert-note {
-  background-color: #EFF6FF;
-  border-left-color: #3B82F6; /* Vivid Blue */
+  border-left-color: #3B82F6;
   color: #1E3A8A;
+  background-color: #EFF6FF;
 }
 
 .alert-tip {
-  background-color: #F0FDF4;
-  border-left-color: #22C55E; /* Vibrant Green */
-  color: #14532D;
+  border-left-color: #10B981;
+  color: #065F46;
+  background-color: #ECFDF5;
 }
 
 .alert-important {
-  background-color: #FAF5FF;
-  border-left-color: #A855F7; /* Glowing Purple */
-  color: #581C87;
+  border-left-color: #7C3AED;
+  color: #4C1D95;
+  background-color: #F5F3FF;
 }
 
 .alert-warning {
-  background-color: #FFFBEB;
-  border-left-color: #F59E0B; /* Gold */
+  border-left-color: #F59E0B;
   color: #78350F;
+  background-color: #FFFBEB;
 }
 
 .alert-title {
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   text-transform: uppercase;
-  font-size: 8.5pt;
-  letter-spacing: 0.05em;
+  font-size: 7pt;
+  letter-spacing: 0.06em;
 }
 
+/* ═══════════════════════════════════════════
+   BLOCKQUOTES
+   ═══════════════════════════════════════════ */
 blockquote {
-  border-left: 4px solid #A855F7;
-  background-color: rgba(168, 85, 247, 0.04);
-  padding: 10px 16px;
-  margin: 1.2rem 0;
+  border-left: 3px solid #A855F7;
+  background-color: #FAF5FF;
+  padding: 8px 14px;
+  margin: 8px 0;
   border-radius: 0 6px 6px 0;
+  page-break-inside: avoid;
 }
 
 blockquote p {
   margin: 0;
   font-style: italic;
   color: #4B5563;
+  font-size: 9pt;
 }
 
+/* ═══════════════════════════════════════════
+   HORIZONTAL RULES
+   ═══════════════════════════════════════════ */
 hr {
   border: 0;
   border-top: 1px solid #E5E7EB;
-  margin: 2rem 0;
+  margin: 14px 0;
 }
 
 /* Ensure checklists don't print checkboxes weirdly */
 input[type="checkbox"] {
-  margin-right: 8px;
+  margin-right: 6px;
 }
 `;
 
@@ -290,9 +378,10 @@ function compileMarkdownToPdf() {
     
     // Wrap in standard layout template
     const fullHtml = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaeluma Marketing - ${file.replace('.md', '')}</title>
   <style>${CSS_STYLE}</style>
 </head>
@@ -306,8 +395,8 @@ function compileMarkdownToPdf() {
     
     // Run Microsoft Edge headless to print to PDF
     try {
-      const edgeCmd = `"${msEdgePath}" --headless --disable-gpu --no-pdf-header-footer --user-data-dir="${path.join(TEMP_DIR, 'EdgeProfile')}" --print-to-pdf="${pdfPath}" "file:///${tempHtmlPath.replace(/\\/g, '/')}"`;
-      execSync(edgeCmd, { stdio: 'pipe' });
+      const edgeCmd = `"${msEdgePath}" --headless --disable-gpu --no-pdf-header-footer --run-all-compositor-stages-before-draw --virtual-time-budget=5000 --user-data-dir="${path.join(TEMP_DIR, 'EdgeProfile_' + file.replace('.md', ''))}" --print-to-pdf="${pdfPath}" "file:///${tempHtmlPath.replace(/\\/g, '/')}"`;
+      execSync(edgeCmd, { stdio: 'pipe', timeout: 30000 });
       console.log(`✅ Success: Generated ${pdfName}`);
     } catch (err) {
       console.error(`❌ Failed printing ${file} to PDF:`, err.message);

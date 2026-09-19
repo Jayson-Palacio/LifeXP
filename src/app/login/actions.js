@@ -17,8 +17,8 @@ export async function login(formData) {
     return { error: error.message }
   }
 
-  revalidatePath('/dashboard')
-  redirect('/dashboard')
+  revalidatePath('/apps')
+  redirect('/apps')
 }
 
 export async function signup(formData) {
@@ -53,8 +53,8 @@ export async function signup(formData) {
     return { error: err.message || "An unexpected error occurred during signup." }
   }
 
-  revalidatePath('/dashboard')
-  redirect('/dashboard')
+  revalidatePath('/apps')
+  redirect('/apps')
 }
 
 export async function logout() {

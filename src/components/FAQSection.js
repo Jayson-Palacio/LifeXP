@@ -6,7 +6,11 @@ import { playPop } from '../lib/sounds';
 const faqs = [
   {
     question: "How does Kaeluma work?",
-    answer: "Kaeluma turns daily chores and family habits into an engaging RPG (role-playing game) for kids. Parents assign customized missions, kids check them off on their magical dashboard to earn XP and Gold Coins, and they can then spend those coins in the parent-curated Reward Shop for real-life treats or privileges."
+    answer: "Kaeluma is a family of apps under one login. Quests turns chores into an RPG for kids — missions, XP, gold, and a parent-run reward shop. Vital helps adults set weight-loss goals and track calories and macros. After you sign in, you pick the app you want."
+  },
+  {
+    question: "What is Vital?",
+    answer: "Vital is Kaeluma's nutrition and fitness app. You set a starting weight, a goal weight, and a weekly pace. We estimate daily calories and protein/carbs/fat using the Mifflin–St Jeor formula, then you log meals and weigh-ins as you go."
   },
   {
     question: "What age range is Kaeluma suitable for?",

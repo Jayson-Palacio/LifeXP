@@ -52,12 +52,13 @@ export async function submitContactTicket(email, message, type = 'bug') {
     const allowedEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
     let targetUserId = null;
     
-    const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 10 });
+    const { data, error: listError } = await admin.auth.admin.listUsers({ perPage: 10 });
+    const users = data?.users || [];
     const adminUser = users?.find(u => allowedEmails.includes(u.email?.toLowerCase()));
     
     if (adminUser) {
       targetUserId = adminUser.id;
-    } else if (users && users.length > 0) {
+    } else if (users.length > 0) {
       targetUserId = users[0].id;
     }
     

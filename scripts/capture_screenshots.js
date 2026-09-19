@@ -30,6 +30,24 @@ if (!fs.existsSync(EDGE_PATH)) {
 // Helper to wait
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// ─── Screenshot Configurations ──────────────────────────────────
+const SCREENSHOTS = [
+  // Public pages
+  { name: 'landing_page',  url: '/',        viewport: { width: 1280, height: 800 }, waitMs: 2000 },
+  { name: 'login_page',    url: '/login',   viewport: { width: 1280, height: 800 }, waitMs: 1000 },
+  { name: 'signup_page',   url: '/signup',  viewport: { width: 1280, height: 800 }, waitMs: 1000 },
+
+  // In-app demo pages (Kid Dashboard) — multiple device sizes
+  { name: 'kid_dashboard_desktop',  url: '/demo-screenshots', viewport: { width: 1280, height: 800 },  waitMs: 3000, clickSelector: null },
+  { name: 'kid_dashboard_iphone',   url: '/demo-screenshots', viewport: { width: 430,  height: 932, isMobile: true, deviceScaleFactor: 3 },  waitMs: 3000 },
+  { name: 'kid_dashboard_ipad',     url: '/demo-screenshots', viewport: { width: 820,  height: 1180, isMobile: true, deviceScaleFactor: 2 }, waitMs: 3000 },
+
+  // In-app demo pages (Parent Dashboard)
+  { name: 'parent_dashboard_desktop', url: '/demo-screenshots', viewport: { width: 1280, height: 800 },  waitMs: 3000, switchTo: 'parent' },
+  { name: 'parent_dashboard_iphone',  url: '/demo-screenshots', viewport: { width: 430,  height: 932, isMobile: true, deviceScaleFactor: 3 },  waitMs: 3000, switchTo: 'parent' },
+  { name: 'parent_dashboard_ipad',    url: '/demo-screenshots', viewport: { width: 820,  height: 1180, isMobile: true, deviceScaleFactor: 2 }, waitMs: 3000, switchTo: 'parent' },
+];
+
 async function main() {
   console.log('🚀 Starting local Next.js development server...');
   const devServer = spawn('npm', ['run', 'dev'], {
@@ -46,9 +64,9 @@ async function main() {
     console.error(`[Next.js Error]: ${data.toString().trim()}`);
   });
 
-  // Wait for the dev server to boot up (5 seconds)
-  console.log('⏰ Waiting 6 seconds for Next.js to start on http://localhost:3000 ...');
-  await wait(6000);
+  // Wait for the dev server to boot up
+  console.log('⏰ Waiting 8 seconds for Next.js to start on http://localhost:3000 ...');
+  await wait(8000);
 
   console.log('🌐 Launching headless Microsoft Edge...');
   let browser;
@@ -56,41 +74,60 @@ async function main() {
     browser = await puppeteer.launch({
       executablePath: EDGE_PATH,
       headless: true,
-      defaultViewport: { width: 1280, height: 800 },
+      defaultViewport: null, // We'll set per-screenshot
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
-    const page = await browser.newPage();
+    for (const shot of SCREENSHOTS) {
+      console.log(`\n📸 Capturing: ${shot.name} (${shot.viewport.width}x${shot.viewport.height})`);
 
-    // 1. Screenshot Landing Page
-    console.log('📸 Navigating to Landing Page (http://localhost:3000/)...');
-    await page.goto('http://localhost:3000/', { waitUntil: 'networkidle2', timeout: 30000 });
-    await wait(2000); // Allow animation to settle
-    const landingPath = path.join(SCREENSHOT_DIR, 'landing_page.png');
-    await page.screenshot({ path: landingPath, fullPage: false });
-    console.log(`✅ Saved screenshot: landing_page.png`);
+      const page = await browser.newPage();
+      await page.setViewport({
+        width: shot.viewport.width,
+        height: shot.viewport.height,
+        isMobile: shot.viewport.isMobile || false,
+        deviceScaleFactor: shot.viewport.deviceScaleFactor || 1,
+      });
 
-    // 2. Screenshot Login Page
-    console.log('📸 Navigating to Login Page (http://localhost:3000/login)...');
-    await page.goto('http://localhost:3000/login', { waitUntil: 'networkidle2', timeout: 30000 });
-    await wait(1000);
-    const loginPath = path.join(SCREENSHOT_DIR, 'login_page.png');
-    await page.screenshot({ path: loginPath, fullPage: false });
-    console.log(`✅ Saved screenshot: login_page.png`);
+      await page.goto(`http://localhost:3000${shot.url}`, { waitUntil: 'networkidle2', timeout: 30000 });
+      await wait(shot.waitMs);
 
-    // 3. Screenshot Signup Page
-    console.log('📸 Navigating to Signup Page (http://localhost:3000/signup)...');
-    await page.goto('http://localhost:3000/signup', { waitUntil: 'networkidle2', timeout: 30000 });
-    await wait(1000);
-    const signupPath = path.join(SCREENSHOT_DIR, 'signup_page.png');
-    await page.screenshot({ path: signupPath, fullPage: false });
-    console.log(`✅ Saved screenshot: signup_page.png`);
+      // If we need to switch dashboard view (e.g., to 'parent')
+      if (shot.switchTo === 'parent') {
+        try {
+          const buttons = await page.$$('[data-screenshot-hide] button');
+          for (const btn of buttons) {
+            const text = await btn.evaluate(el => el.textContent);
+            if (text.includes('Parent')) {
+              await btn.click();
+              await wait(2000);
+              break;
+            }
+          }
+        } catch (e) {
+          console.log(`  ⚠️ Could not switch to parent view: ${e.message}`);
+        }
+      }
+
+      // Hide the screenshot selector bar
+      await page.evaluate(() => {
+        const bar = document.querySelector('[data-screenshot-hide]');
+        if (bar) bar.style.display = 'none';
+      });
+      await wait(500);
+
+      const filePath = path.join(SCREENSHOT_DIR, `${shot.name}.png`);
+      await page.screenshot({ path: filePath, fullPage: false });
+      console.log(`  ✅ Saved: ${shot.name}.png`);
+
+      await page.close();
+    }
 
   } catch (err) {
     console.error('❌ Error during browser automation:', err);
   } finally {
     if (browser) {
-      console.log('🔌 Closing browser...');
+      console.log('\n🔌 Closing browser...');
       await browser.close();
     }
 

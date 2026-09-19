@@ -104,6 +104,66 @@ Jayson</p>
 
 ---
 
+## 🚀 Email 2.5: LAUNCH DAY — We're Live!
+* **Trigger**: Manual blast — June 17, 2026 at 7:00 AM EST.
+* **Resend Segment**: `full-list` (all waitlist subscribers + all registered beta users)
+* **Subject A/B Test**:
+  * **A**: `🚀 Kaeluma is LIVE — we need your help today`
+  * **B**: `It's here. Kaeluma just launched on Product Hunt ☀️`
+* **Preheader**: `We built this for families like yours. Help us spread the word.`
+
+> [!IMPORTANT]
+> This is the single most important email in the entire campaign. It drives Product Hunt upvotes, day-one social sharing, and first-hour signup momentum. Send it at exactly 7:00 AM EST — 7 hours after the Product Hunt listing goes live at midnight PST.
+
+```html
+<h2>Today's the day. ☀️</h2>
+
+<p>Hi {{parentName}},</p>
+
+<p>I'm writing this at 5:00 AM because I genuinely can't sleep. <strong>Kaeluma is officially live.</strong></p>
+
+<p>After months of building, testing with my own kids, and refining every coin clink and level-up animation — the gamified chore dashboard I built to save our family's mornings is now open to every family, everywhere.</p>
+
+<p><strong>And it's 100% free. No ads. No subscriptions. No catch.</strong></p>
+
+<h3>🎯 I need one favor today</h3>
+
+<p>We just launched on <strong>Product Hunt</strong> and your upvote would mean the world. A top finish gets Kaeluma in front of thousands of parents who are fighting the same morning battles you are:</p>
+
+<p style="text-align: center; margin: 24px 0;">
+  <a href="https://www.producthunt.com/posts/kaeluma" style="display: inline-block; background: linear-gradient(135deg, #a855f7, #6366f1); color: #fff; padding: 14px 32px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 16px;">⬆️ Upvote Kaeluma on Product Hunt</a>
+</p>
+
+<h3>☀️ What your family gets today</h3>
+<ul>
+  <li><strong>Quest Dashboard</strong> — Kids pick their own missions (chores, homework, hygiene) and track progress like a video game.</li>
+  <li><strong>Gold Coins & XP</strong> — Every completed quest earns instant rewards with satisfying animations and sound effects.</li>
+  <li><strong>Custom Reward Shop</strong> — You decide what coins buy: screen time, pizza night, staying up late. You control the economy.</li>
+</ul>
+
+<p style="text-align: center; margin: 24px 0;">
+  <a href="https://kaeluma.com/signup" style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; padding: 14px 32px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 16px;">Create Your Family Guild — Free</a>
+</p>
+
+<h3>📣 Help us reach more families</h3>
+
+<p>If Kaeluma sounds like something your friends, school group, or parenting community would love, I'd be incredibly grateful if you shared it today:</p>
+
+<ul>
+  <li><strong>Forward this email</strong> to a parent who fights the morning routine battle</li>
+  <li><strong>Share on social</strong>: "We just replaced our sticker chart with @KaelumaApp — it's free, ad-free, and our kids actually love it. kaeluma.com ☀️"</li>
+  <li><strong>Drop it in your parent group chat</strong> — WhatsApp, Slack, Facebook Group, whatever works</li>
+</ul>
+
+<p>Every single share matters. We have zero marketing budget — just one dad, a dream, and families like yours spreading the word.</p>
+
+<p>Thank you for being part of this from the beginning.<br>
+Jayson<br>
+<em>Founder, Kaeluma</em></p>
+```
+
+---
+
 ## Email 3: Account Created & Quick Start
 * **Trigger**: Supabase `auth.users` insert (triggered immediately upon signup).
 * **Resend Segment**: `active-parents`
