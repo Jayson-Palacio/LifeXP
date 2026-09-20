@@ -7,12 +7,12 @@ import { KAELUMA_APPS } from '../lib/apps';
 import { playClick } from '../lib/sounds';
 import { logout } from '../app/login/actions';
 
-export default function AppLauncherClient({ familyName, questsReady }) {
+export default function AppLauncherClient({ familyName, questsReady, vitalReady }) {
   const router = useRouter();
 
   const statusFor = (app) => {
     if (app.id === 'quests') return questsReady ? 'Ready' : 'Set up first';
-    if (app.id === 'vital') return 'Open';
+    if (app.id === 'vital') return vitalReady ? 'Ready' : 'Set up first';
     return '';
   };
 
@@ -30,18 +30,20 @@ export default function AppLauncherClient({ familyName, questsReady }) {
       <SiteNav account onSignOut={() => logout()} />
 
       <main id="main" className="site-apps-page">
-        <p className="site-kicker">{familyName}</p>
-        <h1>Choose an app.</h1>
-        <p className="site-lede">
-          One household. Tools for whoever needs them next.
-        </p>
+        <header className="site-apps-intro">
+          <p className="site-kicker">{familyName}</p>
+          <h1>Choose an app.</h1>
+          <p className="site-lede">
+            One household. Tools for whoever needs them next.
+          </p>
+        </header>
 
         <div className="site-apps">
           {KAELUMA_APPS.map((app) => (
             <button
               key={app.id}
               type="button"
-              className="site-app"
+              className={`site-app site-app-${app.id}`}
               onClick={() => openApp(app)}
             >
               <div className="site-app-copy">

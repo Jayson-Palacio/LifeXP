@@ -1,6 +1,7 @@
 import { createClient } from '../../../utils/supabase/server';
 import { redirect } from 'next/navigation';
 import ChildDashboardClient from '../../../components/ChildDashboardClient';
+import { daysAgoIso } from '../../../lib/time';
 
 export default async function ChildDashboardPage({ params }) {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export default async function ChildDashboardPage({ params }) {
     redirect('/');
   }
 
-  // Fire all remaining queries in parallel — ~60-70% faster than sequential awaits
+  const since = daysAgoIso(40);
   const [
     { data: allMissions },
     { data: rewards },
@@ -24,8 +25,8 @@ export default async function ChildDashboardPage({ params }) {
     supabase.from('missions').select('*').order('name'),
     supabase.from('rewards').select('*').order('cost'),
     supabase.from('app_settings').select('require_approval, family_name').order('setup_complete', { ascending: false }).limit(1).single(),
-    supabase.from('completions').select('*').eq('child_id', id),
-    supabase.from('redemptions').select('*').eq('child_id', id),
+    supabase.from('completions').select('*').eq('child_id', id).gte('submitted_at', since),
+    supabase.from('redemptions').select('*').eq('child_id', id).gte('redeemed_at', since),
   ]);
 
   const missions = (allMissions || []).filter(

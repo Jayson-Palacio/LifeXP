@@ -25,9 +25,9 @@ function AccordionItem({ icon, title, children, defaultOpen = false }) {
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '14px 16px', 
-          background: open ? 'var(--bg-surface-alt)' : hovered ? 'rgba(255,255,255,0.06)' : 'var(--bg-surface-alt)', 
+          background: open ? 'var(--bg-surface-alt)' : hovered ? 'rgba(28, 28, 30, 0.04)' : 'var(--bg-surface-alt)', 
           border: '1px solid var(--bg-glass-border)',
-          borderColor: open ? 'rgba(168,85,247,0.3)' : hovered ? 'rgba(255,255,255,0.15)' : 'var(--bg-glass-border)',
+          borderColor: open ? 'rgba(168,85,247,0.3)' : hovered ? 'rgba(28, 28, 30, 0.12)' : 'var(--bg-glass-border)',
           borderRadius: open ? 'var(--radius-md) var(--radius-md) 0 0' : 'var(--radius-md)',
           cursor: 'pointer', color: 'var(--text-bright)', fontWeight: 700, fontSize: '0.95rem',
           transition: 'all 0.2s var(--ease-out)',
@@ -138,11 +138,11 @@ function AboutSection() {
         {/* Core Rules Group */}
         <div>
           <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, paddingLeft: 4 }}>
-            🎮 Core Game Loops
+            🎮 How Quests works
           </div>
           <AccordionItem icon="🌟" title="What is Kaeluma?" defaultOpen={true}>
             <p style={{ margin: '0 0 12px' }}>
-              <strong style={{ color: 'var(--text-bright)' }}>Kaeluma</strong> turns family daily tasks into an epic adventure. 
+              <strong style={{ color: 'var(--text-bright)' }}>Kaeluma</strong> turns family routines into a game kids actually want to play. 
               Parents create <strong style={{ color: 'var(--text-bright)' }}>missions</strong> (chores, routines, learning goals) 
               and set up <strong style={{ color: 'var(--text-bright)' }}>rewards</strong> as incentives. 
               Players earn <strong style={{ color: 'var(--gold)' }}>XP</strong> and <strong style={{ color: 'var(--amber)' }}>Coins</strong> for 
@@ -238,10 +238,10 @@ function AboutSection() {
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {tierData.map(t => (
-                  <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(28, 28, 30, 0.06)' }}>
                     <span style={{ fontSize: '1.3rem', width: 28, textAlign: 'center' }}>{t.symbol}</span>
                     <span style={{ flex: 1, fontWeight: 700, color: 'var(--text-bright)' }}>{t.name}</span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>Lv {t.range}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600, background: 'rgba(28, 28, 30, 0.06)', padding: '2px 8px', borderRadius: '10px' }}>Lv {t.range}</span>
                   </div>
                 ))}
               </div>
@@ -256,9 +256,9 @@ function AboutSection() {
             </p>
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14, maxHeight: 280, overflowY: 'auto' }}>
               {colorMilestones.map(c => (
-                <div key={c.level} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div key={c.level} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid rgba(28, 28, 30, 0.06)' }}>
                   <span style={{ color: 'var(--text-bright)', fontSize: '0.85rem' }}>{c.colors}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px', flexShrink: 0, marginLeft: 8 }}>Lv {c.level}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600, background: 'rgba(28, 28, 30, 0.06)', padding: '2px 8px', borderRadius: '10px', flexShrink: 0, marginLeft: 8 }}>Lv {c.level}</span>
                 </div>
               ))}
             </div>
@@ -271,12 +271,12 @@ function AboutSection() {
             </p>
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14 }}>
               {ringData.map(r => (
-                <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(28, 28, 30, 0.06)' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: 'var(--text-bright)', fontSize: '0.9rem' }}>{r.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{r.desc}</div>
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px', flexShrink: 0 }}>Lv {r.level}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600, background: 'rgba(28, 28, 30, 0.06)', padding: '2px 8px', borderRadius: '10px', flexShrink: 0 }}>Lv {r.level}</span>
                 </div>
               ))}
             </div>
@@ -470,26 +470,9 @@ export default function SettingsTab({ initialSettings, onOpenSupport }) {
   return (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>⚙️ Settings</h2>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {onOpenSupport && (
-            <button 
-              className="cool-home-btn" 
-              style={{ 
-                background: 'rgba(99, 102, 241, 0.08)', 
-                borderColor: 'rgba(99, 102, 241, 0.25)',
-                color: 'var(--text-bright)'
-              }}
-              onClick={onOpenSupport}
-            >
-              <span>💬</span> <span>Support</span>
-            </button>
-          )}
-          <button className="cool-home-btn" onClick={() => window.location.href='/'}>
-            🏠 <span>Home</span>
-          </button>
-        </div>
+      <div style={{ marginBottom: 'var(--space-lg)' }}>
+        <p className="quests-kicker">Quests</p>
+        <h2 style={{ fontSize: 'clamp(1.6rem, 5vw, 2rem)', fontWeight: 600, letterSpacing: '-0.035em', margin: 0 }}>Settings.</h2>
       </div>
 
       {/* Segmented Sub-tab Navigation */}
@@ -526,7 +509,7 @@ export default function SettingsTab({ initialSettings, onOpenSupport }) {
             boxShadow: '0 4px 20px rgba(99, 102, 241, 0.05)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 300px' }}>
-              <span style={{ fontSize: '1.6rem', animation: 'pulse 2s infinite' }}>💖</span>
+              <span style={{ fontSize: '1.6rem' }}>💖</span>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-bright)' }}>Support Kaeluma</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, marginTop: 1 }}>

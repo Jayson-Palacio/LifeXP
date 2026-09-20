@@ -17,6 +17,7 @@ export default function LandingPage() {
 
       <main id="main">
         <section className="site-hero">
+          <p className="site-kicker">Kaeluma</p>
           <h1>Live well, together.</h1>
           <p>The apps your household actually uses. One login. Nothing to buy.</p>
           <div className="site-hero-actions">
@@ -25,7 +26,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="quests" className="site-stage">
+        <section id="quests" className="site-stage site-stage-quests">
           <div className="site-stage-copy">
             <p className="site-kicker">Quests</p>
             <h2>Mornings that run themselves.</h2>
@@ -37,7 +38,7 @@ export default function LandingPage() {
           <ProductPreview app="quests" />
         </section>
 
-        <section id="vital" className="site-stage site-stage-dark">
+        <section id="vital" className="site-stage site-stage-vital">
           <div className="site-stage-copy">
             <p className="site-kicker">Vital</p>
             <h2>Health, without the noise.</h2>
@@ -58,15 +59,15 @@ export default function LandingPage() {
         </section>
 
         <section className="site-points">
-          <div>
+          <div className="site-point">
             <h3>One account</h3>
             <p>Sign up once. Everyone in the household uses the same login, then picks the app they need.</p>
           </div>
-          <div>
+          <div className="site-point">
             <h3>Built to stay out of the way</h3>
             <p>No ads, no subscriptions, no loot shops. The software does the job and then gets quiet.</p>
           </div>
-          <div>
+          <div className="site-point">
             <h3>Made by a parent</h3>
             <p>It started with a five-year-old and the morning rush. It is growing into the rest of family life.</p>
           </div>

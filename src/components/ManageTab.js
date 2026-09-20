@@ -1,28 +1,26 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MISSION_LIBRARY, REWARD_LIBRARY } from '../lib/missionLibrary';
 import { playPop } from '../lib/sounds';
 import GoldCoin from './GoldCoin';
 
 export default function ManageTab({
   missions, rewards, children,
-  isExiting, setIsExiting, router,
   setModal,
   handleDeleteMission, handleToggleActiveMission,
   handleDeleteReward, handleToggleActiveReward,
-  onOpenSupport,
 }) {
   const [manageTab, setManageTab] = useState('missions');
   const [selectedChildId, setSelectedChildId] = useState('all');
+  const [collapsedCategories, setCollapsedCategories] = useState({});
 
-  const [collapsedCategories, setCollapsedCategories] = useState(() => {
-    if (typeof window !== 'undefined') {
+  useEffect(() => {
+    try {
       const stored = localStorage.getItem('kaeluma_collapsed_categories');
-      if (stored) return JSON.parse(stored);
-    }
-    return {};
-  });
+      if (stored) setCollapsedCategories(JSON.parse(stored));
+    } catch {}
+  }, []);
 
   const toggleCategory = (cat) => {
     setCollapsedCategories(prev => {
@@ -55,10 +53,10 @@ export default function ManageTab({
       padding: '12px 14px', 
       opacity: isInactive ? 0.6 : 1, 
       marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10,
-      background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: '#fff',
+      border: '1px solid rgba(28, 28, 30, 0.08)',
       borderRadius: 'var(--radius-lg)',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+      boxShadow: '0 4px 14px rgba(28, 28, 30, 0.04)',
       animation: 'slideUp 0.3s ease-out backwards',
       animationDelay: `${index * 0.05}s`
     }}>
@@ -84,8 +82,8 @@ export default function ManageTab({
             width: 36,
             height: 20,
             borderRadius: 10,
-            background: isInactive ? 'rgba(255,255,255,0.08)' : 'var(--primary)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            background: isInactive ? 'rgba(28, 28, 30, 0.12)' : 'var(--primary)',
+            border: '1px solid rgba(28, 28, 30, 0.1)',
             padding: 2,
             cursor: 'pointer',
             transition: 'background 0.2s',
@@ -98,7 +96,7 @@ export default function ManageTab({
             width: 14,
             height: 14,
             borderRadius: '50%',
-            background: isInactive ? 'var(--text-muted)' : 'var(--bg-deep)',
+            background: isInactive ? 'var(--text-muted)' : '#fff',
             boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
             transition: 'all 0.2s'
           }} />
@@ -117,10 +115,10 @@ export default function ManageTab({
   const renderReward = (r, isInactive, index = 0) => (
     <div key={r.id} className="mission-card" style={{ 
       padding: '12px 14px', opacity: isInactive ? 0.6 : 1, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10,
-      background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: '#fff',
+      border: '1px solid rgba(28, 28, 30, 0.08)',
       borderRadius: 'var(--radius-lg)',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+      boxShadow: '0 4px 14px rgba(28, 28, 30, 0.04)',
       animation: 'slideUp 0.3s ease-out backwards',
       animationDelay: `${index * 0.05}s`
     }}>
@@ -145,8 +143,8 @@ export default function ManageTab({
             width: 36,
             height: 20,
             borderRadius: 10,
-            background: isInactive ? 'rgba(255,255,255,0.08)' : 'var(--primary)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            background: isInactive ? 'rgba(28, 28, 30, 0.12)' : 'var(--primary)',
+            border: '1px solid rgba(28, 28, 30, 0.1)',
             padding: 2,
             cursor: 'pointer',
             transition: 'background 0.2s',
@@ -159,7 +157,7 @@ export default function ManageTab({
             width: 14,
             height: 14,
             borderRadius: '50%',
-            background: isInactive ? 'var(--text-muted)' : 'var(--bg-deep)',
+            background: isInactive ? 'var(--text-muted)' : '#fff',
             boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
             transition: 'all 0.2s'
           }} />
@@ -193,34 +191,10 @@ export default function ManageTab({
 
   return (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-lg)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 'var(--space-md)' }}>
-        <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-          <h2 style={{ fontSize: 'clamp(1.4rem, 5vw, 2rem)', fontWeight: 800, margin: 0, lineHeight: 1.15 }}>Missions & Rewards</h2>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '4px 0 0', lineHeight: 1.35 }}>Create, organize, and assign missions or rewards.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {onOpenSupport && (
-            <button 
-              className="cool-home-btn" 
-              style={{ 
-                background: 'rgba(99, 102, 241, 0.08)', 
-                borderColor: 'rgba(99, 102, 241, 0.25)',
-                color: 'var(--text-bright)'
-              }}
-              onClick={onOpenSupport}
-            >
-              <span>💬</span> <span>Support</span>
-            </button>
-          )}
-          <button className="cool-home-btn" onClick={() => {
-              if (isExiting) return;
-              if (playPop) playPop();
-              setIsExiting(true);
-              setTimeout(() => router.push('/apps'), 250);
-          }}>
-            {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Apps'}</span>
-          </button>
-        </div>
+      <div style={{ textAlign: 'left', marginBottom: 'var(--space-md)' }}>
+        <p className="quests-kicker">Quests</p>
+        <h2 style={{ fontSize: 'clamp(1.6rem, 5vw, 2rem)', fontWeight: 600, letterSpacing: '-0.035em', margin: 0, lineHeight: 1.15 }}>Missions & rewards.</h2>
+        <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.4 }}>Create, organize, and assign what the kids chase.</p>
       </div>
 
       {/* Kid Filter Bar */}
@@ -243,9 +217,9 @@ export default function ManageTab({
               fontSize: '0.8rem',
               fontWeight: 800,
               cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: selectedChildId === 'all' ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
-              color: selectedChildId === 'all' ? 'var(--bg-deep)' : 'var(--text-bright)',
+              border: '1px solid rgba(28, 28, 30, 0.08)',
+              background: selectedChildId === 'all' ? '#1c1c1e' : '#fff',
+              color: selectedChildId === 'all' ? '#fff' : '#1c1c1e',
               transition: 'all 0.2s',
               whiteSpace: 'nowrap'
             }}
@@ -266,12 +240,12 @@ export default function ManageTab({
                 padding: 0,
                 borderRadius: '50%',
                 cursor: 'pointer',
-                border: selectedChildId === child.id ? '2.5px solid var(--primary)' : '2px solid rgba(255,255,255,0.1)',
-                background: selectedChildId === child.id ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
+                border: selectedChildId === child.id ? '2.5px solid var(--primary)' : '2px solid rgba(28, 28, 30, 0.08)',
+                background: selectedChildId === child.id ? 'var(--primary-dim)' : '#fff',
                 transition: 'all 0.2s',
                 flexShrink: 0,
                 overflow: 'hidden',
-                boxShadow: selectedChildId === child.id ? '0 0 10px rgba(168, 85, 247, 0.4)' : 'none',
+                boxShadow: 'none',
               }}
             >
               {child.avatar?.startsWith('data:image') ? (
@@ -319,11 +293,11 @@ export default function ManageTab({
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
                           cursor: 'pointer', 
                           marginBottom: collapsedCategories[cat] ? 0 : 8,
-                          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
+                          background: '#fff',
+                          border: '1px solid rgba(28, 28, 30, 0.08)',
+                          boxShadow: '0 2px 10px rgba(28, 28, 30, 0.04)',
+                          backdropFilter: 'none',
+                          WebkitBackdropFilter: 'none',
                           borderRadius: 'var(--radius-md)',
                           padding: '10px 14px',
                           transition: 'all 0.2s ease',
@@ -334,7 +308,7 @@ export default function ManageTab({
                           <span style={{ fontSize: '1.15rem', flexShrink: 0 }}>{icon}</span>
                           <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-bright)', margin: 0, letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat}</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, background: 'rgba(0, 0, 0, 0.3)', padding: '1px 7px', borderRadius: '10px', flexShrink: 0 }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, background: 'var(--bg-surface-alt)', padding: '1px 7px', borderRadius: '10px', flexShrink: 0 }}>
                               {groupedActive[cat].length}
                             </span>
                           </h3>
@@ -342,7 +316,7 @@ export default function ManageTab({
                         <div style={{ 
                           display: 'flex', alignItems: 'center', justifyContent: 'center', 
                           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                          background: 'rgba(255, 255, 255, 0.06)',
+                          background: 'var(--bg-surface-alt)',
                           transform: collapsedCategories[cat] ? 'rotate(-90deg)' : 'none', 
                           transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
                         }}>
@@ -370,8 +344,8 @@ export default function ManageTab({
                   <div style={{ marginTop: 'var(--space-2xl)' }}>
                     <div style={{ 
                       display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-lg)',
-                      background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: 'var(--radius-lg)',
-                      border: '1px dashed rgba(255, 255, 255, 0.1)',
+                      background: 'var(--bg-surface-alt)', padding: '12px 16px', borderRadius: 'var(--radius-lg)',
+                      border: '1px dashed var(--bg-glass-border)',
                     }}>
                       <span style={{ fontSize: '1.4rem' }}>🗄️</span>
                       <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)', margin: 0 }}>Archived Missions</h3>
@@ -436,8 +410,8 @@ export default function ManageTab({
                                 minWidth: 110,
                                 flexShrink: 0,
                                 scrollSnapAlign: 'start',
-                                background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
-                                border: '1px solid rgba(255,255,255,0.08)',
+                                background: '#fff',
+                                border: '1px solid rgba(28, 28, 30, 0.08)',
                                 borderRadius: 'var(--radius-md)',
                                 padding: '12px 10px',
                                 display: 'flex',
@@ -448,8 +422,8 @@ export default function ManageTab({
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s, background 0.2s',
                               }}
-                              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-                              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)'; }}
+                              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.background = 'var(--bg-surface-alt)'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.background = '#fff'; }}
                             >
                               <div style={{ fontSize: '1.8rem', marginBottom: 6, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>{idea.icon}</div>
                               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-bright)', lineHeight: 1.2, marginBottom: 6 }}>{idea.name}</div>
@@ -545,8 +519,8 @@ export default function ManageTab({
                                   minWidth: 110,
                                   flexShrink: 0,
                                   scrollSnapAlign: 'start',
-                                  background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
-                                  border: '1px solid rgba(255,255,255,0.08)',
+                                  background: '#fff',
+                                  border: '1px solid rgba(28, 28, 30, 0.08)',
                                   borderRadius: 'var(--radius-md)',
                                   padding: '12px 10px',
                                   display: 'flex',
@@ -557,8 +531,8 @@ export default function ManageTab({
                                   cursor: 'pointer',
                                   transition: 'transform 0.2s, background 0.2s',
                                 }}
-                                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)'; }}
+                                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.background = 'var(--bg-surface-alt)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.background = '#fff'; }}
                               >
                                 <div style={{ fontSize: '1.8rem', marginBottom: 6, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>{idea.icon}</div>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-bright)', lineHeight: 1.2, marginBottom: 6 }}>{idea.name}</div>

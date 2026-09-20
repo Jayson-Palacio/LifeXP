@@ -1,6 +1,7 @@
 import { createClient } from '../../utils/supabase/server';
 import { redirect } from 'next/navigation';
 import RoleSelectClient from '../../components/RoleSelectClient';
+import { daysAgoIso } from '../../lib/time';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,9 +27,12 @@ export default async function RoleSelectPage() {
     redirect('/setup');
   }
 
-  const { data: children } = await supabase.from('children').select('*').order('name');
-  const { data: missions } = await supabase.from('missions').select('*').eq('is_active', true);
-  const { data: completions } = await supabase.from('completions').select('*');
+  const since = daysAgoIso(40);
+  const [{ data: children }, { data: missions }, { data: completions }] = await Promise.all([
+    supabase.from('children').select('*').order('name'),
+    supabase.from('missions').select('*').eq('is_active', true),
+    supabase.from('completions').select('id, child_id, mission_id, status, submitted_at').gte('submitted_at', since),
+  ]);
 
-  return <RoleSelectClient childrenData={children} missions={missions} completions={completions} />;
+  return <RoleSelectClient childrenData={children || []} missions={missions || []} completions={completions || []} />;
 }

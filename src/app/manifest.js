@@ -5,8 +5,8 @@ export default function manifest() {
     description: 'Software for the whole family — routines, health, and home, under one login.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#f5f5f7',
-    theme_color: '#f5f5f7',
+    background_color: '#eceff3',
+    theme_color: '#eceff3',
     icons: [
       {
         src: '/logo_icon.svg',

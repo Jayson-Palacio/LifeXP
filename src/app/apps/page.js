@@ -20,10 +20,15 @@ export default async function AppsPage() {
     .limit(1)
     .maybeSingle();
 
+  const { count: vitalCount } = await supabase
+    .from('vital_members')
+    .select('id', { count: 'exact', head: true });
+
   return (
     <AppLauncherClient
       familyName={settings?.family_name || 'your family'}
       questsReady={Boolean(settings?.setup_complete)}
+      vitalReady={Boolean(vitalCount)}
     />
   );
 }

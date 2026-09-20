@@ -99,7 +99,7 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
     <div style={{
       maxWidth: 600,
       margin: isModal ? '0' : '0 auto 10vh',
-      background: isModal ? 'transparent' : 'rgba(30, 33, 53, 0.5)',
+      background: isModal ? 'transparent' : 'var(--bg-surface)',
       border: isModal ? 'none' : '1px solid var(--bg-glass-border)',
       borderRadius: isModal ? '0' : 'var(--radius-lg)',
       padding: isModal ? '0' : 'var(--space-lg)',
@@ -108,24 +108,24 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
         <span style={{ fontSize: '1.4rem' }}>💬</span>
-        <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-bright)' }}>Help &amp; Support Center</div>
+        <div style={{ fontWeight: 600, fontSize: '1.25rem', letterSpacing: '-0.03em', color: 'var(--text-bright)' }}>Help & support</div>
       </div>
 
       {/* Glassmorphic Tabs */}
       <div style={{
         display: 'flex',
-        background: 'rgba(0, 0, 0, 0.2)',
+        background: 'var(--bg-surface-alt)',
         borderRadius: 'var(--radius-md)',
         padding: 4,
         marginBottom: 20,
-        border: '1px solid rgba(255, 255, 255, 0.05)'
+        border: '1px solid var(--bg-glass-border)'
       }}>
         <button
           onClick={() => handleTabChange('message')}
           style={{
             flex: 1,
             padding: '8px 12px',
-            background: activeTab === 'message' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+            background: activeTab === 'message' ? '#fff' : 'transparent',
             border: 'none',
             borderRadius: 'var(--radius-sm)',
             color: activeTab === 'message' ? 'var(--text-bright)' : 'var(--text-muted)',
@@ -142,7 +142,7 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
           style={{
             flex: 1,
             padding: '8px 12px',
-            background: activeTab === 'faq' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+            background: activeTab === 'faq' ? '#fff' : 'transparent',
             border: 'none',
             borderRadius: 'var(--radius-sm)',
             color: activeTab === 'faq' ? 'var(--text-bright)' : 'var(--text-muted)',
@@ -171,8 +171,8 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
                 disabled={sending}
                 style={{
                   width: '100%',
-                  background: '#0f1117',
-                  border: '1px solid #2d3148',
+                  background: 'var(--bg-surface-alt)',
+                  border: '1px solid var(--bg-glass-border)',
                   borderRadius: 'var(--radius-sm)',
                   color: 'var(--text-bright)',
                   padding: '10px 12px',
@@ -199,8 +199,8 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
                 disabled={sending}
                 style={{
                   width: '100%',
-                  background: '#0f1117',
-                  border: '1px solid #2d3148',
+                  background: 'var(--bg-surface-alt)',
+                  border: '1px solid var(--bg-glass-border)',
                   borderRadius: 'var(--radius-sm)',
                   color: 'var(--text-bright)',
                   padding: '10px 12px',
@@ -224,8 +224,8 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
               disabled={sending || !!initialEmail}
               style={{
                 width: '100%',
-                background: initialEmail ? 'rgba(255,255,255,0.02)' : '#0f1117',
-                border: '1px solid #2d3148',
+                background: 'var(--bg-surface-alt)',
+                border: '1px solid var(--bg-glass-border)',
                 borderRadius: 'var(--radius-sm)',
                 color: initialEmail ? 'var(--text-muted)' : 'var(--text-bright)',
                 padding: '10px 14px',
@@ -255,8 +255,8 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
               rows={4}
               style={{
                 width: '100%',
-                background: '#0f1117',
-                border: '1px solid #2d3148',
+                background: 'var(--bg-surface-alt)',
+                border: '1px solid var(--bg-glass-border)',
                 borderRadius: 'var(--radius-sm)',
                 color: 'var(--text-bright)',
                 padding: '10px 14px',
@@ -306,9 +306,9 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
               <div
                 key={index}
                 style={{
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  border: '1px solid var(--bg-glass-border)',
                   borderRadius: 'var(--radius-md)',
-                  background: 'rgba(255, 255, 255, 0.01)',
+                  background: '#fff',
                   overflow: 'hidden',
                   transition: 'all 0.25s'
                 }}
@@ -321,7 +321,7 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '12px 14px',
-                    background: isOpen ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+                    background: isOpen ? 'var(--bg-surface-alt)' : 'transparent',
                     border: 'none',
                     color: 'var(--text-bright)',
                     fontWeight: 700,
@@ -338,7 +338,7 @@ export default function ContactForm({ onSuccess, isModal = false, initialEmail =
                   overflow: 'hidden',
                   transition: 'max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}>
-                  <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, borderTop: '1px solid rgba(28, 28, 30, 0.06)' }}>
                     {faq.a}
                   </div>
                 </div>

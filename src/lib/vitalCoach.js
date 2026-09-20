@@ -4,10 +4,23 @@ import { ageFromBirthYear } from './nutrition';
  * Calm, specific guidance. Not medical advice — estimates from energy-balance
  * research (Mifflin–St Jeor / Schofield) and protein ranges used in adult fat-loss.
  */
-export function coachNote({ member, plan, eaten, mealCount, recentWeights }) {
+export function coachNote({
+  member,
+  plan,
+  eaten,
+  mealCount,
+  recentWeights,
+  todayMoveMinutes = 0,
+  strengthDays = 0,
+  child,
+  hour = 12,
+  adaptive = null,
+}) {
   const name = member?.display_name || 'This person';
   const age = ageFromBirthYear(member?.birth_year);
-  const child = member?.kind === 'child' || (age != null && age < 18);
+  const isChild = child || member?.kind === 'child' || (age != null && age < 18);
+  const method = plan?.method || 'high_protein';
+  const simple = method === 'simple';
 
   if (!member) {
     return {
@@ -21,8 +34,8 @@ export function coachNote({ member, plan, eaten, mealCount, recentWeights }) {
     if (mealCount === 0) {
       return {
         kicker: name,
-        title: child ? 'Kids need enough to grow.' : 'Log the first meal. Targets can wait.',
-        body: child
+        title: isChild ? 'Kids need enough to grow.' : 'Log the first meal. Targets can wait.',
+        body: isChild
           ? 'We do not put children on calorie diets. Track what they actually eat so dinner stays ordinary.'
           : 'Tap a food. We will fill calories from the kitchen list. Set a plan when you want protein and a daily target.',
       };
@@ -30,13 +43,13 @@ export function coachNote({ member, plan, eaten, mealCount, recentWeights }) {
     return {
       kicker: name,
       title: `${mealCount} ${mealCount === 1 ? 'item' : 'items'} today`,
-      body: child
+      body: isChild
         ? 'Nice. Regular meals beat a perfect log. Add height and weight later if you want a growth snapshot — not a diet.'
         : 'When you are ready, a short plan gives a calorie and protein target from your stats. Until then, keep logging.',
     };
   }
 
-  if (child) {
+  if (isChild) {
     if (mealCount === 0) {
       return {
         kicker: name,
@@ -45,6 +58,13 @@ export function coachNote({ member, plan, eaten, mealCount, recentWeights }) {
       };
     }
     const protein = Math.round(eaten.protein);
+    if (todayMoveMinutes < 20) {
+      return {
+        kicker: name,
+        title: 'Meals plus play.',
+        body: `${mealCount} logged. Tap Play when they run around — about 60 minutes a day is the WHO sketch, not a workout.`,
+      };
+    }
     return {
       kicker: name,
       title: protein < 25 ? 'A little more protein helps them grow.' : 'Meals are landing.',
@@ -56,16 +76,74 @@ export function coachNote({ member, plan, eaten, mealCount, recentWeights }) {
 
   const target = plan.calorie_target;
   const proteinTarget = plan.protein_target_g;
-  const remaining = target ? Math.round(target - eaten.calories) : null;
+  const fiberTarget = plan.fiber_target_g;
+  const remaining = !simple && target ? Math.round(target - eaten.calories) : null;
   const proteinGap = proteinTarget ? Math.round(proteinTarget - eaten.protein) : null;
+  const fiberGap = fiberTarget ? Math.round(fiberTarget - (eaten.fiber || 0)) : null;
+  const proteinPerMeal = proteinTarget ? Math.round(proteinTarget / 3) : 30;
 
   if (mealCount === 0) {
+    if (simple) {
+      return {
+        kicker: name,
+        title: 'Protein, plants, then a walk.',
+        body: `Aim about ${proteinPerMeal}g protein at this meal, fiber through the day${fiberTarget ? ` (~${fiberTarget}g)` : ''}, and 30 minutes of movement. No need to chase a calorie total.`,
+      };
+    }
     return {
       kicker: name,
       title: plan.intent === 'lose' ? 'Protein first, deficit second.' : 'Eat on a schedule. The math follows.',
       body: plan.intent === 'lose'
         ? `About ${target} kcal today, with ${proteinTarget}g protein. Front-load protein at the first meal so the deficit does not turn into a crash at 4pm.`
         : `Maintenance is about ${target} kcal. You do not need a perfect log — breakfast and a protein check are enough to steer.`,
+    };
+  }
+
+  if (remaining != null && remaining > 400 && hour >= 17 && hour < 22) {
+    return {
+      kicker: name,
+      title: 'Eat a real dinner now.',
+      body: `About ${remaining} kcal still sit in the day. Do not bank them. A plate with protein and plants beats a late snack pile.`,
+    };
+  }
+
+  if (adaptive?.kind === 'weekend_gap' && mealCount >= 1) {
+    return {
+      kicker: name,
+      title: adaptive.title,
+      body: adaptive.body,
+    };
+  }
+
+  if (todayMoveMinutes >= 30 && plan.intent === 'lose') {
+    return {
+      kicker: name,
+      title: 'You moved. Keep dinner the same size.',
+      body: `${todayMoveMinutes} minutes is the health win. We do not add it back to the food budget — that extra pizza is how the scale stalls.`,
+    };
+  }
+
+  if (plan.intent === 'lose' && strengthDays < 2 && mealCount >= 1) {
+    return {
+      kicker: name,
+      title: 'Lift twice this week if you can.',
+      body: `Strength work protects muscle while the deficit does the fat loss. ${strengthDays === 0 ? 'A short Lift log is enough to start.' : 'One more Lift day this week closes the WHO minimum.'}`,
+    };
+  }
+
+  if (simple && proteinGap != null && proteinGap > 25) {
+    return {
+      kicker: name,
+      title: 'Get the next meal to 30g protein.',
+      body: `About ${proteinGap}g left for the day. Eggs, yogurt, chicken, or a shake. Fiber and a 30-minute walk do the rest.`,
+    };
+  }
+
+  if (fiberGap != null && fiberGap > 10 && (remaining == null || remaining > 150)) {
+    return {
+      kicker: name,
+      title: 'Fiber is still light.',
+      body: `About ${fiberGap}g to the day’s fiber target. Berries, beans, oats, or broccoli fill it without a calorie spike.`,
     };
   }
 
@@ -105,6 +183,16 @@ export function coachNote({ member, plan, eaten, mealCount, recentWeights }) {
     }
   }
 
+  if (simple) {
+    return {
+      kicker: name,
+      title: todayMoveMinutes >= 30 ? 'The simple day is working.' : 'A 30-minute walk still fits.',
+      body: proteinGap != null && proteinGap > 0
+        ? `Protein still wants about ${proteinGap}g. Log movement when you can — it is a health ring, not extra food.`
+        : 'Keep meals ordinary. Movement is extra credit for muscle and mood, not a license to eat more.',
+    };
+  }
+
   return {
     kicker: name,
     title: remaining != null ? `${remaining} kcal left in the day` : 'Keep the log light.',
@@ -114,11 +202,18 @@ export function coachNote({ member, plan, eaten, mealCount, recentWeights }) {
   };
 }
 
-export function familyStatusLine({ plan, eaten, mealCount, child }) {
-  if (mealCount === 0) return child ? 'No meals yet' : 'Not started';
-  if (child) return `${mealCount} logged`;
-  if (!plan?.calorie_target) return `${Math.round(eaten.calories)} kcal`;
+export function familyStatusLine({ plan, eaten, mealCount, child, minutes = 0 }) {
+  if (mealCount === 0 && minutes === 0) return child ? 'No meals yet' : 'Not started';
+  if (child) {
+    const bits = [];
+    if (mealCount) bits.push(`${mealCount} logged`);
+    if (minutes) bits.push(`${minutes} min`);
+    return bits.join(' · ') || 'No meals yet';
+  }
+  if (!plan?.calorie_target || plan?.method === 'simple') {
+    return minutes ? `${Math.round(eaten.calories)} kcal · ${minutes} min` : `${Math.round(eaten.calories)} kcal`;
+  }
   const remaining = Math.round(plan.calorie_target - eaten.calories);
-  if (remaining < 0) return `${Math.abs(remaining)} over`;
-  return `${remaining} left`;
+  const cal = remaining < 0 ? `${Math.abs(remaining)} over` : `${remaining} left`;
+  return minutes ? `${cal} · ${minutes} min` : cal;
 }

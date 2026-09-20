@@ -75,8 +75,8 @@ export default function KidDrawer({
   const activeTheme = child.theme ? child.theme : tierColor;
 
   return (
-    <div className={`theme-${activeTheme}`} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'fadeIn 0.2s ease-out' }}>
-       <div style={{ width: '100%', height: 'calc(100% - 100px)', background: 'var(--bg-deep)', borderTopLeftRadius: 'var(--radius-xl)', borderTopRightRadius: 'var(--radius-xl)', padding: 'var(--space-xl)', overflowY: 'auto', borderTop: '4px solid var(--primary)', animation: 'slideUp 0.3s ease-out', position: 'relative' }}>
+    <div className={`quests-app theme-${activeTheme}`} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(28,28,30,0.32)', zIndex: 2000, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'fadeIn 0.2s ease-out' }}>
+       <div style={{ width: '100%', height: 'calc(100% - 100px)', background: 'var(--bg-surface)', borderTopLeftRadius: 'var(--radius-xl)', borderTopRightRadius: 'var(--radius-xl)', padding: 'var(--space-xl)', overflowY: 'auto', borderTop: '3px solid var(--primary)', animation: 'slideUp 0.3s ease-out', position: 'relative', boxShadow: '0 -12px 40px rgba(28,28,30,0.12)' }}>
            <button className="btn btn-ghost" style={{ position: 'absolute', top: 'var(--space-lg)', right: 'var(--space-lg)', zIndex: 10 }} onClick={() => setInspectChildId(null)}>Close</button>
            
            <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
@@ -98,8 +98,8 @@ export default function KidDrawer({
                   <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: 8 }}>{child.coins} Coins</div>
 
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
-                    <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -1, e)}>-1</button>
-                    <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-deep)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 1, e)}>+1</button>
+                    <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-surface-alt)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, -1, e)}>-1</button>
+                    <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem', background: 'var(--bg-surface-alt)', border: '1px solid rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleAdjustCoins(child.id, 1, e)}>+1</button>
                   </div>
                </div>
                <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>

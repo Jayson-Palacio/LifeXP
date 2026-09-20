@@ -130,15 +130,16 @@ export default function SetupClient() {
     : <div style={{ fontSize: '5rem', lineHeight: 1 }}>{childAvatar}</div>;
 
   return (
-    <div style={{
+    <div className="quests-app" style={{
       minHeight: '100dvh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      padding: '24px 20px', background: 'var(--bg-deep)',
+      padding: '24px 20px', position: 'relative',
     }}>
+      <div className="kaeluma-bg" />
 
       {/* Progress Bar — hidden on Welcome (0) and Done (6) */}
       {step > 0 && step < 6 && (
-        <div style={{ width: '100%', maxWidth: 440, marginBottom: 32 }}>
+        <div style={{ width: '100%', maxWidth: 440, marginBottom: 32, position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             {STEP_LABELS.slice(1, 6).map((label, i) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
@@ -173,21 +174,18 @@ export default function SetupClient() {
       )}
 
       {/* Card */}
-      <div className="page-enter" key={step} style={{
+      <div className="page-enter quests-sheet" key={step} style={{
         width: '100%', maxWidth: 440,
-        background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.02) 100%)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 'var(--radius-3xl)',
         padding: '36px 28px',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
-        backdropFilter: 'blur(20px)',
+        position: 'relative',
+        zIndex: 1,
       }}>
 
         {/* ── STEP 0: Welcome ── */}
         {step === 0 && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, filter: 'drop-shadow(0 0 24px rgba(168,85,247,0.6))' }}>
-              <BrandLogo size="hero" />
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <BrandLogo size="hero" tone="ink" />
             </div>
             <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: 8 }}>
               Set up Quests for<br /><strong style={{ color: 'var(--text-bright)' }}>your household.</strong>
@@ -262,14 +260,14 @@ export default function SetupClient() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, maxWidth: 280, margin: '0 auto' }}>
               {[1,2,3,4,5,6,7,8,9].map(n => (
-                <button key={n} className="pin-key" onClick={() => handlePinKey(n.toString())} style={{ fontSize: '1.4rem', fontWeight: 700, padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', transition: 'transform 0.1s, background 0.1s', color: 'var(--text-bright)' }}
+                <button key={n} className="pin-key" onClick={() => handlePinKey(n.toString())} style={{ fontSize: '1.4rem', fontWeight: 700, padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', cursor: 'pointer', transition: 'transform 0.1s, background 0.1s', color: 'var(--text-bright)' }}
                   onMouseDown={e => e.currentTarget.style.transform = 'scale(0.92)'}
                   onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
                 >{n}</button>
               ))}
               <div />
-              <button className="pin-key" onClick={() => handlePinKey('0')} style={{ fontSize: '1.4rem', fontWeight: 700, padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'var(--text-bright)' }}>0</button>
-              <button onClick={() => handlePinKey('del')} style={{ fontSize: '1.2rem', padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'var(--text-muted)' }}>←</button>
+              <button className="pin-key" onClick={() => handlePinKey('0')} style={{ fontSize: '1.4rem', fontWeight: 700, padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', cursor: 'pointer', color: 'var(--text-bright)' }}>0</button>
+              <button onClick={() => handlePinKey('del')} style={{ fontSize: '1.2rem', padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', cursor: 'pointer', color: 'var(--text-muted)' }}>←</button>
             </div>
           </div>
         )}
@@ -346,7 +344,7 @@ export default function SetupClient() {
                           flex: 1, padding: '10px 0',
                           borderRadius: 'var(--radius-md)',
                           background: childAgeGroup === age ? 'var(--primary)' : 'var(--bg-deep)',
-                          border: childAgeGroup === age ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.06)',
+                          border: childAgeGroup === age ? '1px solid var(--primary)' : '1px solid rgba(28, 28, 30, 0.08)',
                           color: childAgeGroup === age ? '#fff' : 'var(--text-muted)',
                           fontWeight: childAgeGroup === age ? 800 : 600,
                           cursor: 'pointer', transition: 'all 0.15s'
@@ -415,7 +413,7 @@ export default function SetupClient() {
                       padding: '10px 12px',
                       borderRadius: 'var(--radius-lg)',
                       background: missionName === t.name ? 'rgba(var(--primary-rgb,168,85,247),0.15)' : 'var(--bg-deep)',
-                      border: missionName === t.name ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.06)',
+                      border: missionName === t.name ? '1px solid var(--primary)' : '1px solid rgba(28, 28, 30, 0.08)',
                       cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
                     }}
                   >
@@ -427,9 +425,9 @@ export default function SetupClient() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ flex: 1, height: 1, background: 'rgba(28, 28, 30, 0.08)' }} />
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>OR CUSTOM</span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ flex: 1, height: 1, background: 'rgba(28, 28, 30, 0.08)' }} />
             </div>
 
             <div className="input-group" style={{ marginBottom: 12 }}>
@@ -487,7 +485,7 @@ export default function SetupClient() {
                       padding: '10px 12px',
                       borderRadius: 'var(--radius-lg)',
                       background: rewardName === t.name ? 'rgba(var(--primary-rgb,168,85,247),0.15)' : 'var(--bg-deep)',
-                      border: rewardName === t.name ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.06)',
+                      border: rewardName === t.name ? '1px solid var(--primary)' : '1px solid rgba(28, 28, 30, 0.08)',
                       cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
                     }}
                   >
@@ -499,9 +497,9 @@ export default function SetupClient() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ flex: 1, height: 1, background: 'rgba(28, 28, 30, 0.08)' }} />
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>OR CUSTOM</span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ flex: 1, height: 1, background: 'rgba(28, 28, 30, 0.08)' }} />
             </div>
 
             <div className="input-group" style={{ marginBottom: 12 }}>
@@ -526,7 +524,7 @@ export default function SetupClient() {
               disabled={!rewardName.trim() || isSubmitting}
               onClick={handleFinish}
             >
-              {isSubmitting ? 'Setting up...' : "🚀 Let's Go!"}
+              {isSubmitting ? 'Setting up...' : "Let's go"}
             </button>
           </div>
         )}
@@ -534,8 +532,8 @@ export default function SetupClient() {
         {/* ── STEP 6: Celebration ── */}
         {step === 6 && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '4rem', marginBottom: 12, animation: 'bounce 0.6s ease infinite alternate' }}>🎉</div>
-            <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: '0 0 6px', background: 'linear-gradient(135deg, #fbbf24, var(--primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <div style={{ fontSize: '4rem', marginBottom: 12 }}>🎉</div>
+            <h2 style={{ fontSize: '2rem', fontWeight: 600, letterSpacing: '-0.03em', margin: '0 0 6px', color: 'var(--text-bright)' }}>
               You're all set!
             </h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: 28, fontSize: '0.95rem' }}>
@@ -545,7 +543,7 @@ export default function SetupClient() {
             {/* Summary card */}
             <div style={{
               background: 'var(--bg-deep)', borderRadius: 'var(--radius-xl)',
-              padding: '20px', marginBottom: 28, border: '1px solid rgba(255,255,255,0.06)',
+              padding: '20px', marginBottom: 28, border: '1px solid rgba(28, 28, 30, 0.08)',
               display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -583,14 +581,14 @@ export default function SetupClient() {
             </div>
 
             <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))', border: '1px solid rgba(168,85,247,0.2)', padding: '16px', borderRadius: 'var(--radius-xl)', marginBottom: 28, textAlign: 'left' }}>
-              <h3 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><span>👑</span> Inside Parent Mode</h3>
+              <h3 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: 700, color: 'var(--text-bright)', display: 'flex', alignItems: 'center', gap: 8 }}>Parent Mode</h3>
               <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                 Switch to Parent Mode anytime using your PIN to add players, set up weekly allowances, approve missions, and customize your family's experience!
               </p>
             </div>
 
             <button className="btn btn-gold btn-block btn-lg" onClick={() => router.push('/apps')}>
-              Open Family Apps 🚀
+              Open family apps
             </button>
           </div>
         )}

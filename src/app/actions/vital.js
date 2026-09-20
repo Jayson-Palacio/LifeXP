@@ -5,14 +5,23 @@ import { requireUser } from '../../lib/authz';
 import { lookupFood } from '../../lib/foods';
 import {
   MEMBER_ACCENTS,
+  LEGACY_MOVE_KINDS,
+  MOVE_KINDS,
+  activityKcal,
   ageFromBirthYear,
+  applyPlanNumbers,
   birthYearFromAge,
   calorieTarget,
+  defaultMethod,
+  fiberTargetG,
   inferIntent,
   inToCm,
   lbToKg,
   localDateISO,
   macroTargets,
+  MEAL_IDS,
+  minutesFromSteps,
+  scaleServing,
   suggestedWeeklyChangeKg,
   tdeeKcal,
 } from '../../lib/nutrition';
@@ -22,8 +31,30 @@ function fail(error) {
 }
 
 function num(value) {
+  if (value === '' || value == null) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function foodFromOff(product) {
+  const n = product?.nutriments || {};
+  const perServing = n['energy-kcal_serving'];
+  const per100 = n['energy-kcal_100g'] ?? n['energy-kcal'];
+  const calories = Math.round(Number(perServing ?? per100 ?? 0));
+  if (!calories) return null;
+  const name = String(product.product_name || product.generic_name || '').trim().slice(0, 120);
+  if (!name) return null;
+  return {
+    name,
+    calories,
+    protein_g: Math.round(Number(n.proteins_serving ?? n.proteins_100g ?? 0) * 10) / 10,
+    carbs_g: Math.round(Number(n.carbohydrates_serving ?? n.carbohydrates_100g ?? 0) * 10) / 10,
+    fat_g: Math.round(Number(n.fat_serving ?? n.fat_100g ?? 0) * 10) / 10,
+    fiber_g: Math.round(Number(n.fiber_serving ?? n.fiber_100g ?? 0) * 10) / 10,
+    barcode: product.code || null,
+    source: 'search',
+    serving: perServing != null ? 'serving' : '100g',
+  };
 }
 
 async function vitalUser() {
@@ -156,6 +187,12 @@ export async function saveVitalPlan(payload) {
 
   if (weekly < 0 || weekly > 1.2) return fail('Weekly change should stay under about 2.5 lb (1.2 kg).');
 
+  const method = ['high_protein', 'balanced', 'simple', 'custom'].includes(payload.method)
+    ? payload.method
+    : defaultMethod(intent);
+  const childPlan = kind === 'child' || age < 18;
+  const resolvedMethod = childPlan ? (method === 'custom' ? 'custom' : 'simple') : method;
+
   const profile = {
     sex,
     birth_year: Math.round(birthYear),
@@ -163,13 +200,32 @@ export async function saveVitalPlan(payload) {
     activity_level: activity,
   };
 
-  let calories = null;
-  let macros = { protein: null, carbs: null, fat: null };
+  let computed = { calories: null, protein: null, carbs: null, fat: null };
   if (currentKg) {
     const tdee = tdeeKcal(profile, currentKg);
-    calories = calorieTarget({ tdee, weeklyChangeKg: weekly, sex, age, intent });
-    macros = macroTargets({ calories, weightKg: currentKg, age, intent });
+    const calories = calorieTarget({ tdee, weeklyChangeKg: weekly, sex, age, intent });
+    const macros = macroTargets({ calories, weightKg: currentKg, age, intent, method: resolvedMethod });
+    computed = { calories, ...macros };
   }
+
+  const overrides = {
+    calories: num(payload.calorie_override),
+    protein: num(payload.protein_override),
+    carbs: num(payload.carbs_override),
+    fat: num(payload.fat_override),
+  };
+  if (resolvedMethod !== 'custom') {
+    if (payload.calorie_override === '' || payload.calorie_override == null) overrides.calories = null;
+    if (payload.protein_override === '' || payload.protein_override == null) overrides.protein = null;
+    if (payload.carbs_override === '' || payload.carbs_override == null) overrides.carbs = null;
+    if (payload.fat_override === '' || payload.fat_override == null) overrides.fat = null;
+  }
+  const numbers = applyPlanNumbers({ method: resolvedMethod, computed, overrides });
+  const fiber = fiberTargetG({
+    method: resolvedMethod,
+    sex,
+    explicit: payload.fiber_target_g,
+  });
 
   const { error: memberError } = await supabase.from('vital_members').update({
     sex,
@@ -187,22 +243,40 @@ export async function saveVitalPlan(payload) {
     member_id: member.id,
     owner_id: user.id,
     intent,
+    method: resolvedMethod,
     start_weight_kg: existing?.start_weight_kg ?? (currentKg != null ? Math.round(currentKg * 10) / 10 : null),
     current_weight_kg: currentKg != null ? Math.round(currentKg * 10) / 10 : null,
     target_weight_kg: targetKg != null ? Math.round(targetKg * 10) / 10 : (intent === 'grow' ? null : currentKg != null ? Math.round(currentKg * 10) / 10 : null),
     weekly_change_kg: Math.round(weekly * 100) / 100,
-    calorie_target: calories,
-    protein_target_g: macros.protein,
-    carbs_target_g: macros.carbs,
-    fat_target_g: macros.fat,
+    calorie_target: numbers.calories,
+    protein_target_g: numbers.protein,
+    carbs_target_g: numbers.carbs,
+    fat_target_g: numbers.fat,
+    calorie_override: numbers.locked ? numbers.calories : null,
+    protein_override: numbers.locked ? numbers.protein : null,
+    carbs_override: numbers.locked ? numbers.carbs : null,
+    fat_override: numbers.locked ? numbers.fat : null,
+    fiber_target_g: fiber,
+    eat_back: 'off',
+    step_goal: Math.round(num(payload.step_goal) || (intent === 'grow' ? 6000 : 8000)),
     updated_at: new Date().toISOString(),
   };
 
   const { error: planError } = await supabase.from('vital_plans').upsert(plan, { onConflict: 'member_id' });
-  if (planError) return fail(planError.message);
+  if (planError) {
+    if (/step_goal/i.test(planError.message || '')) {
+      delete plan.step_goal;
+      const retry = await supabase.from('vital_plans').upsert(plan, { onConflict: 'member_id' });
+      if (retry.error) return fail(retry.error.message);
+    } else if (/method|fiber_target|calorie_override|eat_back|schema cache|does not exist/i.test(planError.message || '')) {
+      return fail('Run the latest vital_schema.sql so methods and custom targets can save.');
+    } else {
+      return fail(planError.message);
+    }
+  }
 
   revalidatePath('/vital');
-  return { success: true, data: { calories, macros, intent } };
+  return { success: true, data: { calories: numbers.calories, macros: { protein: numbers.protein, carbs: numbers.carbs, fat: numbers.fat }, intent, method: resolvedMethod } };
 }
 
 async function rememberKitchen(supabase, ownerId, item) {
@@ -222,6 +296,7 @@ async function rememberKitchen(supabase, ownerId, item) {
     protein_g: item.protein_g,
     carbs_g: item.carbs_g,
     fat_g: item.fat_g,
+    fiber_g: item.fiber_g ?? 0,
     barcode: item.barcode || null,
     updated_at: new Date().toISOString(),
   };
@@ -250,6 +325,8 @@ export async function logVitalFood(payload) {
   let protein = num(payload.protein_g);
   let carbs = num(payload.carbs_g);
   let fat = num(payload.fat_g);
+  let fiber = num(payload.fiber_g);
+  const servings = num(payload.servings) || 1;
 
   const catalog = lookupFood(name);
   if (catalog) {
@@ -258,6 +335,7 @@ export async function logVitalFood(payload) {
     if (protein == null) protein = catalog.protein_g;
     if (carbs == null) carbs = catalog.carbs_g;
     if (fat == null) fat = catalog.fat_g;
+    if (fiber == null) fiber = catalog.fiber_g;
   }
 
   if (calories == null && name) {
@@ -273,10 +351,24 @@ export async function logVitalFood(payload) {
       protein = protein ?? Number(kitchenItem.protein_g);
       carbs = carbs ?? Number(kitchenItem.carbs_g);
       fat = fat ?? Number(kitchenItem.fat_g);
+      fiber = fiber ?? Number(kitchenItem.fiber_g || 0);
     }
   }
 
-  const meal = ['breakfast', 'lunch', 'dinner', 'snack'].includes(payload.meal)
+  const scaled = scaleServing({
+    calories,
+    protein_g: protein,
+    carbs_g: carbs,
+    fat_g: fat,
+    fiber_g: fiber,
+  }, servings);
+  calories = scaled.calories;
+  protein = scaled.protein_g;
+  carbs = scaled.carbs_g;
+  fat = scaled.fat_g;
+  fiber = scaled.fiber_g;
+
+  const meal = MEAL_IDS.includes(payload.meal)
     ? payload.meal
     : (catalog?.meal || 'snack');
   const loggedOn = /^\d{4}-\d{2}-\d{2}$/.test(payload.logged_on || '') ? payload.logged_on : localDateISO();
@@ -286,7 +378,7 @@ export async function logVitalFood(payload) {
     return fail('Add calories, or pick a food from the kitchen list.');
   }
 
-  const { data, error } = await auth.supabase.from('vital_foods').insert({
+  const foodRow = {
     member_id: owned.member.id,
     owner_id: auth.user.id,
     name,
@@ -294,18 +386,31 @@ export async function logVitalFood(payload) {
     protein_g: Math.round((protein ?? 0) * 10) / 10,
     carbs_g: Math.round((carbs ?? 0) * 10) / 10,
     fat_g: Math.round((fat ?? 0) * 10) / 10,
+    fiber_g: Math.round((fiber ?? 0) * 10) / 10,
     meal,
     logged_on: loggedOn,
-  }).select().single();
+  };
+
+  let { data, error } = await auth.supabase.from('vital_foods').insert(foodRow).select().single();
+  if (error && /fiber_g/i.test(error.message || '')) {
+    const fallback = { ...foodRow };
+    delete fallback.fiber_g;
+    ({ data, error } = await auth.supabase.from('vital_foods').insert(fallback).select().single());
+  }
+  if (error && meal === 'drink' && /meal|check constraint|invalid/i.test(error.message || '')) {
+    const fallback = { ...foodRow, meal: 'snack' };
+    ({ data, error } = await auth.supabase.from('vital_foods').insert(fallback).select().single());
+  }
 
   if (error) return fail(error.message);
 
   await rememberKitchen(auth.supabase, auth.user.id, {
     name,
-    calories: Math.round(calories),
-    protein_g: Math.round((protein ?? 0) * 10) / 10,
-    carbs_g: Math.round((carbs ?? 0) * 10) / 10,
-    fat_g: Math.round((fat ?? 0) * 10) / 10,
+    calories: Math.round((calories || 0) / servings),
+    protein_g: Math.round(((protein ?? 0) / servings) * 10) / 10,
+    carbs_g: Math.round(((carbs ?? 0) / servings) * 10) / 10,
+    fat_g: Math.round(((fat ?? 0) / servings) * 10) / 10,
+    fiber_g: Math.round(((fiber ?? 0) / servings) * 10) / 10,
     barcode: payload.barcode || null,
   });
 
@@ -318,6 +423,118 @@ export async function deleteVitalFood(id) {
   if (auth.error) return fail(auth.error);
   if (typeof id !== 'string') return fail('Invalid entry.');
   const { error } = await auth.supabase.from('vital_foods').delete().eq('id', id).eq('owner_id', auth.user.id);
+  if (error) return fail(error.message);
+  revalidatePath('/vital');
+  return { success: true };
+}
+
+export async function updateVitalFood(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  if (typeof payload.id !== 'string') return fail('Invalid entry.');
+  const scale = num(payload.scale) || 1;
+  if (scale < 0.25 || scale > 4) return fail('Keep the serving between 0.25× and 4×.');
+  const { data: row, error: loadError } = await auth.supabase
+    .from('vital_foods')
+    .select('*')
+    .eq('id', payload.id)
+    .eq('owner_id', auth.user.id)
+    .maybeSingle();
+  if (loadError) return fail(loadError.message);
+  if (!row) return fail('That log is gone.');
+  const next = {
+    calories: Math.round((Number(row.calories) || 0) * scale),
+    protein_g: Math.round((Number(row.protein_g) || 0) * scale * 10) / 10,
+    carbs_g: Math.round((Number(row.carbs_g) || 0) * scale * 10) / 10,
+    fat_g: Math.round((Number(row.fat_g) || 0) * scale * 10) / 10,
+    fiber_g: Math.round((Number(row.fiber_g) || 0) * scale * 10) / 10,
+  };
+  const { error } = await auth.supabase.from('vital_foods').update(next).eq('id', row.id).eq('owner_id', auth.user.id);
+  if (error && /fiber_g/i.test(error.message || '')) {
+    delete next.fiber_g;
+    const retry = await auth.supabase.from('vital_foods').update(next).eq('id', row.id).eq('owner_id', auth.user.id);
+    if (retry.error) return fail(retry.error.message);
+  } else if (error) {
+    return fail(error.message);
+  }
+  revalidatePath('/vital');
+  return { success: true };
+}
+
+export async function serveVitalFood(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  if (typeof payload.food_id !== 'string') return fail('Pick a food first.');
+  const { data: row, error: loadError } = await auth.supabase
+    .from('vital_foods')
+    .select('*')
+    .eq('id', payload.food_id)
+    .eq('owner_id', auth.user.id)
+    .maybeSingle();
+  if (loadError) return fail(loadError.message);
+  if (!row) return fail('That log is gone.');
+
+  const portions = Array.isArray(payload.portions) ? payload.portions : [];
+  const inserts = [];
+  for (const item of portions.slice(0, 8)) {
+    if (item.member_id === row.member_id) continue;
+    const owned = await ownedMember(auth.supabase, auth.user.id, item.member_id);
+    if (owned.error) continue;
+    const scaled = scaleServing(row, num(item.servings) || 1);
+    inserts.push({
+      member_id: owned.member.id,
+      owner_id: auth.user.id,
+      name: row.name,
+      calories: scaled.calories,
+      protein_g: scaled.protein_g,
+      carbs_g: scaled.carbs_g,
+      fat_g: scaled.fat_g,
+      fiber_g: scaled.fiber_g,
+      meal: row.meal,
+      logged_on: row.logged_on,
+    });
+  }
+  if (!inserts.length) return fail('Pick at least one other person.');
+  let { error } = await auth.supabase.from('vital_foods').insert(inserts);
+  if (error && /fiber_g/i.test(error.message || '')) {
+    ({ error } = await auth.supabase.from('vital_foods').insert(inserts.map((item) => {
+      const copy = { ...item };
+      delete copy.fiber_g;
+      return copy;
+    })));
+  }
+  if (error) return fail(error.message);
+  revalidatePath('/vital');
+  return { success: true, data: { count: inserts.length } };
+}
+
+export async function nudgeVitalCalories(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  const owned = await ownedMember(auth.supabase, auth.user.id, payload.member_id);
+  if (owned.error) return fail(owned.error);
+  const calories = Math.round(num(payload.calories) || 0);
+  if (calories < 800 || calories > 6000) return fail('That calorie target looks off.');
+  const { data: plan } = await auth.supabase.from('vital_plans').select('*').eq('member_id', owned.member.id).maybeSingle();
+  if (!plan) return fail('Set a plan first.');
+  const age = ageFromBirthYear(owned.member.birth_year);
+  const macros = macroTargets({
+    calories,
+    weightKg: plan.current_weight_kg || 80,
+    age,
+    intent: payload.mode === 'hold' ? 'maintain' : plan.intent,
+    method: plan.method,
+  });
+  const update = {
+    calorie_target: calories,
+    calorie_override: calories,
+    protein_target_g: macros.protein,
+    carbs_target_g: macros.carbs,
+    fat_target_g: macros.fat,
+    updated_at: new Date().toISOString(),
+  };
+  if (payload.mode === 'hold') update.intent = 'maintain';
+  const { error } = await auth.supabase.from('vital_plans').update(update).eq('member_id', owned.member.id).eq('owner_id', auth.user.id);
   if (error) return fail(error.message);
   revalidatePath('/vital');
   return { success: true };
@@ -348,24 +565,32 @@ export async function logVitalWeight(payload) {
 
   const { data: plan } = await auth.supabase.from('vital_plans').select('*').eq('member_id', member.id).maybeSingle();
   if (plan && member.sex && member.birth_year && member.height_cm) {
-    const age = ageFromBirthYear(member.birth_year);
-    const tdee = tdeeKcal(member, rounded);
-    const calories = calorieTarget({
-      tdee,
-      weeklyChangeKg: plan.weekly_change_kg,
-      sex: member.sex,
-      age,
-      intent: plan.intent,
-    });
-    const macros = macroTargets({ calories, weightKg: rounded, age, intent: plan.intent });
-    await auth.supabase.from('vital_plans').update({
-      current_weight_kg: rounded,
-      calorie_target: calories,
-      protein_target_g: macros.protein,
-      carbs_target_g: macros.carbs,
-      fat_target_g: macros.fat,
-      updated_at: new Date().toISOString(),
-    }).eq('member_id', member.id).eq('owner_id', auth.user.id);
+    const locked = plan.method === 'custom' || plan.calorie_override != null || plan.protein_override != null;
+    if (locked) {
+      await auth.supabase.from('vital_plans').update({
+        current_weight_kg: rounded,
+        updated_at: new Date().toISOString(),
+      }).eq('member_id', member.id).eq('owner_id', auth.user.id);
+    } else {
+      const age = ageFromBirthYear(member.birth_year);
+      const tdee = tdeeKcal(member, rounded);
+      const calories = calorieTarget({
+        tdee,
+        weeklyChangeKg: plan.weekly_change_kg,
+        sex: member.sex,
+        age,
+        intent: plan.intent,
+      });
+      const macros = macroTargets({ calories, weightKg: rounded, age, intent: plan.intent, method: plan.method });
+      await auth.supabase.from('vital_plans').update({
+        current_weight_kg: rounded,
+        calorie_target: calories,
+        protein_target_g: macros.protein,
+        carbs_target_g: macros.carbs,
+        fat_target_g: macros.fat,
+        updated_at: new Date().toISOString(),
+      }).eq('member_id', member.id).eq('owner_id', auth.user.id);
+    }
   } else if (plan) {
     await auth.supabase.from('vital_plans').update({
       current_weight_kg: rounded,
@@ -375,6 +600,44 @@ export async function logVitalWeight(payload) {
 
   revalidatePath('/vital');
   return { success: true, data };
+}
+
+export async function completeVitalOnboarding(payload) {
+  const created = await saveVitalMember({
+    id: payload.member_id,
+    display_name: payload.display_name,
+    kind: payload.kind,
+    units: payload.units,
+    sex: payload.sex,
+    age: payload.age,
+  });
+  if (!created.success) return created;
+
+  const plan = await saveVitalPlan({
+    member_id: created.data.id,
+    units: payload.units,
+    sex: payload.sex,
+    age: payload.age,
+    height: payload.height,
+    current_weight: payload.current_weight,
+    target_weight: payload.target_weight,
+    activity_level: payload.activity_level,
+    intent: payload.intent,
+    method: payload.method,
+    weekly_change: payload.weekly_change,
+    step_goal: payload.step_goal,
+  });
+  if (!plan.success) return plan;
+
+  if (payload.current_weight) {
+    await logVitalWeight({
+      member_id: created.data.id,
+      weight: payload.current_weight,
+    });
+  }
+
+  revalidatePath('/apps');
+  return { success: true, data: { member: created.data, plan: plan.data } };
 }
 
 export async function saveVitalKitchenItem(payload) {
@@ -390,6 +653,7 @@ export async function saveVitalKitchenItem(payload) {
     protein_g: Math.round((num(payload.protein_g) ?? 0) * 10) / 10,
     carbs_g: Math.round((num(payload.carbs_g) ?? 0) * 10) / 10,
     fat_g: Math.round((num(payload.fat_g) ?? 0) * 10) / 10,
+    fiber_g: Math.round((num(payload.fiber_g) ?? 0) * 10) / 10,
     barcode: payload.barcode || null,
   });
   if (kitchenError) {
@@ -431,11 +695,18 @@ export async function copyYesterdayMeals(memberId) {
     .limit(1);
   if (existing?.length) return fail('Today already has meals. Remove them first if you want a full copy.');
 
-  const { data: rows, error } = await auth.supabase
+  let { data: rows, error } = await auth.supabase
     .from('vital_foods')
-    .select('name, calories, protein_g, carbs_g, fat_g, meal')
+    .select('name, calories, protein_g, carbs_g, fat_g, fiber_g, meal')
     .eq('member_id', owned.member.id)
     .eq('logged_on', yesterday);
+  if (error && /fiber_g/i.test(error.message || '')) {
+    ({ data: rows, error } = await auth.supabase
+      .from('vital_foods')
+      .select('name, calories, protein_g, carbs_g, fat_g, meal')
+      .eq('member_id', owned.member.id)
+      .eq('logged_on', yesterday));
+  }
   if (error) return fail(error.message);
   if (!rows?.length) return fail('Nothing was logged yesterday to copy.');
 
@@ -473,6 +744,7 @@ export async function lookupBarcodeFood(barcode) {
         protein_g: Number(saved.protein_g),
         carbs_g: Number(saved.carbs_g),
         fat_g: Number(saved.fat_g),
+        fiber_g: Number(saved.fiber_g || 0),
         barcode: code,
         source: 'kitchen',
       },
@@ -486,30 +758,273 @@ export async function lookupBarcodeFood(barcode) {
     if (!response.ok) return fail('Could not reach the food database. Try again.');
     const json = await response.json();
     if (json.status !== 1 || !json.product) return fail('No product for that barcode. Save it to your kitchen instead.');
-    const product = json.product;
-    const n = product.nutriments || {};
-    const perServing = n['energy-kcal_serving'];
-    const per100 = n['energy-kcal_100g'] ?? n['energy-kcal'];
-    const calories = Math.round(Number(perServing ?? per100 ?? 0));
-    if (!calories) return fail('That product has no calorie data. Add it to your kitchen by hand.');
-    const protein = Number(n.proteins_serving ?? n.proteins_100g ?? 0);
-    const carbs = Number(n.carbohydrates_serving ?? n.carbohydrates_100g ?? 0);
-    const fat = Number(n.fat_serving ?? n.fat_100g ?? 0);
-    const name = String(product.product_name || product.generic_name || 'Scanned item').slice(0, 120);
+    const data = foodFromOff(json.product);
+    if (!data) return fail('That product has no calorie data. Add it to your kitchen by hand.');
     return {
       success: true,
-      data: {
-        name,
-        calories,
-        protein_g: Math.round(protein * 10) / 10,
-        carbs_g: Math.round(carbs * 10) / 10,
-        fat_g: Math.round(fat * 10) / 10,
-        barcode: code,
-        source: 'scan',
-        serving: perServing != null ? 'serving' : '100g',
-      },
+      data: { ...data, barcode: code, source: 'scan' },
     };
   } catch {
     return fail('Could not look up that barcode.');
   }
 }
+
+export async function searchVitalFoods(query) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  const q = String(query || '').trim();
+  if (q.length < 3) return { success: true, data: [] };
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'KaelumaVital/1.0 (family health tracker)' },
+    });
+    if (!response.ok) return { success: true, data: [] };
+    const json = await response.json();
+    const seen = new Set();
+    const data = [];
+    for (const product of json.products || []) {
+      const item = foodFromOff(product);
+      if (!item) continue;
+      const key = item.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      data.push(item);
+      if (data.length >= 6) break;
+    }
+    return { success: true, data };
+  } catch {
+    return { success: true, data: [] };
+  }
+}
+
+export async function updateVitalKitchenItem(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  if (typeof payload.id !== 'string') return fail('Invalid item.');
+  const name = String(payload.name || '').trim();
+  const calories = num(payload.calories);
+  if (name.length < 1 || name.length > 120) return fail('Give this food a name.');
+  if (calories == null || calories < 0 || calories > 5000) return fail('Add calories so we can save it.');
+  const { error } = await auth.supabase.from('vital_kitchen').update({
+    name,
+    calories: Math.round(calories),
+    protein_g: Math.round((num(payload.protein_g) ?? 0) * 10) / 10,
+    carbs_g: Math.round((num(payload.carbs_g) ?? 0) * 10) / 10,
+    fat_g: Math.round((num(payload.fat_g) ?? 0) * 10) / 10,
+    fiber_g: Math.round((num(payload.fiber_g) ?? 0) * 10) / 10,
+    barcode: payload.barcode || null,
+    updated_at: new Date().toISOString(),
+  }).eq('id', payload.id).eq('owner_id', auth.user.id);
+  if (error) {
+    if (/does not exist|schema cache/i.test(error.message || '')) {
+      return fail('Run vital_schema.sql so your kitchen can save custom foods.');
+    }
+    return fail(error.message);
+  }
+  revalidatePath('/vital');
+  return { success: true };
+}
+
+export async function pinVitalKitchen(ids) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  const list = (Array.isArray(ids) ? ids : [])
+    .map((key) => String(key || '').trim())
+    .filter(Boolean)
+    .slice(0, 12);
+  const { error: clearError } = await auth.supabase
+    .from('vital_kitchen')
+    .update({ pin_rank: null })
+    .eq('owner_id', auth.user.id);
+  if (clearError && /pin_rank|schema cache|does not exist/i.test(clearError.message || '')) {
+    return { success: true, localOnly: true };
+  }
+  if (clearError) return fail(clearError.message);
+  await Promise.all(list.map((key, index) => {
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key);
+    let query = auth.supabase
+      .from('vital_kitchen')
+      .update({ pin_rank: index + 1 })
+      .eq('owner_id', auth.user.id);
+    query = uuid ? query.eq('id', key) : query.ilike('name', key);
+    return query;
+  }));
+  revalidatePath('/vital');
+  return { success: true };
+}
+
+async function rememberMove(supabase, ownerId, item) {
+  const label = String(item.label || '').trim();
+  if (!label) return;
+  const { data: existing } = await supabase
+    .from('vital_moves')
+    .select('id, times_logged')
+    .eq('owner_id', ownerId)
+    .ilike('label', label)
+    .maybeSingle();
+  const kind = MOVE_KINDS.some((row) => row.id === item.kind) ? item.kind : 'other';
+  const row = {
+    owner_id: ownerId,
+    label,
+    kind: LEGACY_MOVE_KINDS.includes(kind) ? kind : 'other',
+    minutes: item.minutes,
+    effort: item.effort,
+    updated_at: new Date().toISOString(),
+  };
+  if (existing?.id) {
+    await supabase.from('vital_moves').update({
+      ...row,
+      times_logged: (existing.times_logged || 1) + 1,
+    }).eq('id', existing.id);
+    return;
+  }
+  const { error } = await supabase.from('vital_moves').insert({ ...row, times_logged: 1, kind });
+  if (error && /kind|check/i.test(error.message || '')) {
+    await supabase.from('vital_moves').insert({ ...row, times_logged: 1 });
+  }
+}
+
+async function memberWeightKg(supabase, member) {
+  if (member.kind === 'child') return 35;
+  const { data: planRow } = await supabase
+    .from('vital_plans')
+    .select('current_weight_kg')
+    .eq('member_id', member.id)
+    .maybeSingle();
+  return Number(planRow?.current_weight_kg) || 80;
+}
+
+async function insertActivity(supabase, row) {
+  let { data, error } = await supabase.from('vital_activity').insert(row).select().single();
+  if (error && /steps|note|schema cache|does not exist/i.test(error.message || '')) {
+    const slim = { ...row };
+    delete slim.steps;
+    delete slim.note;
+    ({ data, error } = await supabase.from('vital_activity').insert(slim).select().single());
+  }
+  if (error && /kind|check/i.test(error.message || '')) {
+    const fallbackKind = row.kind === 'steps' ? 'walk' : 'other';
+    const fallback = { ...row, kind: fallbackKind };
+    ({ data, error } = await supabase.from('vital_activity').insert(fallback).select().single());
+    if (error && /steps|note/i.test(error.message || '')) {
+      delete fallback.steps;
+      delete fallback.note;
+      ({ data, error } = await supabase.from('vital_activity').insert(fallback).select().single());
+    }
+  }
+  return { data, error };
+}
+
+export async function logVitalActivity(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  const owned = await ownedMember(auth.supabase, auth.user.id, payload.member_id);
+  if (owned.error) return fail(owned.error);
+
+  const known = MOVE_KINDS.some((item) => item.id === payload.kind) ? payload.kind : null;
+  const effort = ['easy', 'moderate', 'hard'].includes(payload.effort) ? payload.effort : 'moderate';
+  const loggedOn = /^\d{4}-\d{2}-\d{2}$/.test(payload.logged_on || '') ? payload.logged_on : localDateISO();
+  const note = String(payload.note || payload.label || '').trim().slice(0, 80) || null;
+  let kind = known;
+  let steps = num(payload.steps);
+  let minutes = num(payload.minutes);
+
+  if (kind === 'steps' || (steps && !kind)) {
+    kind = 'steps';
+    steps = Math.round(steps || 0);
+    if (steps < 100 || steps > 100000) return fail('Steps should be between 100 and 100,000.');
+    minutes = minutesFromSteps(steps);
+  }
+  if (!kind) return fail('Pick a kind of movement.');
+  if (!minutes || minutes < 1 || minutes > 480) return fail('Minutes should be between 1 and 480.');
+
+  const weightKg = await memberWeightKg(auth.supabase, owned.member);
+  const kcal = activityKcal({ kind: kind === 'steps' ? 'walk' : kind, minutes, effort, weightKg });
+  const row = {
+    member_id: owned.member.id,
+    owner_id: auth.user.id,
+    logged_on: loggedOn,
+    kind,
+    minutes: Math.round(minutes),
+    effort,
+    kcal_est: kcal,
+    note,
+    steps: kind === 'steps' ? steps : null,
+  };
+
+  if (kind === 'steps') {
+    const { data: existing } = await auth.supabase
+      .from('vital_activity')
+      .select('id')
+      .eq('member_id', owned.member.id)
+      .eq('logged_on', loggedOn)
+      .or('kind.eq.steps,steps.gte.100')
+      .maybeSingle();
+    if (existing?.id) {
+      const { error } = await auth.supabase.from('vital_activity').update({
+        minutes: row.minutes,
+        effort,
+        kcal_est: kcal,
+        steps,
+        note: note || 'Steps',
+      }).eq('id', existing.id).eq('owner_id', auth.user.id);
+      if (error) return fail(error.message);
+      revalidatePath('/vital');
+      return { success: true };
+    }
+  }
+
+  const { data, error } = await insertActivity(auth.supabase, row);
+  if (error) {
+    if (/does not exist|schema cache/i.test(error.message || '')) {
+      return fail('Run the latest vital_schema.sql so movement can be saved.');
+    }
+    return fail(error.message);
+  }
+
+  if (kind !== 'steps') {
+    const label = note
+      || `${kind[0].toUpperCase()}${kind.slice(1)} ${Math.round(minutes)}`;
+    await rememberMove(auth.supabase, auth.user.id, { label, kind, minutes: Math.round(minutes), effort });
+  }
+
+  revalidatePath('/vital');
+  return { success: true, data };
+}
+
+export async function deleteVitalActivity(id) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  if (typeof id !== 'string') return fail('Invalid entry.');
+  const { error } = await auth.supabase.from('vital_activity').delete().eq('id', id).eq('owner_id', auth.user.id);
+  if (error) return fail(error.message);
+  revalidatePath('/vital');
+  return { success: true };
+}
+
+export async function saveVitalMove(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  const label = String(payload.label || '').trim();
+  const kind = MOVE_KINDS.some((item) => item.id === payload.kind) ? payload.kind : null;
+  const minutes = num(payload.minutes);
+  const effort = ['easy', 'moderate', 'hard'].includes(payload.effort) ? payload.effort : 'moderate';
+  if (label.length < 1 || label.length > 80) return fail('Give this move a name.');
+  if (!kind) return fail('Pick a kind of movement.');
+  if (!minutes || minutes < 1 || minutes > 480) return fail('Minutes should be between 1 and 480.');
+  await rememberMove(auth.supabase, auth.user.id, { label, kind, minutes: Math.round(minutes), effort });
+  revalidatePath('/vital');
+  return { success: true };
+}
+
+export async function deleteVitalMove(id) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  if (typeof id !== 'string') return fail('Invalid item.');
+  const { error } = await auth.supabase.from('vital_moves').delete().eq('id', id).eq('owner_id', auth.user.id);
+  if (error) return fail(error.message);
+  revalidatePath('/vital');
+  return { success: true };
+}
+

@@ -112,6 +112,110 @@ create policy "Owners manage vital kitchen" on public.vital_kitchen
 grant select, insert, update, delete on public.vital_kitchen to authenticated;
 revoke all on public.vital_kitchen from anon;
 
+alter table public.vital_plans
+  add column if not exists method text not null default 'high_protein',
+  add column if not exists calorie_override integer,
+  add column if not exists protein_override integer,
+  add column if not exists carbs_override integer,
+  add column if not exists fat_override integer,
+  add column if not exists fiber_target_g integer,
+  add column if not exists eat_back text not null default 'off';
+
+alter table public.vital_foods
+  add column if not exists fiber_g numeric(6,1) not null default 0;
+
+alter table public.vital_kitchen
+  add column if not exists fiber_g numeric(6,1) not null default 0;
+
+do $$
+begin
+  alter table public.vital_plans drop constraint if exists vital_plans_method_check;
+  alter table public.vital_plans add constraint vital_plans_method_check
+    check (method in ('high_protein', 'balanced', 'simple', 'custom'));
+  alter table public.vital_plans drop constraint if exists vital_plans_eat_back_check;
+  alter table public.vital_plans add constraint vital_plans_eat_back_check
+    check (eat_back in ('off', 'half', 'full'));
+end $$;
+
+create table if not exists public.vital_activity (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.vital_members(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  logged_on date not null default current_date,
+  kind text not null check (kind in ('walk', 'run', 'bike', 'lift', 'play', 'other')),
+  minutes integer not null check (minutes between 1 and 480),
+  effort text not null default 'moderate' check (effort in ('easy', 'moderate', 'hard')),
+  kcal_est integer not null default 0 check (kcal_est between 0 and 4000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists vital_activity_member_day_idx on public.vital_activity (member_id, logged_on desc, created_at desc);
+
+alter table public.vital_activity enable row level security;
+
+drop policy if exists "Owners manage vital activity" on public.vital_activity;
+create policy "Owners manage vital activity" on public.vital_activity
+  for all using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+
+grant select, insert, update, delete on public.vital_activity to authenticated;
+revoke all on public.vital_activity from anon;
+
+create table if not exists public.vital_moves (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  label text not null check (char_length(label) between 1 and 80),
+  kind text not null check (kind in ('walk', 'run', 'bike', 'lift', 'play', 'other')),
+  minutes integer not null check (minutes between 1 and 480),
+  effort text not null default 'moderate' check (effort in ('easy', 'moderate', 'hard')),
+  times_logged integer not null default 1 check (times_logged >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (owner_id, label)
+);
+
+create index if not exists vital_moves_owner_idx on public.vital_moves (owner_id, times_logged desc);
+
+alter table public.vital_moves enable row level security;
+
+drop policy if exists "Owners manage vital moves" on public.vital_moves;
+create policy "Owners manage vital moves" on public.vital_moves
+  for all using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+
+grant select, insert, update, delete on public.vital_moves to authenticated;
+revoke all on public.vital_moves from anon;
+
+alter table public.vital_activity
+  add column if not exists steps integer,
+  add column if not exists note text;
+
+alter table public.vital_plans
+  add column if not exists step_goal integer;
+
+alter table public.vital_kitchen
+  add column if not exists pin_rank integer;
+
+do $$
+begin
+  alter table public.vital_activity drop constraint if exists vital_activity_kind_check;
+  alter table public.vital_activity add constraint vital_activity_kind_check
+    check (kind in ('walk', 'run', 'bike', 'lift', 'play', 'other', 'steps', 'swim', 'yoga', 'hiit', 'sport'));
+  alter table public.vital_activity drop constraint if exists vital_activity_steps_check;
+  alter table public.vital_activity add constraint vital_activity_steps_check
+    check (steps is null or steps between 100 and 100000);
+  alter table public.vital_activity drop constraint if exists vital_activity_note_check;
+  alter table public.vital_activity add constraint vital_activity_note_check
+    check (note is null or char_length(note) between 1 and 80);
+  alter table public.vital_moves drop constraint if exists vital_moves_kind_check;
+  alter table public.vital_moves add constraint vital_moves_kind_check
+    check (kind in ('walk', 'run', 'bike', 'lift', 'play', 'other', 'steps', 'swim', 'yoga', 'hiit', 'sport'));
+  alter table public.vital_plans drop constraint if exists vital_plans_step_goal_check;
+  alter table public.vital_plans add constraint vital_plans_step_goal_check
+    check (step_goal is null or step_goal between 1000 and 40000);
+  alter table public.vital_kitchen drop constraint if exists vital_kitchen_pin_rank_check;
+  alter table public.vital_kitchen add constraint vital_kitchen_pin_rank_check
+    check (pin_rank is null or pin_rank between 1 and 40);
+end $$;
+
 -- Copy the original single-user Vital rows into household tables once.
 do $$
 begin
@@ -154,5 +258,9 @@ begin
       select 1 from public.vital_foods nf
       where nf.member_id = m.id and nf.logged_on = f.logged_on and nf.name = f.name and nf.created_at = f.created_at
     );
-  end if;
+do $$
+begin
+  alter table public.vital_foods drop constraint if exists vital_foods_meal_check;
+  alter table public.vital_foods add constraint vital_foods_meal_check
+    check (meal in ('breakfast', 'lunch', 'dinner', 'snack', 'drink'));
 end $$;

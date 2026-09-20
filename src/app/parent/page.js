@@ -17,8 +17,8 @@ export default async function ParentDashboardPage() {
     supabase.from('children').select('*').order('name'),
     supabase.from('missions').select('*').order('name'),
     supabase.from('rewards').select('*').order('cost'),
-    supabase.from('completions').select('*').eq('status', 'pending').order('submitted_at', { ascending: false }),
-    supabase.from('redemptions').select('*').eq('status', 'pending').order('redeemed_at', { ascending: false })
+    supabase.from('completions').select('*').eq('status', 'pending').order('submitted_at', { ascending: false }).limit(80),
+    supabase.from('redemptions').select('*').eq('status', 'pending').order('redeemed_at', { ascending: false }).limit(80)
   ]);
 
   if (!appSettings?.setup_complete) {

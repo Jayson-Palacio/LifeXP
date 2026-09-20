@@ -140,7 +140,7 @@ export default function MissionModal({ modal, childrenList = [], closeModal, onS
                     cursor: 'pointer',
                     transition: 'background 0.2s'
                   }}
-                  onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseOver={(e) => e.target.style.background = 'rgba(28, 28, 30, 0.06)'}
                   onMouseOut={(e) => e.target.style.background = 'var(--bg-glass)'}
                 >
                   {s.icon} {s.name}

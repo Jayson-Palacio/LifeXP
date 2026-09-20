@@ -51,3 +51,18 @@ export function getStoredTzOffset() {
   const n = parseFloat(v);
   return isNaN(n) ? null : n;
 }
+
+/** Local calendar YYYY-MM-DD (not UTC). */
+export function localYmd(date = new Date()) {
+  const y = date.getFullYear();
+  const mo = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${d}`;
+}
+
+/** ISO timestamp for “recent enough” Quests queries (covers monthly missions). */
+export function daysAgoIso(days = 40) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString();
+}

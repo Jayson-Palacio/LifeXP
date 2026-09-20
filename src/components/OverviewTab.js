@@ -3,89 +3,82 @@
 import AvatarDisplay from './AvatarDisplay';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
 import { getStreakIcon, getStreakStyles } from '../lib/streaks';
-import { playPop } from '../lib/sounds';
 import GoldCoin from './GoldCoin';
-import BrandLogo from './BrandLogo';
 
 export default function OverviewTab({
   children, missions, rewards, pending, pendingRedemptions,
-  settings, isExiting, setIsExiting, router,
+  settings,
   setInspectChildId, setModal,
   handleApprove, handleReject, handleFulfillReward, handleRefundReward,
-  onOpenSupport,
 }) {
   const hasApprovals = pending.length > 0;
   const hasRedemptions = pendingRedemptions.length > 0;
+  const queueCount = pending.length + pendingRedemptions.length;
 
   return (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
       {(hasApprovals || hasRedemptions) && (
         <div style={{ marginBottom: 'var(--space-xl)' }}>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 'var(--space-md)' }}>Action Required</h2>
+          <p className="quests-kicker">Needs you</p>
+          <h2 style={{ fontSize: 'clamp(1.8rem, 5vw, 2.3rem)', fontWeight: 600, letterSpacing: '-0.035em', margin: '0 0 18px' }}>
+            {queueCount} to review.
+          </h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-md)', maxWidth: 800 }}>
-            {pending.map((comp, index) => {
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 560 }}>
+            {pending.map((comp) => {
                const child = children.find(c => c.id === comp.child_id) || {};
-               const mission = missions.find(m => m.id === comp.mission_id) || {};
+               const mission = missions.find(m => m.id === comp.mission_id);
+               const canApprove = Boolean(mission?.id);
                return (
-                <div key={comp.id} style={{ 
-                  display: 'flex', flexDirection: 'column', padding: '12px 16px', 
-                  background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.03) 100%)', 
-                  border: '1px solid var(--primary)', borderRadius: 'var(--radius-lg)', 
-                  boxShadow: '0 0 15px rgba(var(--primary-rgb, 168,85,247), 0.1)',
-                  animation: 'slideUp 0.4s ease-out backwards',
-                  animationDelay: `${index * 0.1}s`
+                <div key={comp.id} className="quests-family-card" style={{ 
+                  display: 'flex', flexDirection: 'column', padding: '14px 16px',
                 }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                      <AvatarDisplay avatarString={child.avatar} style={{ fontSize: '2.2rem', flexShrink: 0 }} />
                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{child.name} submitted:</div>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mission.icon} {mission.name}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{child.name || 'Player'}</div>
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mission?.icon || '🎯'} {mission?.name || 'Deleted mission'}</div>
+                        {mission && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                           <span className="badge badge-gold" style={{ fontSize: '0.75rem', padding: '2px 6px' }}>⭐ {mission.xp_reward} XP</span>
                           <span className="badge badge-amber" style={{ fontSize: '0.75rem', padding: '2px 6px' }}><GoldCoin /> {mission.coin_reward}</span>
                          </div>
+                        )}
                      </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                     <button className="btn btn-ghost" style={{ flex: 1, padding: '8px', fontSize: '0.9rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: 'none' }} onClick={(e) => handleReject(comp, e)}>✗ Reject</button>
-                     <button className="btn btn-success" style={{ flex: 2, padding: '8px', fontSize: '0.9rem', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.2)' }} onClick={(e) => handleApprove(comp, e)}>✓ Approve!</button>
+                     <button className="btn btn-ghost" style={{ flex: 1, minHeight: 44, padding: '10px', fontSize: '0.95rem' }} onClick={(e) => handleReject(comp, e)}>Redo</button>
+                     <button className="btn btn-success" disabled={!canApprove} style={{ flex: 2, minHeight: 44, padding: '10px', fontSize: '0.95rem' }} onClick={(e) => handleApprove(comp, e)}>Approve</button>
                   </div>
                 </div>
                );
             })}
 
-            {pendingRedemptions.map((red, index) => {
+            {pendingRedemptions.map((red) => {
                const child = children.find(c => c.id === red.child_id) || {};
                const reward = rewards.find(r => r.id === red.reward_id) || {};
                return (
-                  <div key={red.id} style={{ 
-                    display: 'flex', flexDirection: 'column', padding: '12px 16px', 
-                    background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.03) 100%)', 
-                    border: '1px solid var(--secondary-dim, rgba(168,85,247,0.5))', 
-                    borderRadius: 'var(--radius-lg)', 
-                    boxShadow: '0 0 15px rgba(168,85,247, 0.1)',
-                    animation: 'slideUp 0.4s ease-out backwards',
-                    animationDelay: `${(pending.length + index) * 0.1}s`
+                  <div key={red.id} className="quests-family-card" style={{ 
+                    display: 'flex', flexDirection: 'column', padding: '14px 16px',
                   }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                       <div style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-deep)', fontSize: '1.5rem' }}>
+                       <div style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-surface-alt)', fontSize: '1.5rem' }}>
                          {reward.image
                            ? <img src={reward.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                            : (reward.icon || '🎁')
                          }
                        </div>
                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{child.name} redeemed:</div>
-                          <div style={{ fontWeight: 800, fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reward.name}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{child.name} redeemed</div>
+                          <div style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reward.name}</div>
                           <div style={{ marginTop: 4 }}>
                             <span className="badge badge-amber" style={{ fontSize: '0.75rem', padding: '2px 6px' }}><GoldCoin /> {reward.cost} coins</span>
                           </div>
                        </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                       <button className="btn btn-ghost" style={{ flex: 1, padding: '8px', fontSize: '0.9rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: 'none' }} onClick={(e) => handleRefundReward(red, e)}>↻ Refund</button>
-                       <button className="btn btn-success" style={{ flex: 2, padding: '8px', fontSize: '0.9rem', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.2)' }} onClick={(e) => handleFulfillReward(red, e)}>✓ Mark Given!</button>
+                       <button className="btn btn-ghost" style={{ flex: 1, minHeight: 44, padding: '10px', fontSize: '0.95rem' }} onClick={(e) => handleRefundReward(red, e)}>Refund</button>
+                       <button className="btn btn-success" style={{ flex: 2, minHeight: 44, padding: '10px', fontSize: '0.95rem' }} onClick={(e) => handleFulfillReward(red, e)}>Mark given</button>
                     </div>
                   </div>
                );
@@ -93,38 +86,8 @@ export default function OverviewTab({
           </div>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <BrandLogo variant="icon" size="sm" />
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Family Dashboard</div>
-          </div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: 0 }}>{settings.family_name || 'Your Family'}</h2>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {onOpenSupport && (
-            <button 
-              className="cool-home-btn" 
-              style={{ 
-                background: 'rgba(99, 102, 241, 0.08)', 
-                borderColor: 'rgba(99, 102, 241, 0.25)',
-                color: 'var(--text-bright)'
-              }}
-              onClick={onOpenSupport}
-            >
-              <span>💬</span> <span>Support</span>
-            </button>
-          )}
-          <button className="cool-home-btn" onClick={() => {
-              if (isExiting) return;
-              if (playPop) playPop();
-              setIsExiting(true);
-              setTimeout(() => router.push('/apps'), 250);
-          }}>
-            {isExiting ? '🚀' : '🏠'} <span>{isExiting ? 'Warping...' : 'Apps'}</span>
-          </button>
-        </div>
-      </div>
+      <p className="quests-kicker">{settings.family_name || 'Your family'}</p>
+      <h2 style={{ fontSize: 'clamp(1.8rem, 5vw, 2.3rem)', fontWeight: 600, letterSpacing: '-0.035em', margin: '0 0 22px' }}>Who's playing.</h2>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-md)' }}>
         {children.map((child, index) => {
@@ -132,22 +95,22 @@ export default function OverviewTab({
           const progressFraction = getXPProgress(child.total_xp_earned || child.xp || 0);
           const activeTheme = child.theme ? child.theme : tierColor;
           
-          const childMissions = missions.filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(child.id));
+          const childMissions = missions.filter(m => m.is_active !== false && (!m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(child.id)));
 
           return (
-            <div 
+            <button
+              type="button"
               key={child.id} 
-              className={`theme-${activeTheme}`}
+              className={`theme-${activeTheme} quests-family-card`}
               style={{ 
                 padding: 'var(--space-lg)', 
-                background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.02) 100%)', 
-                border: '1px solid var(--primary-dim)', 
-                borderRadius: 'var(--radius-lg)', 
-                boxShadow: 'var(--glow-primary)', 
                 cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                animation: 'slideUp 0.5s ease-out backwards',
-                animationDelay: `${index * 0.1}s`,
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                animation: 'slideUp 0.35s ease-out backwards',
+                animationDelay: `${index * 0.04}s`,
+                textAlign: 'left',
+                font: 'inherit',
+                color: 'inherit',
+                width: '100%',
               }}
               onClick={() => setInspectChildId(child.id)}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
@@ -161,7 +124,7 @@ export default function OverviewTab({
                 </div>
               </div>
               <div style={{ marginTop: '16px' }}>
-                <div style={{ width: '100%', height: '8px', background: 'var(--bg-deep)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '8px', background: 'var(--bg-surface-alt)', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${progressFraction * 100}%`, background: 'var(--primary)', borderRadius: '4px' }} />
                 </div>
               </div>
@@ -170,26 +133,27 @@ export default function OverviewTab({
                 {child.streak > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 'var(--radius-full)', ...getStreakStyles(child.streak) }}>
                     <span style={{ fontSize: '0.8rem' }}>{getStreakIcon(child.streak)}</span>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>{child.streak} days</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>{child.streak} day{child.streak === 1 ? '' : 's'}</span>
                   </div>
                 )}
               </div>
               <div style={{ marginTop: 'auto', paddingTop: 16 }}>
-                <div style={{ background: 'var(--bg-deep)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                  🎯 {childMissions.length} Active Missions
+                <div style={{ background: 'var(--bg-surface-alt)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  🎯 {childMissions.length} active mission{childMissions.length === 1 ? '' : 's'}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
         
-        <div 
-          style={{ padding: 'var(--space-lg)', background: 'var(--bg-glass)', border: '1px dashed var(--text-dim)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 140 }}
+        <button
+          type="button"
+          style={{ padding: 'var(--space-lg)', background: 'var(--bg-glass)', border: '1px dashed var(--text-dim)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 140, font: 'inherit', color: 'inherit' }}
           onClick={() => setModal({ type: 'child', data: null })}
         >
           <span style={{ fontSize: '2.5rem', color: 'var(--text-muted)' }}>+</span>
           <span style={{ color: 'var(--text-muted)', fontWeight: 600, marginTop: 8 }}>Add Player</span>
-        </div>
+        </button>
       </div>
 
       {/* SUPPORT & TIP JAR BANNER */}
@@ -209,7 +173,7 @@ export default function OverviewTab({
         animationDelay: '0.3s'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: '280px', flex: '1 1 400px' }}>
-          <span style={{ fontSize: '2.2rem', animation: 'pulse 2s infinite' }}>💖</span>
+          <span style={{ fontSize: '2.2rem' }}>💖</span>
           <div>
             <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-bright)' }}>Loving Kaeluma?</div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.4, marginTop: 2 }}>

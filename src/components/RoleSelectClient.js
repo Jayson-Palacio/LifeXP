@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
-import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset } from '../lib/time';
+import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset, localYmd } from '../lib/time';
 import AvatarDisplay from './AvatarDisplay';
 import RocketShip from './RocketShip';
 import GoldCoin from './GoldCoin';
-import SunIcon from './SunIcon';
+import QuestsTopBar from './QuestsTopBar';
 import { playClick, playPop } from '../lib/sounds';
 import { verifyParentPin, verifyAccountPassword, resetParentPinWithPassword } from '../app/actions/auth';
 
@@ -17,7 +17,6 @@ export default function RoleSelectClient({ childrenData, missions, completions }
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [accountPassword, setAccountPassword] = useState('');
 
@@ -29,14 +28,21 @@ export default function RoleSelectClient({ childrenData, missions, completions }
     router.prefetch('/parent');
   }, [childrenData, router]);
 
+  const [tzOffset, setTzOffset] = useState(null);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setTzOffset(getStoredTzOffset());
+    setHydrated(true);
+  }, []);
+
   const getDailyMissionStats = (childId) => {
-     if (!missions || !completions) return null;
+     if (!hydrated || !missions || !completions) return null;
      
      const now = new Date();
-     const tz = getStoredTzOffset();
+     const tz = tzOffset;
      const today = getStartOfDay(tz);
      
-     const childMissions = missions.filter(m => !m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(childId));
+     const childMissions = missions.filter(m => m.is_active !== false && (!m.assigned_to || m.assigned_to.length === 0 || m.assigned_to.includes(childId)));
      
      let total = 0;
      let done = 0;
@@ -46,7 +52,7 @@ export default function RoleSelectClient({ childrenData, missions, completions }
            if (!m.specific_days.includes(now.getDay())) continue;
         }
         if (m.frequency === 'date_range' && m.start_date && m.end_date) {
-           const todayStr = now.toISOString().split('T')[0];
+           const todayStr = localYmd(now);
            if (todayStr < m.start_date || todayStr > m.end_date) continue;
         }
         
@@ -62,8 +68,9 @@ export default function RoleSelectClient({ childrenData, missions, completions }
         
         const periodDoneCount = childComps.filter(c => new Date(c.submitted_at || c.created_at) >= periodStart).length;
         
-        total += maxPerPeriod;
-        done += Math.min(periodDoneCount, maxPerPeriod);
+        const todayCap = (!m.frequency || m.frequency === 'daily' || m.frequency === 'date_range') ? maxPerPeriod : 1;
+        total += todayCap;
+        done += Math.min(periodDoneCount, todayCap);
      }
      
      return { done, total };
@@ -89,14 +96,15 @@ export default function RoleSelectClient({ childrenData, missions, completions }
       setPin(newPin);
       
       if (newPin.length === 4) {
+        // Let the 4th pin dot paint before we lock the pad.
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
         setIsVerifying(true);
         if (view === 'pin') {
           // Standard PIN verification
           const isCorrect = await verifyParentPin(newPin);
           setIsVerifying(false);
           if (isCorrect) {
-            setIsExiting(true);
-            setTimeout(() => router.push('/parent'), 250);
+            router.push('/parent');
           } else {
             setIsShaking(true);
             setError('Wrong PIN. Try again.');
@@ -110,8 +118,7 @@ export default function RoleSelectClient({ childrenData, missions, completions }
           const res = await resetParentPinWithPassword(accountPassword, newPin);
           setIsVerifying(false);
           if (res.success) {
-            setIsExiting(true);
-            setTimeout(() => router.push('/parent'), 250);
+            router.push('/parent');
           } else {
             setIsShaking(true);
             setError(res.error || 'Failed to reset PIN.');
@@ -127,11 +134,14 @@ export default function RoleSelectClient({ childrenData, missions, completions }
 
   if (view === 'forgot-pin-password') {
     return (
-      <div className={`pin-page ${isExiting ? 'page-exit' : 'page-enter'}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', padding: 'var(--space-md)' }}>
-        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView('pin'); setError(''); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
+      <div className="quests-app page-enter" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <QuestsTopBar />
+        <div className="kaeluma-bg" />
+        <div className="pin-page" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: 'var(--space-md)', minHeight: 0 }}>
+        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView('pin'); setError(''); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)', zIndex: 2 }}>←</button>
         
-        <div style={{ background: 'rgba(10, 8, 20, 0.7)', backdropFilter: 'blur(16px)', padding: 'var(--space-xl)', borderRadius: 'var(--radius-xl)', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, marginBottom: 'var(--space-sm)', background: 'linear-gradient(135deg, #a855f7, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <div className="quests-sheet" style={{ padding: 'var(--space-xl)', width: '100%', maxWidth: 400, textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 600, letterSpacing: '-0.03em', marginBottom: 'var(--space-sm)', color: 'var(--text-bright)' }}>
             Reset PIN
           </h2>
           
@@ -159,7 +169,7 @@ export default function RoleSelectClient({ childrenData, missions, completions }
           }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <div className="input-group" style={{ textAlign: 'left' }}>
               <label htmlFor="password">Account Password</label>
-              <input className="input" id="password" name="password" type="password" required disabled={isVerifying} style={{ background: 'var(--bg-deep)' }} />
+              <input className="input" id="password" name="password" type="password" required disabled={isVerifying} />
             </div>
 
             {error && <p style={{ color: 'var(--red)', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
@@ -169,6 +179,7 @@ export default function RoleSelectClient({ childrenData, missions, completions }
             </button>
           </form>
         </div>
+        </div>
       </div>
     );
   }
@@ -176,9 +187,12 @@ export default function RoleSelectClient({ childrenData, missions, completions }
   if (view === 'pin' || view === 'forgot-pin-new') {
     const isReset = view === 'forgot-pin-new';
     return (
-      <div className={`pin-page ${isExiting ? 'page-exit' : 'page-enter'}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView(isReset ? 'forgot-pin-password' : 'select'); setError(''); setPin(''); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)' }}>←</button>
-        <h2 className="pin-title" style={{ marginBottom: 'var(--space-lg)' }}>{isReset ? '🔒 Set New PIN' : '🔒 Parent Mode'}</h2>
+      <div className="quests-app page-enter" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <QuestsTopBar />
+        <div className="kaeluma-bg" />
+        <div className="pin-page" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, minHeight: 0 }}>
+        <button className="back-btn" onClick={() => { if (playClick) playClick(); setView(isReset ? 'forgot-pin-password' : 'select'); setError(''); setPin(''); }} style={{ position: 'absolute', top: 'var(--space-lg)', left: 'var(--space-lg)', zIndex: 2 }}>←</button>
+        <h2 className="pin-title" style={{ marginBottom: 'var(--space-lg)' }}>{isReset ? 'Set a new PIN' : 'Parent Mode'}</h2>
         <div className={`pin-display ${isShaking ? 'shake' : ''}`}>
           {[0, 1, 2, 3].map(i => (
             <div key={i} className={`pin-dot ${i < pin.length ? 'filled' : ''}`}></div>
@@ -216,23 +230,21 @@ export default function RoleSelectClient({ childrenData, missions, completions }
             Forgot PIN?
           </button>
         )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`role-select-page ${isExiting ? 'page-exit' : 'page-enter'}`}>
-      
-      {/* Ambient energetic cosmic background for Kaeluma */}
+    <div className="quests-app role-select-page page-enter">
+      <QuestsTopBar />
       <div className="kaeluma-bg" />
       <RocketShip />
 
-      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: 1000, margin: '0 auto', zIndex: 1 }}>
-        <div className="kaeluma-logo-spin" aria-hidden="true">
-          <SunIcon />
-        </div>
-        <h1 className="kaeluma-title">Kaeluma</h1>
-        <p className="role-select-subtitle">Who's checking in?</p>
+      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: 1000, margin: '0 auto', zIndex: 1, padding: '24px 20px 28px' }}>
+        <p className="quests-kicker">Quests</p>
+        <h1 className="kaeluma-title">Who's checking in?</h1>
+        <p className="role-select-subtitle">Pick your player. Parents use Parent Mode.</p>
 
         {childrenData && childrenData.length > 0 ? (() => {
           const n = childrenData.length;
@@ -261,11 +273,9 @@ export default function RoleSelectClient({ childrenData, missions, completions }
                     border: isAllDone ? '1px solid var(--primary)' : undefined,
                   }}
                   onClick={() => {
-                    if (playPop) playPop();
-                    // Persist theme so the loading skeleton matches this kid's color
                     try { localStorage.setItem('kaeluma_kid_theme', child.theme || 'seedling'); } catch {}
-                    setIsExiting(true);
-                    setTimeout(() => router.push(`/kid/${child.id}`), 250);
+                    router.push(`/kid/${child.id}`);
+                    if (playPop) playPop();
                   }}
                 >
                   <div className="kaeluma-card-avatar" style={{ border: 'none', background: 'transparent', boxShadow: 'none', overflow: 'visible' }}>
@@ -281,8 +291,8 @@ export default function RoleSelectClient({ childrenData, missions, completions }
                     <div className="kaeluma-card-level">Lv {level}</div>
                     <div className="kaeluma-card-stats">
                       <span style={{ color: 'var(--amber)' }}><GoldCoin /> {child.coins}</span>
-                      {stats && (
-                        <span style={{ color: stats.done >= stats.total && stats.total > 0 ? 'var(--green)' : 'var(--text-muted)' }}>
+                      {stats && stats.total > 0 && (
+                        <span style={{ color: stats.done >= stats.total ? 'var(--green)' : 'var(--text-muted)' }}>
                           🎯 {stats.done}/{stats.total}
                         </span>
                       )}
@@ -290,8 +300,8 @@ export default function RoleSelectClient({ childrenData, missions, completions }
                   </div>
                   
                   {/* Glowing Progress Bar at the bottom edge */}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', background: 'rgba(0,0,0,0.3)', zIndex: 1, borderBottomLeftRadius: 'var(--radius-xl)', borderBottomRightRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${progressFraction * 100}%`, background: 'var(--primary)', boxShadow: '0 0 10px var(--primary)' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', background: 'rgba(28,28,30,0.08)', zIndex: 1, borderBottomLeftRadius: 'var(--radius-xl)', borderBottomRightRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${progressFraction * 100}%`, background: 'var(--primary)' }} />
                   </div>
                 </button>
               );
@@ -304,19 +314,12 @@ export default function RoleSelectClient({ childrenData, missions, completions }
       </div>
 
       {/* Sleek Parent Lock centered at the bottom */}
-      <button 
+      <button
         className="sleek-parent-btn"
         onClick={handleParentClick}
         title="Parent Mode"
       >
-        🔒 <span className="sleek-parent-btn-text">Parent Mode</span>
-      </button>
-      <button
-        className="btn btn-ghost"
-        style={{ marginTop: 10, marginBottom: 20, fontSize: '0.85rem' }}
-        onClick={() => router.push('/apps')}
-      >
-        ← Family apps
+        Parent Mode
       </button>
 
     </div>

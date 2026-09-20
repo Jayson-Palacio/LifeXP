@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-// All theme → hex primary color mappings (mirrors variables.css)
 const THEME_COLORS = {
   'seedling':       '#4ade80',
   'bubblegum':      '#f472b6',
@@ -38,16 +37,15 @@ const THEME_COLORS = {
 };
 
 export default function Loading() {
-  const [color, setColor] = useState('#6366f1'); // fallback: indigo
+  const [color, setColor] = useState('#f5c518');
 
   useEffect(() => {
     try {
       const theme = localStorage.getItem('kaeluma_kid_theme') || 'seedling';
-      setColor(THEME_COLORS[theme] ?? '#6366f1');
+      setColor(THEME_COLORS[theme] ?? '#f5c518');
     } catch {}
   }, []);
 
-  // Derive rgba variants from the hex color
   const toRgba = (hex, a) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -55,29 +53,13 @@ export default function Loading() {
     return `rgba(${r},${g},${b},${a})`;
   };
 
-  const c0 = toRgba(color, 0.07);
+  const c0 = toRgba(color, 0.08);
   const c1 = toRgba(color, 0.22);
-  const c2 = toRgba(color, 0.35);
-  const c3 = toRgba(color, 0.15);
-  const c4 = toRgba(color, 0.12);
 
   const css = `
     @keyframes shimmer {
       0%   { background-position: 200% 0; }
       100% { background-position: -200% 0; }
-    }
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 0 0 ${toRgba(color, 0)}; }
-      50%       { box-shadow: 0 0 0 14px ${toRgba(color, 0.12)}; }
-    }
-    @keyframes cosmicGradient {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    @keyframes floatAvatar {
-      0%, 100% { transform: translateY(0px); }
-      50%       { transform: translateY(-7px); }
     }
     .sk {
       background: linear-gradient(90deg, ${c0} 0%, ${c1} 40%, ${c0} 80%);
@@ -92,106 +74,72 @@ export default function Loading() {
   );
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0a0814', overflow: 'hidden', position: 'relative' }}>
+    <div className="quests-app" style={{ minHeight: '100dvh', overflow: 'hidden', position: 'relative' }}>
       <style>{css}</style>
-
-      {/* Cosmic animated background — tinted with the kid's color */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: 'linear-gradient(-45deg, #0f172a, #1e1b4b, #0d0d14, #000000)',
-        backgroundSize: '400% 400%',
-        animation: 'cosmicGradient 15s ease infinite',
-      }} />
-      {/* Radial bloom in kid's color */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: `radial-gradient(ellipse 70% 45% at 50% 0%, ${c2} 0%, transparent 70%)`,
-        transition: 'background 0.5s ease',
-      }} />
+      <div className="kaeluma-bg" />
 
       <div className="page-enter" style={{ position: 'relative', zIndex: 1, maxWidth: 900, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
-
-        {/* ── Top nav bar ── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '14px 20px',
-          borderBottom: `1px solid ${c3}`,
-          backdropFilter: 'blur(8px)',
-          background: 'rgba(10,8,20,0.4)',
+          borderBottom: '1px solid rgba(28,28,30,0.08)',
         }}>
-          <S w={90} h={32} r={20} />
-          <S w={130} h={32} r={20} />
-          <S w={90} h={32} r={20} />
+          <S w={120} h={22} r={8} />
+          <S w={88} h={32} r={20} />
         </div>
 
-        {/* ── Floating avatar with kid-colored glow ── */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '36px 20px 24px', textAlign: 'center',
-        }}>
-          {/* Avatar ring */}
+        <div style={{ padding: '24px 16px 0' }}>
           <div style={{
-            width: 118, height: 118, borderRadius: '50%',
-            background: `linear-gradient(135deg, ${c4}, ${c2})`,
-            border: `3px solid ${c2}`,
-            animation: 'floatAvatar 3s ease-in-out infinite, pulseGlow 2.5s ease-in-out infinite',
-            marginBottom: 22,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#fff',
+            border: '1px solid rgba(28,28,30,0.08)',
+            borderRadius: 28,
+            boxShadow: '0 10px 28px rgba(28,28,30,0.06)',
+            padding: '28px 20px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}>
-            <div className="sk" style={{ width: 88, height: 88, borderRadius: '50%' }} />
-          </div>
-
-          <S w={150} h={28} r={10} style={{ marginBottom: 10 }} />
-          <S w={100} h={18} r={20} style={{ marginBottom: 18 }} />
-
-          {/* XP bar */}
-          <div style={{
-            width: '75%', height: 10, borderRadius: 10,
-            background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 6,
-          }}>
-            <div className="sk" style={{ width: '55%', height: '100%', borderRadius: 10 }} />
-          </div>
-          <S w={120} h={12} r={6} style={{ marginBottom: 20 }} />
-
-          {/* Stat chips */}
-          <div style={{ display: 'flex', gap: 10 }}>
-            {[80, 72, 76].map((w, i) => (
-              <div key={i} className="sk" style={{
-                width: w, height: 34, borderRadius: 20,
-                border: `1px solid ${c3}`,
-              }} />
-            ))}
+            <div style={{
+              width: 96, height: 96, borderRadius: '50%',
+              border: `3px solid ${c1}`,
+              marginBottom: 16,
+              overflow: 'hidden',
+            }}>
+              <div className="sk" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+            </div>
+            <S w={120} h={22} r={8} style={{ marginBottom: 10 }} />
+            <S w={80} h={14} r={20} style={{ marginBottom: 16 }} />
+            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+              <S w={72} h={28} r={20} />
+              <S w={56} h={28} r={20} />
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              width: '100%', marginBottom: 18,
+              padding: '12px 14px', borderRadius: 20,
+              background: '#f5f5f7',
+            }}>
+              <div className="sk" style={{ width: 76, height: 76, borderRadius: '50%', flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <S w={72} h={16} r={6} />
+                <S w={96} h={12} r={6} />
+              </div>
+            </div>
+            <div style={{ width: '100%', height: 8, borderRadius: 10, background: '#f5f5f7', overflow: 'hidden' }}>
+              <div className="sk" style={{ width: '45%', height: '100%', borderRadius: 10 }} />
+            </div>
           </div>
         </div>
 
-        {/* ── Tab bar ── */}
-        <div style={{
-          display: 'flex', gap: 4, margin: '0 16px 24px',
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 12, padding: 4,
-          border: `1px solid ${c3}`,
-        }}>
-          {[1, 2, 3].map((_, i) => (
-            <div key={i} className={i === 0 ? '' : 'sk'} style={{
-              flex: 1, height: 38, borderRadius: 9,
-              ...(i === 0 ? {
-                background: `linear-gradient(90deg, ${toRgba(color, 0.4)} 0%, ${toRgba(color, 0.25)} 100%)`,
-                border: `1px solid ${c2}`,
-              } : {}),
-            }} />
-          ))}
-        </div>
-
-        {/* ── Mission cards ── */}
-        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[0.95, 1, 0.85, 0.7].map((opacity, i) => (
+        <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <S w={180} h={22} r={8} style={{ marginBottom: 6 }} />
+          {[0.95, 1, 0.9].map((opacity, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 16px', borderRadius: 16,
-              background: 'rgba(255,255,255,0.03)',
-              border: `1px solid ${c3}`,
-              borderLeft: `4px solid ${c2}`,
-              backdropFilter: 'blur(8px)',
+              padding: '14px 16px', borderRadius: 18,
+              background: '#fff',
+              border: '1px solid rgba(28,28,30,0.06)',
+              borderLeft: `4px solid ${c1}`,
               opacity,
             }}>
               <div className="sk" style={{ width: 46, height: 46, borderRadius: 12, flexShrink: 0 }} />
@@ -206,7 +154,6 @@ export default function Loading() {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );

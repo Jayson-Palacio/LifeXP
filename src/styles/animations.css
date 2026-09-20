@@ -58,11 +58,11 @@
   }
   70% {
     opacity: 1;
-    transform: translateY(-60px) scale(1.2);
+    transform: translateY(-36px) scale(1.08);
   }
   100% {
     opacity: 0;
-    transform: translateY(-100px) scale(0.8);
+    transform: translateY(-56px) scale(0.92);
   }
 }
 
@@ -158,18 +158,18 @@
   }
   100% {
     opacity: 0;
-    transform: translateY(calc(100vh)) rotate(720deg) scale(0.5);
+    transform: translateY(42vh) rotate(220deg) scale(0.7);
   }
 }
 
 .confetti-piece {
   position: fixed;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
   z-index: 5000;
   pointer-events: none;
-  animation: confettiDrop 2s var(--ease-out) forwards;
+  animation: confettiDrop 1s var(--ease-out) forwards;
 }
 
 /* ============================================
@@ -177,25 +177,12 @@
    ============================================ */
 @keyframes levelUpPulse {
   0% {
-    transform: scale(0.5);
+    transform: scale(0.94);
     opacity: 0;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 1;
   }
   100% {
     transform: scale(1);
     opacity: 1;
-  }
-}
-
-@keyframes levelUpGlow {
-  0%, 100% {
-    text-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
-  }
-  50% {
-    text-shadow: 0 0 40px rgba(168, 85, 247, 0.8), 0 0 80px rgba(168, 85, 247, 0.4);
   }
 }
 
@@ -220,24 +207,24 @@
    TIER CREST ANIMATIONS
    ============================================ */
 @keyframes crestSway {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(5deg); }
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
 }
-.crest-sway { animation: crestSway 4s ease-in-out infinite; transform-origin: bottom center; }
-.crest-sway-slow { animation: crestSway 6s ease-in-out infinite; transform-origin: top center; }
+.crest-sway { animation: crestSway 8s ease-in-out infinite; transform-origin: bottom center; }
+.crest-sway-slow { animation: crestSway 12s ease-in-out infinite; transform-origin: top center; }
 
 @keyframes crestPulse {
-  0%, 100% { opacity: 0.5; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
+  0%, 100% { opacity: 0.7; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.03); }
 }
-.crest-pulse { animation: crestPulse 2s ease-in-out infinite; transform-origin: center; }
-.crest-pulse-slow { animation: crestPulse 4s ease-in-out infinite; transform-origin: center; }
+.crest-pulse { animation: crestPulse 5s ease-in-out infinite; transform-origin: center; }
+.crest-pulse-slow { animation: crestPulse 8s ease-in-out infinite; transform-origin: center; }
 
 @keyframes crestSpinSlow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
-.crest-spin-slow { animation: crestSpinSlow 12s linear infinite; transform-origin: center; }
+.crest-spin-slow { animation: crestSpinSlow 22s linear infinite; transform-origin: center; }
 
 @keyframes crestSpinNeedle {
   0%, 100% { transform: rotate(-10deg); }
@@ -245,7 +232,7 @@
   40%, 60% { transform: rotate(-5deg); }
   50% { transform: rotate(20deg); }
 }
-.crest-spin-needle { animation: crestSpinNeedle 6s ease-in-out infinite; transform-origin: 50% 50%; }
+.crest-spin-needle { animation: crestSpinNeedle 10s ease-in-out infinite; transform-origin: 50% 50%; }
 
 @keyframes crestBlink {
   0%, 96%, 100% { transform: scaleY(1); opacity: 0.2; }
@@ -269,30 +256,28 @@
 
 @keyframes crestWave {
   0% { transform: translateX(0); }
-  100% { transform: translateX(-10px); }
+  100% { transform: translateX(-4px); }
 }
-.crest-wave { animation: crestWave 3s ease-in-out infinite alternate; }
+.crest-wave { animation: crestWave 6s ease-in-out infinite alternate; }
 
 @keyframes crestFloat {
-  0%, 100% { transform: translateY(0); opacity: 0.4; }
-  50% { transform: translateY(-5px); opacity: 1; }
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(-2px) ; opacity: 1; }
 }
-.crest-float { animation: crestFloat 3s ease-in-out infinite; }
+.crest-float { animation: crestFloat 5s ease-in-out infinite; }
 
 @keyframes crestExpandRing {
-  0% { transform: scale(0.5); opacity: 0.8; }
-  100% { transform: scale(1.5); opacity: 0; }
+  0% { transform: scale(0.85); opacity: 0.45; }
+  100% { transform: scale(1.2); opacity: 0; }
 }
-.crest-expand-ring { animation: crestExpandRing 3s ease-out infinite; transform-origin: center; position: absolute; }
+.crest-expand-ring { animation: crestExpandRing 5s ease-out infinite; transform-origin: center; position: absolute; }
 
 /* ============================================
    EMPTY STATE ANIMATION
    ============================================ */
 @keyframes emptyStateWobble {
-  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
-  25% { transform: translateY(-8px) rotate(-4deg); opacity: 1; }
-  50% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
-  75% { transform: translateY(-5px) rotate(3deg); opacity: 1; }
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(-3px); opacity: 1; }
 }
 
 
@@ -300,11 +285,10 @@
    GRAND FINALE CELEBRATION
    ============================================ */
 @keyframes grandFinaleTextScale {
-  0% { transform: scale(0.5); opacity: 0; }
-  15% { transform: scale(1.1); opacity: 1; }
-  25% { transform: scale(1); opacity: 1; }
-  80% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(1.2); opacity: 0; }
+  0% { transform: scale(0.96); opacity: 0; }
+  16% { transform: scale(1); opacity: 1; }
+  72% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.02); opacity: 0; }
 }
 
 .grand-finale-overlay {
@@ -318,30 +302,66 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  background: transparent;
 }
 
 .grand-finale-text {
-  font-size: 3.5rem;
-  font-weight: 900;
-  color: #fff;
-  text-transform: uppercase;
+  font-size: clamp(1.45rem, 4.2vw, 2rem);
+  font-weight: 700;
+  color: #1c1c1e;
+  text-transform: none;
   text-align: center;
   line-height: 1.1;
-  text-shadow: 0 4px 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(251, 191, 36, 0.8);
-  animation: grandFinaleTextScale 4s ease-in-out forwards;
+  letter-spacing: -0.04em;
+  text-shadow: none;
+  animation: grandFinaleTextScale 1.6s ease-out forwards;
+}
+
+.grand-finale-overlay .confetti-piece {
+  z-index: 10000;
 }
 
 @keyframes themeAuraPulse {
   0%, 100% { 
-    box-shadow: var(--glow-primary); 
+    box-shadow: 0 0 0 rgba(28, 28, 30, 0);
     border-color: var(--primary);
   }
   50% { 
-    box-shadow: 0 0 25px var(--primary), inset 0 0 10px var(--primary); 
-    border-color: #fff;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 28%, transparent);
+    border-color: var(--primary);
   }
 }
 
 .theme-aura {
-  animation: themeAuraPulse 3s ease-in-out infinite !important;
+  animation: themeAuraPulse 6s ease-in-out infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece,
+  .grand-finale-text,
+  .quests-today-spark,
+  .quests-today-ring.is-burst,
+  .empty-state-emoji,
+  .crest-sway,
+  .crest-sway-slow,
+  .crest-pulse,
+  .crest-pulse-slow,
+  .crest-spin-slow,
+  .crest-spin-needle,
+  .crest-blink,
+  .crest-drift,
+  .crest-flicker,
+  .crest-wave,
+  .crest-float,
+  .crest-expand-ring,
+  .theme-aura,
+  .hero-avatar-ring.ring-pulse::before,
+  .hero-avatar-ring.ring-spin::before,
+  .hero-avatar-ring.ring-shimmer::before,
+  .hero-avatar-ring.ring-plasma::before,
+  .hero-avatar-ring.ring-fire::before,
+  .hero-avatar-ring.ring-galaxy::before,
+  .hero-avatar-ring.ring-legendary::before {
+    animation: none !important;
+  }
 }

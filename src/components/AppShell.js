@@ -1,18 +1,18 @@
 "use client";
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { playClick } from '../lib/sounds';
+import QuestsTopBar from './QuestsTopBar';
 
-export default function AppShell({ 
+export default function AppShell({
   role, // 'kid' | 'parent'
-  activeTab, 
-  onTabChange, 
+  activeTab,
+  onTabChange,
   children,
-  notifications = {} // e.g., { approvals: 2 }
+  notifications = {},
+  onSupport,
 }) {
-  const router = useRouter();
-
   const kidTabs = [
     { id: 'hall',     label: 'Hall',     icon: '🏅' },
     { id: 'missions', label: 'Missions', icon: '🎯' },
@@ -20,16 +20,30 @@ export default function AppShell({
   ];
 
   const parentTabs = [
-    { id: 'overview',   label: 'Overview',   icon: '🏠', badge: notifications.approvals },
-    { id: 'manage',     label: 'Missions & Rewards', icon: '🎯' },
-    { id: 'settings',   label: 'Settings',   icon: '⚙️' }
+    { id: 'overview', label: 'Today',    badge: notifications.approvals },
+    { id: 'manage',   label: 'Missions' },
+    { id: 'settings', label: 'Settings' }
   ];
 
   const tabs = role === 'parent' ? parentTabs : kidTabs;
 
   return (
-    <div className="app-shell" style={{ position: 'relative' }}>
-      <div className="kaeluma-bg" style={{ opacity: 0.12, position: 'fixed', zIndex: 0 }} />
+    <div className={`quests-app app-shell app-shell-${role}`} style={{ position: 'relative' }}>
+      <div className="kaeluma-bg" style={{ opacity: 1, position: 'fixed', zIndex: 0 }} />
+      {role === 'parent' && (
+        <QuestsTopBar
+          right={
+            <>
+              {onSupport && (
+                <button type="button" className="quests-top-link" onClick={onSupport}>
+                  Support
+                </button>
+              )}
+              <Link href="/apps" className="quests-top-link">Apps</Link>
+            </>
+          }
+        />
+      )}
       <div className="app-shell-content" style={{ position: 'relative', zIndex: 1 }}>
         {children}
       </div>
@@ -37,7 +51,7 @@ export default function AppShell({
       <nav className="bottom-nav">
         <div className="bottom-nav-inner">
           {tabs.map(tab => (
-            <button 
+            <button
               key={tab.id}
               className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => {
@@ -45,10 +59,15 @@ export default function AppShell({
                 onTabChange(tab.id);
               }}
             >
-              <div className="nav-tab-icon-wrapper">
-                <span className="nav-tab-icon">{tab.icon}</span>
-                {tab.badge > 0 && <span className="nav-badge">{tab.badge}</span>}
-              </div>
+              {tab.icon && (
+                <div className="nav-tab-icon-wrapper">
+                  <span className="nav-tab-icon">{tab.icon}</span>
+                  {tab.badge > 0 && <span className="nav-badge">{tab.badge}</span>}
+                </div>
+              )}
+              {!tab.icon && tab.badge > 0 && (
+                <span className="nav-badge">{tab.badge}</span>
+              )}
               <span className="nav-tab-label">{tab.label}</span>
             </button>
           ))}

@@ -69,7 +69,6 @@ export default function IdleProvider({ children }) {
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleVisibilityChange);
 
     return () => {
       clearInterval(timerRef.current);
@@ -79,7 +78,6 @@ export default function IdleProvider({ children }) {
       window.removeEventListener('touchstart', handleUserActivity);
       window.removeEventListener('click', handleUserActivity);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleVisibilityChange);
     };
   }, [pathname, router]);
 

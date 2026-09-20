@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { showToast, showFloat } from '../lib/ui';
-import { getLevelForXP } from '../lib/levels';
+import { showToast, showFloat, showLevelUp, showTierUp } from '../lib/ui';
+import { getLevelForXP, checkColorUnlocks } from '../lib/levels';
 import AppShell from './AppShell';
 import SettingsTab from './SettingsTab';
 import OverviewTab from './OverviewTab';
@@ -16,29 +15,41 @@ import ChildModal from './ChildModal';
 import ContactForm from './ContactForm';
 import { playClick, playPop } from '../lib/sounds';
 import { adjustChildCoins, deleteParentResource, reviewCompletion, reviewRedemption, setParentResourceActive } from '../app/actions/parent';
+import { readQuestsLocal, saveQuestsLocal } from '../lib/questsLocal';
 
 export default function ParentDashboardClient({ initialChildren, initialMissions, initialRewards, initialPending, initialPendingRedemptions, initialSettings, parentEmail = '' }) {
-  const router = useRouter();
+  const boot = readQuestsLocal('parent');
   
   // AppShell state
   const [activeTab, setActiveTab] = useState('overview');
-  const [isExiting, setIsExiting] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const inFlight = useRef(new Set());
   
   // Data State
-  const [children, setChildren] = useState(initialChildren || []);
+  const [children, setChildren] = useState(boot?.children ?? initialChildren ?? []);
   const [missions, setMissions] = useState(initialMissions || []);
   const [rewards, setRewards] = useState(initialRewards || []);
-  const [pending, setPending] = useState(initialPending || []);
-  const [pendingRedemptions, setPendingRedemptions] = useState(initialPendingRedemptions || []);
+  const [pending, setPending] = useState(boot?.pending ?? initialPending ?? []);
+  const [pendingRedemptions, setPendingRedemptions] = useState(boot?.pendingRedemptions ?? initialPendingRedemptions ?? []);
   const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
 
-  // Sync state with props when data is refreshed (e.g. on window focus)
-  useEffect(() => { setChildren(initialChildren || []); }, [initialChildren]);
+  const lastMutatedAt = useRef(boot?.at || 0);
+  const skipStaleRefresh = () => Date.now() - lastMutatedAt.current < 2500;
+  const persistParent = (nextChildren, nextPending, nextReds) => {
+    lastMutatedAt.current = Date.now();
+    saveQuestsLocal('parent', {
+      children: nextChildren,
+      pending: nextPending,
+      pendingRedemptions: nextReds,
+    });
+  };
+
+  // Sync from the server, but don't clobber a tap that just landed.
+  useEffect(() => { if (!skipStaleRefresh()) setChildren(initialChildren || []); }, [initialChildren]);
   useEffect(() => { setMissions(initialMissions || []); }, [initialMissions]);
   useEffect(() => { setRewards(initialRewards || []); }, [initialRewards]);
-  useEffect(() => { setPending(initialPending || []); }, [initialPending]);
-  useEffect(() => { setPendingRedemptions(initialPendingRedemptions || []); }, [initialPendingRedemptions]);
+  useEffect(() => { if (!skipStaleRefresh()) setPending(initialPending || []); }, [initialPending]);
+  useEffect(() => { if (!skipStaleRefresh()) setPendingRedemptions(initialPendingRedemptions || []); }, [initialPendingRedemptions]);
   useEffect(() => { setSettings(initialSettings || { require_approval: true, family_name: 'Our Family' }); }, [initialSettings]);
   
   // Modals
@@ -51,12 +62,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
       .channel('completions-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'completions' }, (payload) => {
         if (payload.new.status === 'pending') {
-          setPending(prev => [payload.new, ...prev]);
+          setPending(prev => prev.some(p => p.id === payload.new.id) ? prev : [payload.new, ...prev]);
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'redemptions' }, (payload) => {
         if (payload.new.status === 'pending') {
-          setPendingRedemptions(prev => [payload.new, ...prev]);
+          setPendingRedemptions(prev => prev.some(p => p.id === payload.new.id) ? prev : [payload.new, ...prev]);
         }
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'completions' }, (payload) => {
@@ -72,80 +83,89 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
 
   const handleApprove = async (comp, e) => {
     e.stopPropagation();
+    if (inFlight.current.has(comp.id)) return;
     const mission = missions.find(m => m.id === comp.mission_id);
     const child = children.find(c => c.id === comp.child_id);
     if (!mission || !child) return;
+    inFlight.current.add(comp.id);
 
     const currentXp = child.total_xp_earned || child.xp || 0;
     const oldLevelInfo = getLevelForXP(currentXp);
+    const nextPending = pending.filter(p => p.id !== comp.id);
+    const nextChildren = children.map(c => c.id === child.id ? {
+      ...c,
+      coins: (c.coins || 0) + (mission.coin_reward || 0),
+      xp: (c.xp || 0) + (mission.xp_reward || 0),
+      total_xp_earned: currentXp + (mission.xp_reward || 0),
+    } : c);
+    persistParent(nextChildren, nextPending, pendingRedemptions);
+    setPending(nextPending);
+    setChildren(nextChildren);
 
-    const newXp = currentXp + mission.xp_reward;
-    const newCoins = child.coins + mission.coin_reward;
-    const newLevelInfo = getLevelForXP(newXp);
+    if (playPop) playPop();
+    showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', e.clientX + 12, e.clientY - 16);
+    showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', e.clientX + 12, e.clientY + 14);
 
-    let newStreak = child.streak || 0;
-    const now = new Date();
-    const today = now.toDateString();
-    const lastCompDate = child.last_completion_date ? new Date(child.last_completion_date) : null;
-    
-    if (!lastCompDate || lastCompDate.toDateString() !== today) {
-       if (lastCompDate && now.getTime() - lastCompDate.getTime() > 86400000 * 2) {
-           newStreak = 1;
-       } else {
-           newStreak += 1;
-       }
-    }
-    
     const result = await reviewCompletion(comp.id, true);
     if (!result.success) {
+      persistParent(children, pending, pendingRedemptions);
+      setPending(pending);
+      setChildren(children);
       showToast('Error approving mission: ' + result.error, 'error');
+      inFlight.current.delete(comp.id);
       return;
     }
-    const updatedChild = result.data?.child || { ...child, xp: newXp, total_xp_earned: newXp, coins: newCoins, streak: newStreak, last_completion_date: now.toISOString() };
 
-    setPending(prev => prev.filter(p => p.id !== comp.id));
-    setChildren(prev => prev.map(c => c.id === child.id ? updatedChild : c));
+    const updatedChild = result.data?.child;
+    if (updatedChild) {
+      const synced = nextChildren.map(c => c.id === child.id ? updatedChild : c);
+      persistParent(synced, nextPending, pendingRedemptions);
+      setChildren(synced);
+    }
 
-    setTimeout(async () => {
-        const rTop = e.clientY - 20;
-        const rLeft = e.clientX + 20;
-        showFloat(`+${mission.xp_reward} XP`, 'var(--primary)', rLeft, rTop);
-        showFloat(`+${mission.coin_reward} 🪙`, 'var(--amber)', rLeft, rTop + 30);
-
-        if (newLevelInfo.level > oldLevelInfo.level) {
-            const { showLevelUp, showTierUp } = await import('../lib/ui');
-            const { checkColorUnlocks } = await import('../lib/levels');
-            
-            if (newLevelInfo.tierName !== oldLevelInfo.tierName) {
-                showTierUp(newLevelInfo.level, newLevelInfo.tierName);
-            } else {
-                const unlocks = checkColorUnlocks(oldLevelInfo.level, newLevelInfo.level);
-                showLevelUp(newLevelInfo.level, newLevelInfo.tierName, unlocks.length > 0 ? unlocks[0] : null);
-            }
-        }
-    }, 50);
+    const newXp = updatedChild?.total_xp_earned || updatedChild?.xp || currentXp + (mission.xp_reward || 0);
+    const newLevelInfo = getLevelForXP(newXp);
+    if (newLevelInfo.level > oldLevelInfo.level) {
+      if (newLevelInfo.tierName !== oldLevelInfo.tierName) showTierUp(newLevelInfo.level, newLevelInfo.tierName);
+      else showLevelUp(newLevelInfo.level, newLevelInfo.tierName, checkColorUnlocks(oldLevelInfo.level, newLevelInfo.level)[0] || null);
+    }
+    inFlight.current.delete(comp.id);
   };
 
   const handleReject = async (comp, e) => {
     e.stopPropagation();
+    if (inFlight.current.has(comp.id)) return;
+    inFlight.current.add(comp.id);
+    const nextPending = pending.filter(p => p.id !== comp.id);
+    persistParent(children, nextPending, pendingRedemptions);
+    setPending(nextPending);
     const result = await reviewCompletion(comp.id, false);
     if (!result.success) {
+      persistParent(children, pending, pendingRedemptions);
+      setPending(pending);
       showToast('Error rejecting: ' + result.error, 'error');
-      return;
     }
-    setPending(prev => prev.filter(p => p.id !== comp.id));
+    inFlight.current.delete(comp.id);
   };
 
   const handleFulfillReward = async (red, e) => {
     e.stopPropagation();
+    if (inFlight.current.has(red.id)) return;
+    inFlight.current.add(red.id);
     if (playPop) playPop();
+    const nextReds = pendingRedemptions.filter(r => r.id !== red.id);
+    persistParent(children, pending, nextReds);
+    setPendingRedemptions(nextReds);
     const result = await reviewRedemption(red.id, true);
     if (!result.success) {
+      persistParent(children, pending, pendingRedemptions);
+      setPendingRedemptions(pendingRedemptions);
       showToast('Error fulfilling: ' + result.error, 'error');
+      inFlight.current.delete(red.id);
       return;
     }
-    setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
     showToast('Reward marked as given!');
+    inFlight.current.delete(red.id);
   };
 
   const handleRefundReward = async (red, e) => {
@@ -153,17 +173,31 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
     const reward = rewards.find(r => r.id === red.reward_id);
     const child = children.find(c => c.id === red.child_id);
     if (!reward || !child) return;
+    if (inFlight.current.has(red.id)) return;
+    inFlight.current.add(red.id);
 
     if (playClick) playClick();
+    const nextReds = pendingRedemptions.filter(r => r.id !== red.id);
+    const nextChildren = children.map(c => c.id === child.id ? { ...c, coins: (c.coins || 0) + (reward.cost || 0) } : c);
+    persistParent(nextChildren, pending, nextReds);
+    setPendingRedemptions(nextReds);
+    setChildren(nextChildren);
+
     const result = await reviewRedemption(red.id, false);
     if (!result.success) {
+      persistParent(children, pending, pendingRedemptions);
+      setPendingRedemptions(pendingRedemptions);
+      setChildren(children);
       showToast('Error refunding: ' + result.error, 'error');
+      inFlight.current.delete(red.id);
       return;
     }
-    
-    setChildren(prev => prev.map(c => c.id === child.id ? (result.data?.child || c) : c));
-    setPendingRedemptions(prev => prev.filter(r => r.id !== red.id));
+
+    const synced = nextChildren.map(c => c.id === child.id ? (result.data?.child || c) : c);
+    persistParent(synced, pending, nextReds);
+    setChildren(synced);
     showToast(`Refunded ${reward.cost} coins!`);
+    inFlight.current.delete(red.id);
   };
 
   const handleDeleteMission = async (id) => {
@@ -248,8 +282,8 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
   // ─── RENDER ─────────────────────────────────────────────────────────────────
 
   return (
-    <>
-      <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length }}>
+    <div className="quests-app">
+      <AppShell role="parent" activeTab={activeTab} onTabChange={setActiveTab} notifications={{ approvals: pending.length + pendingRedemptions.length }} onSupport={() => setShowSupportModal(true)}>
         {activeTab === 'overview' && (
           <OverviewTab
             children={children}
@@ -258,16 +292,12 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             pending={pending}
             pendingRedemptions={pendingRedemptions}
             settings={settings}
-            isExiting={isExiting}
-            setIsExiting={setIsExiting}
-            router={router}
             setInspectChildId={setInspectChildId}
             setModal={setModal}
             handleApprove={handleApprove}
             handleReject={handleReject}
             handleFulfillReward={handleFulfillReward}
             handleRefundReward={handleRefundReward}
-            onOpenSupport={() => setShowSupportModal(true)}
           />
         )}
         {activeTab === 'manage' && (
@@ -275,15 +305,11 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
             missions={missions}
             rewards={rewards}
             children={children}
-            isExiting={isExiting}
-            setIsExiting={setIsExiting}
-            router={router}
             setModal={setModal}
             handleDeleteMission={handleDeleteMission}
             handleToggleActiveMission={handleToggleActiveMission}
             handleDeleteReward={handleDeleteReward}
             handleToggleActiveReward={handleToggleActiveReward}
-            onOpenSupport={() => setShowSupportModal(true)}
           />
         )}
         {activeTab === 'settings' && <SettingsTab initialSettings={settings} onOpenSupport={() => setShowSupportModal(true)} />}
@@ -353,33 +379,13 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         <div 
           className="modal-overlay" 
           onPointerDown={(e) => { if (e.target === e.currentTarget) setShowSupportModal(false); }}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(10, 13, 22, 0.85)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20
-          }}
         >
           <div 
             className="modal-content" 
             style={{ 
               maxWidth: 500, 
               width: '100%',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--bg-glass-border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 'var(--space-lg)',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
               position: 'relative',
-              animation: 'scaleIn 0.3s var(--ease-bounce)'
             }}
           >
             {/* Close Button */}
@@ -411,6 +417,6 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLevelForXP } from '../lib/levels';
+import { daysAgoIso } from '../lib/time';
 import AvatarDisplay from './AvatarDisplay';
 import { getStreakIcon, getStreakColor } from '../lib/streaks';
 import GoldCoin from './GoldCoin';
@@ -12,14 +13,14 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function StatCard({ icon, label, value, sub, color = 'var(--primary)' }) {
   return (
     <div style={{
-      background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(255,255,255,0.02) 100%)',
-      border: '1px solid rgba(255,255,255,0.05)',
+      background: '#fff',
+      border: '1px solid rgba(28, 28, 30, 0.08)',
       borderRadius: 'var(--radius-xl)',
       padding: '20px',
       display: 'flex',
       flexDirection: 'column',
       gap: 4,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+      boxShadow: '0 4px 14px rgba(28, 28, 30, 0.04)',
       position: 'relative',
       overflow: 'hidden'
     }}>
@@ -164,8 +165,8 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
         { data: reds },
         { data: childRow },
       ] = await Promise.all([
-        supabase.from('completions').select('*, missions(name, icon, coin_reward, xp_reward)').eq('child_id', childId).order('submitted_at', { ascending: false }),
-        supabase.from('redemptions').select('*, rewards(name, icon, cost)').eq('child_id', childId).order('redeemed_at', { ascending: false }),
+        supabase.from('completions').select('*, missions(name, icon, coin_reward, xp_reward)').eq('child_id', childId).gte('submitted_at', daysAgoIso(90)).order('submitted_at', { ascending: false }).limit(400),
+        supabase.from('redemptions').select('*, rewards(name, icon, cost)').eq('child_id', childId).gte('redeemed_at', daysAgoIso(90)).order('redeemed_at', { ascending: false }).limit(200),
         supabase.from('children').select('streak, coins, total_xp_earned, xp').eq('id', childId).single(),
       ]);
 
@@ -344,7 +345,7 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
           </div>
 
           {/* 60-Day Activity Heatmap */}
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-xl)', padding: '24px', marginBottom: 'var(--space-xl)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+          <div style={{ background: '#fff', border: '1px solid rgba(28, 28, 30, 0.08)', borderRadius: 'var(--radius-xl)', padding: '24px', marginBottom: 'var(--space-xl)', boxShadow: '0 4px 14px rgba(28, 28, 30, 0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>🔥 60-Day Activity</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Consistency is key!</div>
@@ -403,7 +404,7 @@ export default function AnalyticsTab({ children, singleChildId = null }) {
           {/* Day of Week Heatmap */}
           <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-glass-border)', borderRadius: 'var(--radius-xl)', padding: '18px 20px', marginBottom: 'var(--space-xl)' }}>
             <div style={{ fontWeight: 800, fontSize: '1rem', marginBottom: 4 }}>📅 Best Days of the Week</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16 }}>Based on all-time approved completions</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16 }}>Based on approved completions in the last 90 days</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {DAY_NAMES.map((day, i) => (
                 <div key={day} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
