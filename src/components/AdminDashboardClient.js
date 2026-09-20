@@ -3,12 +3,14 @@ import { useState, useCallback, useEffect } from 'react'
 import { logout } from '../app/login/actions'
 import AdminOverviewTab from './AdminOverviewTab'
 import AdminTableTab from './AdminTableTab'
+import AdminMarketingTab from './AdminMarketingTab'
 import { getRelativeTimeString } from '../utils/time'
 import GoldCoin from './GoldCoin'
 import BrandLogo from './BrandLogo'
 
 const TABS = [
   { id: 'overview', label: '📊 Overview' },
+  { id: 'marketing', label: '📣 Marketing' },
   { id: 'cleanup', label: '🧹 Cleanup Hub' },
   { id: 'tickets', label: '🚨 Tickets' },
   { id: 'users', label: '👤 Users' },
@@ -533,6 +535,7 @@ export default function AdminDashboardClient({
 
         <div style={{ paddingTop: 24 }}>
           {tab === 'overview' && <AdminOverviewTab stats={stats} />}
+          {tab === 'marketing' && <AdminMarketingTab />}
 
           {/* 🧹 Cleanup Hub Tab */}
           {tab === 'cleanup' && (
