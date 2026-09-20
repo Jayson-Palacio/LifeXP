@@ -57,6 +57,9 @@ Run the SQL files **in this order** in the Supabase SQL editor.
 2. `supabase_security_migration.sql` — switches RLS to **read-only** for the browser and adds the `kaeluma_*` security-definer functions the app calls for all mutations (submit/undo mission, redeem/review, adjust coins, appearance).
 3. `create_support_tickets.sql` — optional, adds the `support_tickets` table + RLS.
 4. `vital_schema.sql` — nutrition & fitness tables for the Vital app (profiles, goals, food logs, weigh-ins).
+5. `ledger_schema.sql` — household money tables for the Ledger app (monthly take-home, spend logs, yearly savings pace).
+
+If Quests and Vital already work, skip the list above and run **`kaeluma_catchup.sql`** once. That file is everything still missing for Ledger, including custom monthly envelopes.
 
 > ⚠️ **Do not run `supabase_schema.sql` for a fresh project.** It is the legacy kiosk schema (no `user_id`, and its original RLS granted `anon` full access). It is kept only to neutralize that open access on existing kiosk installs. The multi-tenant schema above is the source of truth.
 
@@ -73,6 +76,8 @@ Run only the file that applies to your change. Most day-to-day DDL lives in the 
 | `cleanup_family_sharing.sql` | Removes legacy family-sharing columns/policies |
 | `create_support_tickets.sql` | Support tickets table + RLS |
 | `vital_schema.sql` | Vital nutrition app tables + RLS |
+| `ledger_schema.sql` | Ledger household money tables + RLS |
+| `kaeluma_catchup.sql` | **Run this now** if Quests and Vital already work — full Ledger schema, envelopes, custom categories |
 
 ---
 

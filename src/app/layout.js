@@ -27,7 +27,7 @@ export const viewport = {
 
 export const metadata = {
   title: "Kaeluma — Software for the whole family",
-  description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, one login for everyone. Free and ad-free.",
+  description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, Ledger for money, one login for everyone. Free and ad-free.",
   applicationName: "Kaeluma",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   appleWebApp: {
@@ -37,7 +37,7 @@ export const metadata = {
   },
   openGraph: {
     title: "Kaeluma — Software for the whole family",
-    description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, one login for everyone. Free and ad-free.",
+    description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, Ledger for money, one login for everyone. Free and ad-free.",
     siteName: "Kaeluma",
     locale: "en_US",
     type: "website",
@@ -45,7 +45,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Kaeluma — Software for the whole family",
-    description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, one login for everyone. Free and ad-free.",
+    description: "Kaeluma is a growing set of apps for the household: Quests for routines, Vital for health, Ledger for money, one login for everyone. Free and ad-free.",
   },
 };
 
@@ -65,12 +65,13 @@ export default function RootLayout({ children }) {
       "@type": "Person",
       "name": "Jayson Palacio"
     },
-    "description": "Kaeluma is a family of free apps for the household — Quests for routines and Vital for household health.",
+    "description": "Kaeluma is a family of free apps for the household — Quests for routines, Vital for health, and Ledger for money.",
     "featureList": [
       "Family app hub after login",
       "Quests for household routines",
       "Parent PIN Verification System",
       "Vital household health: meals, weight, and plans for every person",
+      "Ledger household money: monthly spending and yearly savings pace",
       "Voluntary donations, no subscriptions"
     ]
   };

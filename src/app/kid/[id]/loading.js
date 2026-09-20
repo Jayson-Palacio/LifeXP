@@ -101,9 +101,10 @@ export default function Loading() {
           }}>
             <div style={{
               width: 96, height: 96, borderRadius: '50%',
-              border: `3px solid ${c1}`,
+              padding: 2,
+              background: color,
               marginBottom: 16,
-              overflow: 'hidden',
+              boxSizing: 'border-box',
             }}>
               <div className="sk" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
             </div>

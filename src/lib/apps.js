@@ -19,4 +19,13 @@ export const KAELUMA_APPS = [
     accent: '#1d1d1f',
     available: true,
   },
+  {
+    id: 'ledger',
+    name: 'Ledger',
+    tagline: 'Money',
+    description: 'Monthly spending, and the yearly savings you are on pace for.',
+    href: '/ledger',
+    accent: '#1d1d1f',
+    available: true,
+  },
 ];

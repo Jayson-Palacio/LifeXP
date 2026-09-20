@@ -21,6 +21,7 @@ export default function SiteNav({
           <nav className="site-nav-links" aria-label="Product">
             <a href="/#quests">Quests</a>
             <a href="/#vital">Vital</a>
+            <a href="/#ledger">Ledger</a>
             {onSupport && (
               <button type="button" onClick={onSupport}>
                 Support
@@ -63,6 +64,7 @@ export default function SiteNav({
         <div className="site-nav-drawer">
           <a href="/#quests" onClick={() => setOpen(false)}>Quests</a>
           <a href="/#vital" onClick={() => setOpen(false)}>Vital</a>
+          <a href="/#ledger" onClick={() => setOpen(false)}>Ledger</a>
           {onSupport && (
             <button
               type="button"

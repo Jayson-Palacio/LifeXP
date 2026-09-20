@@ -6,15 +6,19 @@ import { playPop } from '../lib/sounds';
 const faqs = [
   {
     question: "What is Kaeluma?",
-    answer: "Kaeluma is a family of apps under one login. Quests helps kids own chores and habits. Vital helps the whole household track meals, weight, and health. After you sign in, you choose the app you need."
+    answer: "Kaeluma is a family of apps under one login. Quests helps kids own chores and habits. Vital is household health. Ledger tracks monthly spending and the yearly savings you are on pace for. After you sign in, you choose the app you need."
   },
   {
     question: "Who is it for?",
-    answer: "The whole household. Parents run the account. Kids use Quests. Everyone can use Vital for health. More apps will join the same family hub over time."
+    answer: "The whole household. Parents run the account. Kids use Quests. Everyone can use Vital for health and Ledger for money. More apps will join the same family hub over time."
   },
   {
     question: "What is Vital?",
     answer: "Vital is household health. Add each person, then log meals in a tap from a kitchen list. Adults can set a weight plan with research-based calorie and protein targets. Kids are treated as growing — we track meals, not diets."
+  },
+  {
+    question: "What is Ledger?",
+    answer: "Ledger is household money. You set monthly take-home, split it into category envelopes, log spending, and see what you are on pace to keep in a year."
   },
   {
     question: "Do I need to download anything?",

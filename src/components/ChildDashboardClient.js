@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import QuestsTopBar from './QuestsTopBar';
 import { supabase } from '../lib/supabase';
-import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors, getUnlockedRings, checkColorUnlocks } from '../lib/levels';
+import { getLevelForXP, getXPProgress, getXPDisplay, getUnlockedColors, checkColorUnlocks } from '../lib/levels';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth, getStoredTzOffset, localYmd } from '../lib/time';
 import { showToast, showFloat, showLevelUp, showTierUp } from '../lib/ui';
 import { playRandomSuccessSound, playKaChing, playPop, playClick } from '../lib/sounds';
@@ -40,9 +40,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   useEffect(() => { if (!skipStaleRefresh()) setAllRedemptions(initialRedemptions || []); }, [initialRedemptions]);
  
   const [showThemePicker, setShowThemePicker] = useState(false);
-  const [showRingPicker, setShowRingPicker]   = useState(false);
   const themePickerRef = useRef(null);
-  const ringPickerRef  = useRef(null);
 
   // Gamification & Polish States
   const [avatarTaps, setAvatarTaps] = useState(0);
@@ -89,9 +87,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
   const xpProgress = getXPProgress(child.total_xp_earned || child.xp || 0);
   const xpDisplay = getXPDisplay(child.total_xp_earned || child.xp || 0);
   const activeTheme    = child.theme || tierColor;
-  const activeRingId   = child.ring_style || 'solid';
   const unlockedColors = getUnlockedColors(level);
-  const unlockedRings  = getUnlockedRings(level);
 
   const [tzOffset, setTzOffset] = useState(null);
   const [hydrated, setHydrated] = useState(false);
@@ -118,18 +114,6 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     document.addEventListener('pointerdown', handler);
     return () => document.removeEventListener('pointerdown', handler);
   }, [showThemePicker]);
-
-  // Close ring picker when clicking outside
-  useEffect(() => {
-    if (!showRingPicker) return;
-    const handler = (e) => {
-      if (ringPickerRef.current && !ringPickerRef.current.contains(e.target)) {
-        setShowRingPicker(false);
-      }
-    };
-    document.addEventListener('pointerdown', handler);
-    return () => document.removeEventListener('pointerdown', handler);
-  }, [showRingPicker]);
 
   // Listen for reward fulfillments/refunds
   useEffect(() => {
@@ -400,14 +384,6 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
     showToast(`🎨 ${t.name}`);
   };
 
-  const handleChangeRing = async (r) => {
-    const result = await updateAppearance(child.id, 'ring_style', r.id);
-    if (!result.success) return showToast('Error changing ring: ' + result.error, 'error');
-    setChild(prev => ({ ...prev, ring_style: r.id }));
-    setShowRingPicker(false);
-    showToast(`💍 ${r.name} ring equipped!`);
-  };
-
   const activeColor = unlockedColors.find(c => c.id === activeTheme);
 
   const getThemeBackground = (hex) => {
@@ -433,7 +409,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                 <button
                   onClick={() => {
                     if (playClick) playClick();
-                    setShowThemePicker(v => !v); setShowRingPicker(false);
+                    setShowThemePicker(v => !v);
                   }}
                   title="Change Theme"
                   style={{
@@ -470,87 +446,15 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
                           style={{
                             width: 32, height: 32, borderRadius: '50%', border: activeTheme === c.id ? '3px solid #1c1c1e' : '2px solid transparent',
                             background: getThemeBackground(c.hex),
-                            boxShadow: activeTheme === c.id ? `0 0 8px ${c.hex.startsWith('gradient-') || c.hex === 'animated' ? '#fff' : c.hex}` : 'none',
+                            boxShadow: activeTheme === c.id ? `0 0 8px ${c.hex}` : 'none',
                             cursor: 'pointer', transition: 'transform 0.12s',
                           }}
                         />
                       ))}
                     </div>
-                    {unlockedColors.length < 8 && (
+                    {unlockedColors.length < 12 && (
                       <div style={{ marginTop: 8, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                         🔒 Level up to unlock more
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div ref={ringPickerRef} style={{ position: 'relative' }}>
-                <button
-                  onClick={() => {
-                    if (playClick) playClick();
-                    setShowRingPicker(v => !v); setShowThemePicker(false);
-                  }}
-                  title="Change Ring Style"
-                  style={{
-                    width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'transparent', padding: 0,
-                    boxShadow: showRingPicker ? 'var(--glow-primary)' : 'none',
-                    cursor: 'pointer', flexShrink: 0, overflow: 'visible'
-                  }}
-                >
-                  <div className={`hero-avatar-ring ring-${activeRingId}`} style={{ width: '100%', height: '100%', margin: 0 }}>
-                    <div className="hero-avatar-img" />
-                  </div>
-                </button>
-                {showRingPicker && (
-                  <div style={{
-                    position: 'absolute', top: 44, right: 0,
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--bg-glass-border)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: 12,
-                    boxShadow: '0 12px 40px rgba(28, 28, 30, 0.12)',
-                    zIndex: 200,
-                    minWidth: 210,
-                    animation: 'slideUp 0.15s ease-out',
-                  }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-                      Ring Style
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {unlockedRings.map(r => (
-                        <button
-                          key={r.id}
-                          onClick={() => {
-                            if (playPop) playPop();
-                            handleChangeRing(r);
-                          }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '7px 10px',
-                            borderRadius: 'var(--radius-md)',
-                            border: activeRingId === r.id ? '1px solid var(--primary)' : '1px solid transparent',
-                            background: activeRingId === r.id ? 'color-mix(in srgb, var(--primary) 12%, transparent)' : 'transparent',
-                            cursor: 'pointer', width: '100%', textAlign: 'left',
-                            transition: 'all 0.12s',
-                          }}
-                        >
-                          <div className={`hero-avatar-ring ring-${r.id}`} style={{ width: 28, height: 28, flexShrink: 0, margin: 0 }}>
-                            <div className="hero-avatar-img" style={{ fontSize: '0.8rem' }} />
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: activeRingId === r.id ? 'var(--primary)' : 'var(--text-bright)' }}>{r.name}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.description}</div>
-                          </div>
-                          {activeRingId === r.id && (
-                            <svg style={{ marginLeft: 'auto', flexShrink: 0, color: 'var(--primary)' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                    {unlockedRings.length < 10 && (
-                      <div style={{ marginTop: 8, fontSize: '0.72rem', color: 'var(--text-muted)', borderTop: '1px solid var(--bg-glass-border)', paddingTop: 8 }}>
-                        🔒 {10 - unlockedRings.length} more ring{10 - unlockedRings.length !== 1 ? 's' : ''} to unlock
                       </div>
                     )}
                   </div>
@@ -587,7 +491,7 @@ export default function ChildDashboardClient({ initialChild, missions, initialCo
         }}>
 
           {/* Avatar — centered */}
-          <div className={`hero-avatar-ring ring-${activeRingId} ${easterEggAnim}`} style={{ width: 96, height: 96, margin: '0 0 14px', cursor: 'pointer', transition: 'all 1s ease-in-out' }} onClick={handleAvatarTap}>
+          <div className={`hero-avatar-ring ${easterEggAnim}`} style={{ width: 96, height: 96, margin: '0 0 14px', cursor: 'pointer', transition: 'all 1s ease-in-out' }} onClick={handleAvatarTap}>
             <div className="hero-avatar-img">
               <AvatarDisplay avatarString={child.avatar} size="100%" />
             </div>

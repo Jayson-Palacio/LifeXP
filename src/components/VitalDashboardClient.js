@@ -920,6 +920,40 @@ export default function VitalDashboardClient({
                         Scan
                       </button>
                     </div>
+                    {meal !== 'drink' && (quickFoods.length > 0 || recents.length > 0 || kitchen.length > 0) && (
+                      <div className="vital-quick-foods">
+                        {quickFoods.map((row) => (
+                          <button
+                            key={row.id || row.name}
+                            type="button"
+                            className={`vital-chip${pinNames.some((name) => name.toLowerCase() === row.name.toLowerCase()) ? ' is-pinned' : ''}`}
+                            onClick={() => addFood(row)}
+                          >
+                            {row.name}
+                          </button>
+                        ))}
+                        {recents.filter((row) => !quickFoods.some((item) => item.name.toLowerCase() === row.name.toLowerCase())).slice(0, 3).map((row) => (
+                          <button key={row.id} type="button" className="vital-chip" onClick={() => addFood(row)}>
+                            {row.name}
+                          </button>
+                        ))}
+                        <button type="button" className="vital-text-btn" onClick={() => {
+                          setPinIds((prev) => (prev.length ? prev : dbPins.map((row) => row.name)));
+                          setShowQuickEdit(true);
+                        }}>
+                          Edit
+                        </button>
+                      </div>
+                    )}
+                    {meal === 'drink' && !child && (
+                      <div className="vital-quick-foods">
+                        {DRINK_FOODS.map((row) => (
+                          <button key={row.name} type="button" className="vital-chip" onClick={() => addFood({ ...row, meal: 'drink' })}>
+                            {row.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="vital-composer-meta">
                       <div className="vital-meals">
                         {(child ? MEALS.filter((item) => item.id !== 'drink') : MEALS).map((item) => (
@@ -1015,40 +1049,6 @@ export default function VitalDashboardClient({
                         </button>
                       )}
                     </div>
-                    {meal !== 'drink' && (quickFoods.length > 0 || recents.length > 0 || kitchen.length > 0) && (
-                      <div className="vital-quick-foods">
-                        {quickFoods.map((row) => (
-                          <button
-                            key={row.id || row.name}
-                            type="button"
-                            className={`vital-chip${pinNames.some((name) => name.toLowerCase() === row.name.toLowerCase()) ? ' is-pinned' : ''}`}
-                            onClick={() => addFood(row)}
-                          >
-                            {row.name}
-                          </button>
-                        ))}
-                        {recents.filter((row) => !quickFoods.some((item) => item.name.toLowerCase() === row.name.toLowerCase())).slice(0, 3).map((row) => (
-                          <button key={row.id} type="button" className="vital-chip" onClick={() => addFood(row)}>
-                            {row.name}
-                          </button>
-                        ))}
-                        <button type="button" className="vital-text-btn" onClick={() => {
-                          setPinIds((prev) => (prev.length ? prev : dbPins.map((row) => row.name)));
-                          setShowQuickEdit(true);
-                        }}>
-                          Edit quick add
-                        </button>
-                      </div>
-                    )}
-                    {meal === 'drink' && !child && (
-                      <div className="vital-quick-foods">
-                        {DRINK_FOODS.map((row) => (
-                          <button key={row.name} type="button" className="vital-chip" onClick={() => addFood({ ...row, meal: 'drink' })}>
-                            {row.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </form>
 
                   {plate && !logYesterday && meal !== 'drink' && (plate.items.length > 0 || plate.title) && (
@@ -1076,7 +1076,7 @@ export default function VitalDashboardClient({
                   <form onSubmit={handleMove} className="vital-card vital-move">
                     <div className="vital-card-head">
                       <p className="vital-kicker">{child ? 'Play' : 'Training'}</p>
-                      <span>{todayMinutes ? `${todayMinutes} min logged` : 'Not eaten back'}</span>
+                      <span>{todayMinutes ? `${todayMinutes} min logged` : 'Doesn’t add calories back'}</span>
                     </div>
                     <div className="vital-week-strip" aria-label="This week’s movement">
                       {weekStrip.map((day) => (

@@ -354,14 +354,7 @@
   .crest-wave,
   .crest-float,
   .crest-expand-ring,
-  .theme-aura,
-  .hero-avatar-ring.ring-pulse::before,
-  .hero-avatar-ring.ring-spin::before,
-  .hero-avatar-ring.ring-shimmer::before,
-  .hero-avatar-ring.ring-plasma::before,
-  .hero-avatar-ring.ring-fire::before,
-  .hero-avatar-ring.ring-galaxy::before,
-  .hero-avatar-ring.ring-legendary::before {
+  .theme-aura {
     animation: none !important;
   }
 }

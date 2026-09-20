@@ -41,6 +41,7 @@ export async function updateSession(request) {
                            request.nextUrl.pathname.startsWith('/admin') ||
                            request.nextUrl.pathname.startsWith('/apps') ||
                            request.nextUrl.pathname.startsWith('/vital') ||
+                           request.nextUrl.pathname.startsWith('/ledger') ||
                            request.nextUrl.pathname.startsWith('/update-password');
 
   if (isProtectedRoute && !user) {

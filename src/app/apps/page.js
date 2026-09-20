@@ -24,11 +24,16 @@ export default async function AppsPage() {
     .from('vital_members')
     .select('id', { count: 'exact', head: true });
 
+  const { count: ledgerCount } = await supabase
+    .from('ledger_settings')
+    .select('id', { count: 'exact', head: true });
+
   return (
     <AppLauncherClient
       familyName={settings?.family_name || 'your family'}
       questsReady={Boolean(settings?.setup_complete)}
       vitalReady={Boolean(vitalCount)}
+      ledgerReady={Boolean(ledgerCount)}
     />
   );
 }
