@@ -186,19 +186,19 @@ export function coachNote({
   if (simple) {
     return {
       kicker: name,
-      title: todayMoveMinutes >= 30 ? 'The simple day is working.' : 'A 30-minute walk still fits.',
-      body: proteinGap != null && proteinGap > 0
-        ? `Protein still wants about ${proteinGap}g. Log movement when you can — it is a health ring, not extra food.`
-        : 'Keep meals ordinary. Movement is extra credit for muscle and mood, not a license to eat more.',
+        title: todayMoveMinutes >= 30 ? 'The simple day is working.' : 'A 30-minute walk still fits.',
+        body: proteinGap != null && proteinGap > 0
+          ? `Protein still wants about ${proteinGap}g. Movement is health, not extra food.`
+          : 'Keep meals ordinary. Movement is not a license to eat more.',
     };
   }
 
   return {
     kicker: name,
     title: remaining != null ? `${remaining} kcal left in the day` : 'Keep the log light.',
-    body: proteinGap != null && proteinGap > 0
-      ? `Protein still wants about ${proteinGap}g. That is the lever that makes a modest calorie target feel livable.`
-      : 'You are on the rails. Log what is in front of you and leave the rest of the evening alone.',
+      body: proteinGap != null && proteinGap > 0
+        ? `Protein still wants about ${proteinGap}g.`
+        : 'Log what is in front of you.',
   };
 }
 
@@ -216,4 +216,25 @@ export function familyStatusLine({ plan, eaten, mealCount, child, minutes = 0 })
   const remaining = Math.round(plan.calorie_target - eaten.calories);
   const cal = remaining < 0 ? `${Math.abs(remaining)} over` : `${remaining} left`;
   return minutes ? `${cal} · ${minutes} min` : cal;
+}
+
+export function weekSentence({ insights, child }) {
+  if (!insights?.loggedDays) {
+    return child ? 'Log a meal or play to start the week.' : 'Log a meal or a walk to start the week.';
+  }
+  if (child) {
+    if ((insights.moveMinutes || 0) < 120) return 'Meals are landing. Play is the gap this week.';
+    return 'Ordinary meals and play — that’s a good week.';
+  }
+  const logged = insights.loggedDays || 0;
+  const proteinOk = (insights.proteinDays || insights.onTarget || 0) >= Math.max(1, Math.ceil(logged * 0.6));
+  const liftGap = (insights.strengthDays || 0) < (insights.strengthGoal || 2);
+  const moveGap = (insights.moveModerate || 0) < ((insights.moveGoal || 150) * 0.5);
+  if (proteinOk && liftGap) return 'Protein was fine. Lift is the gap.';
+  if (proteinOk && moveGap) return 'Protein was fine. Walking is the gap.';
+  if (!proteinOk && !liftGap) return 'Lifts are in. Protein is the gap.';
+  if (insights.weekUnder != null && insights.weekUnder < -400) return 'The week is running hot. Quieter plates, keep lifting.';
+  if (insights.weekUnder != null && insights.weekUnder > 400) return 'You are under for the week. Eat a real dinner — leftover calories are not a prize.';
+  if (insights.streak) return `${insights.streak}-day logging streak. Keep the average honest.`;
+  return 'The week is underway. The average matters more than Tuesday.';
 }

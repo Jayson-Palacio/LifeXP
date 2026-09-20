@@ -14,7 +14,7 @@ export const KAELUMA_APPS = [
     id: 'vital',
     name: 'Vital',
     tagline: 'Health',
-    description: 'Meals, weight, and a calm plan for everyone under your roof.',
+    description: 'Meals, movement, and a calm plan for everyone under your roof.',
     href: '/vital',
     accent: '#1d1d1f',
     available: true,

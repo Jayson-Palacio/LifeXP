@@ -250,7 +250,7 @@ export default function VitalOnboarding({ firstName, member, plan, onDone, onCan
           <p className="vital-kicker">Vital</p>
           <h1>A calm plan for your household.</h1>
           <p>
-            About a minute. We set calories and protein from your body and a goal — then Today is ready to log.
+            About a minute. We set calories and protein from your body and a goal — then Eat is ready to log.
             Kids never get a diet.
           </p>
         </div>

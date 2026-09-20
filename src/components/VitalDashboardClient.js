@@ -33,16 +33,17 @@ import {
   sumMacros,
 } from '../lib/nutrition';
 import { activityWeek, adaptiveCheck, familyWeek, memberInsights } from '../lib/vitalAnalytics';
-import { coachNote } from '../lib/vitalCoach';
-import { suggestNextPlate } from '../lib/vitalSuggest';
+import { coachNote, weekSentence } from '../lib/vitalCoach';
+import { cookTonight } from '../lib/vitalSuggest';
+import { usualPlates } from '../lib/vitalPlates';
 import {
-  copyYesterdayMeals,
   deleteVitalActivity,
   deleteVitalFood,
   deleteVitalKitchenItem,
   deleteVitalMove,
   logVitalActivity,
   logVitalFood,
+  logVitalPlate,
   logVitalWeight,
   nudgeVitalCalories,
   pinVitalKitchen,
@@ -59,8 +60,9 @@ const MEALS = FOOD_MEALS;
 const DRINK_FOODS = FOODS.filter((item) => item.meal === 'drink');
 
 const TABS = [
-  { id: 'today', label: 'Today' },
-  { id: 'insights', label: 'Insights' },
+  { id: 'eat', label: 'Eat' },
+  { id: 'move', label: 'Move' },
+  { id: 'week', label: 'Week' },
   { id: 'plan', label: 'Plan' },
 ];
 
@@ -213,7 +215,10 @@ export default function VitalDashboardClient({
   const router = useRouter();
   const today = localDateISO();
   const [memberId, setMemberId] = useState(members[0]?.id || '');
-  const [tab, setTab] = useState('today');
+  const [tab, setTab] = useState('eat');
+  const [cookIndex, setCookIndex] = useState(0);
+  const [cookBusy, setCookBusy] = useState(false);
+  const [serveCook, setServeCook] = useState(null);
   const [showPerson, setShowPerson] = useState(false);
   const [person, setPerson] = useState(() => emptyPerson());
   const [personError, setPersonError] = useState('');
@@ -230,7 +235,7 @@ export default function VitalDashboardClient({
   const [showScan, setShowScan] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [custom, setCustom] = useState(emptyCustom);
-  const [copyError, setCopyError] = useState('');
+  const [plateBusy, setPlateBusy] = useState(false);
   const [moveKind, setMoveKind] = useState('walk');
   const [moveMinutes, setMoveMinutes] = useState('30');
   const [moveEffort, setMoveEffort] = useState('moderate');
@@ -266,6 +271,10 @@ export default function VitalDashboardClient({
     const isChild = nextMember?.kind === 'child';
     setMoveKind(isChild ? 'play' : 'walk');
   }, [memberId, members, plans]);
+
+  useEffect(() => {
+    setCookIndex(0);
+  }, [memberId]);
 
   useEffect(() => {
     try {
@@ -318,6 +327,10 @@ export default function VitalDashboardClient({
     () => weighIns.filter((row) => row.member_id === memberId),
     [weighIns, memberId]
   );
+  const todayWeight = useMemo(
+    () => memberWeights.find((row) => row.logged_on === today) || null,
+    [memberWeights, today]
+  );
   const age = ageFromBirthYear(member?.birth_year);
   const child = member?.kind === 'child' || (age != null && age < 18);
   const units = member?.units || 'us';
@@ -340,6 +353,10 @@ export default function VitalDashboardClient({
   }, [memberFoods]);
 
   const logDate = logYesterday ? shiftDay(today, -1) : today;
+  const usuals = useMemo(
+    () => usualPlates({ foods: memberFoods, meal, logDate, today }),
+    [memberFoods, meal, logDate, today]
+  );
   const journalFoods = useMemo(
     () => memberFoods.filter((row) => row.logged_on === logDate),
     [memberFoods, logDate]
@@ -414,13 +431,13 @@ export default function VitalDashboardClient({
 
   const selectMember = (id) => {
     setMemberId(id);
-    setTab('today');
+    setTab('eat');
     try { window.localStorage.setItem('vital-member', id); } catch { /* ignore */ }
   };
 
   const focusLog = (mealId) => {
     if (mealId) setMeal(mealId);
-    setTab('today');
+    setTab('eat');
     window.setTimeout(() => foodRef.current?.focus(), 30);
   };
 
@@ -480,6 +497,40 @@ export default function VitalDashboardClient({
     router.refresh();
   };
 
+  const logCookPlate = async (dish, targets) => {
+    if (!member || !dish?.items?.length) return;
+    setCookBusy(true);
+    setFoodError('');
+    const people = targets?.length ? targets : [{ member_id: member.id, servings: 1 }];
+    for (const target of people) {
+      const portion = Number(target.servings) || 1;
+      if (portion <= 0) continue;
+      for (const item of dish.items) {
+        const scaled = scaleServing(item, portion);
+        const result = await logVitalFood({
+          member_id: target.member_id,
+          name: item.name,
+          calories: scaled.calories,
+          protein_g: scaled.protein_g,
+          carbs_g: scaled.carbs_g,
+          fat_g: scaled.fat_g,
+          fiber_g: scaled.fiber_g,
+          servings: 1,
+          meal: dish.meal || meal,
+          logged_on: logDate,
+        });
+        if (!result.success) {
+          setFoodError(result.error);
+          setCookBusy(false);
+          return;
+        }
+      }
+    }
+    setCookBusy(false);
+    setServeCook(null);
+    router.refresh();
+  };
+
   const handleCustomFood = async (event) => {
     event.preventDefault();
     if (!showCustom && matches[0]) {
@@ -512,10 +563,19 @@ export default function VitalDashboardClient({
     await addFood({ ...item, meal: mealForLog(item, meal) });
   };
 
-  const handleCopyYesterday = async () => {
-    setCopyError('');
-    const result = await copyYesterdayMeals(member.id);
-    if (!result.success) setCopyError(result.error);
+  const handleUsualPlate = async (plate) => {
+    if (!member || !plate?.items?.length || plateBusy) return;
+    setPlateBusy(true);
+    setFoodError('');
+    const result = await logVitalPlate({
+      member_id: member.id,
+      meal: plate.meal || meal,
+      logged_on: logDate,
+      servings: 1,
+      items: plate.items,
+    });
+    setPlateBusy(false);
+    if (!result.success) setFoodError(result.error);
     else router.refresh();
   };
 
@@ -621,7 +681,7 @@ export default function VitalDashboardClient({
       setPlanError(result.error);
       return;
     }
-    setTab('today');
+    setTab('eat');
     router.refresh();
   };
 
@@ -656,14 +716,16 @@ export default function VitalDashboardClient({
   const fiberTarget = memberPlan?.fiber_target_g || 0;
   const kcalLeft = calorieTarget ? Math.round(calorieTarget - eaten.calories) : null;
   const proteinLeft = proteinTarget ? Math.round(proteinTarget - eaten.protein) : null;
-  const plate = suggestNextPlate({
+  const cook = cookTonight({
     kitchen,
     remainingKcal: simple ? null : kcalLeft,
     remainingProtein: proteinLeft,
-    meal: hour >= 17 ? 'dinner' : meal,
     child,
     hour,
+    simple,
   });
+  const idea = cook.ideas.length ? cook.ideas[cookIndex % cook.ideas.length] : null;
+  const weekLine = weekSentence({ insights, child });
   const coach = coachNote({
     member,
     plan: memberPlan,
@@ -864,23 +926,33 @@ export default function VitalDashboardClient({
                       : ''}
                   </p>
                 ) : null}
-                <button type="button" className="vital-hero-link" onClick={() => setTab('insights')}>
+                <button type="button" className="vital-hero-link" onClick={() => setTab('week')}>
                   {insights.streak
                     ? `${insights.weekScore}/5 this week · ${insights.streak}-day streak`
                     : insights.loggedDays
-                      ? `${insights.weekScore}/5 this week · Insights`
-                      : 'Open Insights'}
+                      ? `${insights.weekScore}/5 this week · Week`
+                      : 'Open Week'}
                 </button>
               </div>
               <div className="vital-rings" aria-label="Today’s rings">
                 {rings.map((ring) => (
-                  <VitalRing key={ring.id} {...ring} size={rings.length > 3 ? 96 : 118} />
+                  <button
+                    key={ring.id}
+                    type="button"
+                    className="vital-ring-hit"
+                    onClick={() => setTab(ring.id === 'move' ? 'move' : 'eat')}
+                  >
+                    <VitalRing {...ring} size={rings.length > 3 ? 96 : 118} />
+                  </button>
                 ))}
               </div>
             </section>
 
             <nav className="vital-tabs" aria-label="Vital">
-              {TABS.map((item) => (
+              {(child
+                ? TABS.map((item) => (item.id === 'move' ? { ...item, label: 'Play' } : item))
+                : TABS
+              ).map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -892,7 +964,7 @@ export default function VitalDashboardClient({
               ))}
             </nav>
 
-            {tab === 'today' && (
+            {tab === 'eat' && (
               <section className="vital-board">
                 <div className="vital-board-log">
                   <form onSubmit={showCustom ? handleSaveCustom : handleCustomFood} className="vital-card vital-composer">
@@ -920,6 +992,24 @@ export default function VitalDashboardClient({
                         Scan
                       </button>
                     </div>
+                    {meal !== 'drink' && !query.trim() && !showCustom && usuals.length > 0 && (
+                      <div className="vital-usual">
+                        <p className="vital-kicker">Usual</p>
+                        <div className="vital-usual-chips">
+                          {usuals.map((plate) => (
+                            <button
+                              key={plate.id}
+                              type="button"
+                              className="vital-chip is-usual"
+                              disabled={plateBusy}
+                              onClick={() => handleUsualPlate(plate)}
+                            >
+                              {plate.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {meal !== 'drink' && (quickFoods.length > 0 || recents.length > 0 || kitchen.length > 0) && (
                       <div className="vital-quick-foods">
                         {quickFoods.map((row) => (
@@ -1029,18 +1119,13 @@ export default function VitalDashboardClient({
                       </div>
                     )}
                     {foodError && <p className="vital-err">{foodError}</p>}
-                    {copyError && <p className="vital-err">{copyError}</p>}
                     <div className="vital-composer-actions">
                       <button type="submit" className="vital-btn" disabled={showCustom ? !custom.calories : !query.trim()}>
                         {showCustom ? 'Save and log' : 'Log it'}
                       </button>
                       {logYesterday ? (
                         <span className="vital-muted">Adds to yesterday’s journal.</span>
-                      ) : (
-                        <button type="button" className="vital-btn vital-btn-quiet" onClick={handleCopyYesterday}>
-                          Repeat yesterday
-                        </button>
-                      )}
+                      ) : null}
                       {showCustom ? (
                         <button type="button" className="vital-text-btn" onClick={() => setShowCustom(false)}>Cancel</button>
                       ) : (
@@ -1051,165 +1136,54 @@ export default function VitalDashboardClient({
                     </div>
                   </form>
 
-                  {plate && !logYesterday && meal !== 'drink' && (plate.items.length > 0 || plate.title) && (
+                  {idea && !logYesterday && meal !== 'drink' && (
                     <div className="vital-card vital-plate">
-                      <p className="vital-kicker">Next plate</p>
-                      <h2>{plate.title}</h2>
-                      <p>{plate.body}</p>
-                      {plate.items.length > 0 && (
-                        <div className="vital-chips">
-                          {plate.items.map((row) => (
-                            <button
-                              key={row.name}
-                              type="button"
-                              className="vital-chip"
-                              onClick={() => addFood(row, { meal: hour >= 17 ? 'dinner' : (row.meal || 'lunch') })}
-                            >
-                              Log {row.name}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="vital-card-head">
+                        <p className="vital-kicker">{cook.kicker}</p>
+                        {cook.ideas.length > 1 && (
+                          <button type="button" className="vital-text-btn" onClick={() => setCookIndex((index) => index + 1)}>
+                            Another idea
+                          </button>
+                        )}
+                      </div>
+                      <h2>{idea.title}</h2>
+                      {idea.why ? <p>{idea.why}</p> : null}
+                      {idea.ingredients.length > 0 && (
+                        <p className="vital-plate-ings">{idea.ingredients.join(' · ')}</p>
                       )}
+                      <div className="vital-plate-actions">
+                        {idea.recipeUrl && (
+                          <a
+                            className="vital-btn vital-btn-quiet"
+                            href={idea.recipeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Recipe{idea.recipeSource ? ` · ${idea.recipeSource}` : ''}
+                          </a>
+                        )}
+                        {idea.items.length > 0 && (
+                          <button type="button" className="vital-btn" disabled={cookBusy} onClick={() => logCookPlate(idea)}>
+                            {cookBusy ? 'Logging…' : 'Log this plate'}
+                          </button>
+                        )}
+                        {members.length > 1 && idea.items.length > 0 && (
+                          <button
+                            type="button"
+                            className="vital-btn vital-btn-quiet"
+                            onClick={() => {
+                              const next = {};
+                              members.forEach((row) => { next[row.id] = 1; });
+                              setServePortions(next);
+                              setServeCook(idea);
+                            }}
+                          >
+                            Serve
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
-
-                  <form onSubmit={handleMove} className="vital-card vital-move">
-                    <div className="vital-card-head">
-                      <p className="vital-kicker">{child ? 'Play' : 'Training'}</p>
-                      <span>{todayMinutes ? `${todayMinutes} min logged` : 'Doesn’t add calories back'}</span>
-                    </div>
-                    <div className="vital-week-strip" aria-label="This week’s movement">
-                      {weekStrip.map((day) => (
-                        <div key={day.day} className={`vital-week-day${day.isToday ? ' is-today' : ''}${day.strength ? ' is-strength' : ''}`}>
-                          <i style={{ height: `${Math.max(day.minutes ? 18 : 4, Math.min(48, day.minutes / 2))}px` }} />
-                          <span>{day.label}</span>
-                          <em>{day.minutes || (day.steps ? `${Math.round(day.steps / 1000)}k` : '·')}</em>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="vital-steps">
-                      <div className="vital-steps-head">
-                        <strong>Steps</strong>
-                        <span>{todaySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
-                      </div>
-                      <div className="vital-meter" aria-hidden="true">
-                        <div className="vital-meter-fill" style={{ width: `${Math.min(100, (todaySteps / stepGoal) * 100)}%` }} />
-                      </div>
-                      <div className="vital-meals">
-                        {STEP_PRESETS.map((count) => (
-                          <button key={count} type="button" className={todaySteps === count ? 'is-active' : ''} onClick={() => handleSteps(count)}>
-                            {(count / 1000).toFixed(0)}k
-                          </button>
-                        ))}
-                      </div>
-                      <div className="vital-steps-enter">
-                        <input
-                          className="vital-input"
-                          type="number"
-                          min="100"
-                          max="100000"
-                          step="100"
-                          placeholder="Or type today’s count"
-                          value={stepInput}
-                          onChange={(e) => setStepInput(e.target.value)}
-                        />
-                        <button type="button" className="vital-btn vital-btn-quiet" onClick={() => handleSteps()} disabled={!stepInput}>
-                          Save steps
-                        </button>
-                      </div>
-                    </div>
-                    <p className="vital-kicker">Workout</p>
-                    <div className="vital-move-kinds">
-                      {moveKinds.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className={`vital-move-tile${moveKind === item.id ? ' is-active' : ''}`}
-                          onClick={() => setMoveKind(item.id)}
-                        >
-                          <MoveGlyph kind={item.id} />
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      className="vital-input"
-                      value={moveNote}
-                      onChange={(e) => setMoveNote(e.target.value)}
-                      placeholder="Optional — Push day, 5K, pickup soccer"
-                      maxLength={80}
-                    />
-                    <div className="vital-move-controls">
-                      <div className="vital-meals">
-                        {MOVE_MINUTES.map((mins) => (
-                          <button
-                            key={mins}
-                            type="button"
-                            className={Number(moveMinutes) === mins ? 'is-active' : ''}
-                            onClick={() => setMoveMinutes(String(mins))}
-                          >
-                            {mins}m
-                          </button>
-                        ))}
-                      </div>
-                      <label className="vital-sr" htmlFor="move_min">Minutes</label>
-                      <input
-                        id="move_min"
-                        className="vital-input vital-input-mini"
-                        type="number"
-                        min="1"
-                        max="480"
-                        value={moveMinutes}
-                        onChange={(e) => setMoveMinutes(e.target.value)}
-                        required
-                      />
-                      <div className="vital-meals">
-                        {[
-                          { id: 'easy', label: 'Easy' },
-                          { id: 'moderate', label: 'Mod' },
-                          { id: 'hard', label: 'Hard' },
-                        ].map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            className={moveEffort === item.id ? 'is-active' : ''}
-                            onClick={() => setMoveEffort(item.id)}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {moveError && <p className="vital-err">{moveError}</p>}
-                    <div className="vital-composer-actions">
-                      <button type="submit" className="vital-btn">
-                        Log {moveKinds.find((item) => item.id === moveKind)?.label?.toLowerCase() || 'workout'}
-                      </button>
-                      {lastMove && (
-                        <button
-                          type="button"
-                          className="vital-btn vital-btn-quiet"
-                          onClick={() => logShortcut({
-                            kind: lastMove.kind,
-                            minutes: lastMove.minutes,
-                            effort: lastMove.effort,
-                            label: lastMove.note || `${lastMove.kind[0].toUpperCase()}${lastMove.kind.slice(1)} ${lastMove.minutes}`,
-                          })}
-                        >
-                          Repeat last
-                        </button>
-                      )}
-                    </div>
-                    {savedMoves.length > 0 && (
-                      <div className="vital-chips">
-                        {savedMoves.slice(0, 8).map((row) => (
-                          <button key={row.id || row.label} type="button" className="vital-chip" onClick={() => logShortcut(row)}>
-                            {row.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </form>
                 </div>
 
                 <aside className="vital-journal">
@@ -1286,68 +1260,236 @@ export default function VitalDashboardClient({
                       })}
                     </div>
                     {!logYesterday && (todayWorkouts.length > 0 || todaySteps > 0) && (
-                      <div className="vital-journal-move">
-                        {todaySteps > 0 && (
-                          <div className="vital-food-pill">
-                            <div>
-                              <strong>Steps</strong>
-                              <span>{todaySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
-                            </div>
-                          </div>
-                        )}
-                        {todayWorkouts.map((row) => (
-                          <div key={row.id} className="vital-food-pill">
-                            <div>
-                              <strong>{row.note || (row.kind[0].toUpperCase() + row.kind.slice(1))}</strong>
-                              <span>{row.minutes} min · ~{row.kcal_est} kcal work</span>
-                            </div>
-                            <button
-                              type="button"
-                              className="vital-text-btn"
-                              onClick={async () => {
-                                await deleteVitalActivity(row.id);
-                                router.refresh();
-                              }}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                      <button type="button" className="vital-move-jump" onClick={() => setTab('move')}>
+                        {todaySteps > 0 ? `${todaySteps.toLocaleString()} steps` : ''}
+                        {todaySteps > 0 && todayMinutes ? ' · ' : ''}
+                        {todayMinutes ? `${todayMinutes} min logged` : ''}
+                        {' · open Move'}
+                      </button>
                     )}
                   </div>
                 </aside>
               </section>
             )}
 
-            {tab === 'insights' && (
+            {tab === 'move' && (
+              <section className="vital-move-page">
+                <form onSubmit={handleMove} className="vital-card vital-move">
+                  <div className="vital-card-head">
+                    <p className="vital-kicker">{child ? 'Play' : 'Training'}</p>
+                    <span>{todayMinutes ? `${todayMinutes} min logged` : 'Doesn’t add calories back'}</span>
+                  </div>
+                  <div className="vital-week-strip" aria-label="This week’s movement">
+                    {weekStrip.map((day) => (
+                      <div key={day.day} className={`vital-week-day${day.isToday ? ' is-today' : ''}${day.strength ? ' is-strength' : ''}`}>
+                        <i style={{ height: `${Math.max(day.minutes ? 18 : 4, Math.min(48, day.minutes / 2))}px` }} />
+                        <span>{day.label}</span>
+                        <em>{day.minutes || (day.steps ? `${Math.round(day.steps / 1000)}k` : '·')}</em>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="vital-steps">
+                    <div className="vital-steps-head">
+                      <strong>Steps</strong>
+                      <span>{todaySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
+                    </div>
+                    <div className="vital-meter" aria-hidden="true">
+                      <div className="vital-meter-fill" style={{ width: `${Math.min(100, (todaySteps / stepGoal) * 100)}%` }} />
+                    </div>
+                    <div className="vital-meals">
+                      {STEP_PRESETS.map((count) => (
+                        <button key={count} type="button" className={todaySteps === count ? 'is-active' : ''} onClick={() => handleSteps(count)}>
+                          {(count / 1000).toFixed(0)}k
+                        </button>
+                      ))}
+                    </div>
+                    <div className="vital-steps-enter">
+                      <input
+                        className="vital-input"
+                        type="number"
+                        min="100"
+                        max="100000"
+                        step="100"
+                        placeholder="Or type today’s count"
+                        value={stepInput}
+                        onChange={(e) => setStepInput(e.target.value)}
+                      />
+                      <button type="button" className="vital-btn vital-btn-quiet" onClick={() => handleSteps()} disabled={!stepInput}>
+                        Save steps
+                      </button>
+                    </div>
+                  </div>
+                  <p className="vital-kicker">Workout</p>
+                  <div className="vital-move-kinds">
+                    {moveKinds.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`vital-move-tile${moveKind === item.id ? ' is-active' : ''}`}
+                        onClick={() => setMoveKind(item.id)}
+                      >
+                        <MoveGlyph kind={item.id} />
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    className="vital-input"
+                    value={moveNote}
+                    onChange={(e) => setMoveNote(e.target.value)}
+                    placeholder="Optional — Push day, 5K, pickup soccer"
+                    maxLength={80}
+                  />
+                  <div className="vital-move-controls">
+                    <div className="vital-meals">
+                      {MOVE_MINUTES.map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          className={Number(moveMinutes) === mins ? 'is-active' : ''}
+                          onClick={() => setMoveMinutes(String(mins))}
+                        >
+                          {mins}m
+                        </button>
+                      ))}
+                    </div>
+                    <label className="vital-sr" htmlFor="move_min">Minutes</label>
+                    <input
+                      id="move_min"
+                      className="vital-input vital-input-mini"
+                      type="number"
+                      min="1"
+                      max="480"
+                      value={moveMinutes}
+                      onChange={(e) => setMoveMinutes(e.target.value)}
+                      required
+                    />
+                    <div className="vital-meals">
+                      {[
+                        { id: 'easy', label: 'Easy' },
+                        { id: 'moderate', label: 'Mod' },
+                        { id: 'hard', label: 'Hard' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={moveEffort === item.id ? 'is-active' : ''}
+                          onClick={() => setMoveEffort(item.id)}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {moveError && <p className="vital-err">{moveError}</p>}
+                  <div className="vital-composer-actions">
+                    <button type="submit" className="vital-btn">
+                      Log {moveKinds.find((item) => item.id === moveKind)?.label?.toLowerCase() || 'workout'}
+                    </button>
+                    {lastMove && (
+                      <button
+                        type="button"
+                        className="vital-btn vital-btn-quiet"
+                        onClick={() => logShortcut({
+                          kind: lastMove.kind,
+                          minutes: lastMove.minutes,
+                          effort: lastMove.effort,
+                          label: lastMove.note || `${lastMove.kind[0].toUpperCase()}${lastMove.kind.slice(1)} ${lastMove.minutes}`,
+                        })}
+                      >
+                        Repeat last
+                      </button>
+                    )}
+                  </div>
+                  {savedMoves.length > 0 && (
+                    <div className="vital-chips">
+                      {savedMoves.slice(0, 8).map((row) => (
+                        <button key={row.id || row.label} type="button" className="vital-chip" onClick={() => logShortcut(row)}>
+                          {row.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </form>
+                {!logYesterday && (todayWorkouts.length > 0 || todaySteps > 0) && (
+                  <div className="vital-card vital-journal-move">
+                    {todaySteps > 0 && (
+                      <div className="vital-food-pill">
+                        <div>
+                          <strong>Steps</strong>
+                          <span>{todaySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
+                    {todayWorkouts.map((row) => (
+                      <div key={row.id} className="vital-food-pill">
+                        <div>
+                          <strong>{row.note || (row.kind[0].toUpperCase() + row.kind.slice(1))}</strong>
+                          <span>{row.minutes} min · ~{row.kcal_est} kcal work</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="vital-text-btn"
+                          onClick={async () => {
+                            await deleteVitalActivity(row.id);
+                            router.refresh();
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {tab === 'week' && (
               <section className="vital-bento">
                 <div className="vital-card vital-bento-score">
                   <p className="vital-kicker">This week</p>
                   <p className="vital-number">{insights.weekScore}<span>/5</span></p>
-                  <p className="vital-hero-sub">
-                    {insights.streak ? `${insights.streak}-day logging streak` : 'Log a meal or a walk to start a streak.'}
-                  </p>
+                  <p className="vital-hero-sub">{weekLine}</p>
+                  {insights.streak ? (
+                    <p className="vital-muted">{insights.streak}-day logging streak</p>
+                  ) : null}
                 </div>
 
-                <div className="vital-card vital-bento-weight">
+                <form onSubmit={handleWeight} className="vital-card vital-bento-weight">
                   <div className="vital-card-head">
                     <p className="vital-kicker">Weight</p>
                     <span>{insights.weekDeltaLabel || insights.etaLabel || 'Trend'}</span>
                   </div>
                   <p className="vital-number vital-number-move">{insights.currentLabel}</p>
                   <p className="vital-hero-sub">
-                    {insights.lostLabel || 'Log a weigh-in to start the trend.'}
+                    {todayWeight ? 'Today' : (insights.lostLabel || 'Log a weigh-in to start the trend.')}
+                    {todayWeight && insights.lostLabel ? ` · ${insights.lostLabel}` : ''}
                     {insights.remainingLabel ? ` · ${insights.remainingLabel}` : ''}
                   </p>
                   {insights.weightPoints.length > 1 && (
                     <VitalChart
                       values={insights.weightPoints.map((kg) => (units === 'metric' ? kg : kgToLb(kg)))}
                       color="#3d5a80"
-                      height={110}
+                      height={88}
                     />
                   )}
-                </div>
+                  <div className="vital-weigh-row">
+                    <label className="vital-sr" htmlFor="weigh_in">{todayWeight ? 'Update today’s weight' : 'Today’s weight'}</label>
+                    <input
+                      id="weigh_in"
+                      className="vital-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={weightInput}
+                      onChange={(e) => setWeightInput(e.target.value)}
+                      placeholder={units === 'metric' ? 'kg' : 'lb'}
+                      required
+                    />
+                    <button type="submit" className="vital-btn">{todayWeight ? 'Update' : 'Save'}</button>
+                  </div>
+                  {weightError && <p className="vital-err">{weightError}</p>}
+                </form>
 
                 <div className="vital-card vital-bento-metric">
                   <p className="vital-kicker">{child ? 'Play' : 'Move'}</p>
@@ -1440,34 +1582,6 @@ export default function VitalDashboardClient({
                     )}
                   </div>
                 )}
-
-                <form onSubmit={handleWeight} className="vital-card vital-bento-half">
-                  <p className="vital-kicker">Weigh-in</p>
-                  <div className="vital-weigh-row">
-                    <input
-                      id="weigh_in"
-                      className="vital-input"
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={weightInput}
-                      onChange={(e) => setWeightInput(e.target.value)}
-                      placeholder={units === 'metric' ? 'kg' : 'lb'}
-                      required
-                    />
-                    <button type="submit" className="vital-btn">Save</button>
-                  </div>
-                  {weightError && <p className="vital-err">{weightError}</p>}
-                  <div className="vital-weigh-list">
-                    {memberWeights.length === 0 && <p className="vital-muted">No weigh-ins yet.</p>}
-                    {[...memberWeights].reverse().slice(0, 4).map((row) => (
-                      <div key={row.id} className="vital-row">
-                        <span>{row.logged_on}</span>
-                        <strong>{formatWeight(row.weight_kg, units)}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </form>
 
                 {!simple && (
                   <div className="vital-card vital-bento-wide">
@@ -1611,6 +1725,15 @@ export default function VitalDashboardClient({
                       </div>
                     )}
                   </div>
+                </div>
+
+                <div className="vital-card">
+                  <p className="vital-kicker">{child ? 'Play' : 'Move goals'}</p>
+                  <p className="vital-muted">
+                    {child
+                      ? 'About 60 minutes of play a day. It is health, not a calorie diet.'
+                      : 'Lift twice this week on Move. Steps are a health target. Neither one adds food back.'}
+                  </p>
                 </div>
 
                 {!child && (
@@ -1759,7 +1882,7 @@ export default function VitalDashboardClient({
           <div className="vital-sheet">
             <button type="button" className="vital-sheet-close" onClick={() => setShowQuickEdit(false)} aria-label="Close">×</button>
             <h2>Quick add</h2>
-            <p>Pin the foods you reach for every day. That row on Today follows this order.</p>
+            <p>Pin the foods you reach for every day. That row on Eat follows this order.</p>
             {pinPool.length === 0 && <p className="vital-muted">Save a custom food first, then pin it here.</p>}
             {pinPool.map((row) => {
               const key = row.id || row.name;
@@ -1895,6 +2018,49 @@ export default function VitalDashboardClient({
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {serveCook && (
+        <div className="vital-overlay" onPointerDown={(e) => { if (e.target === e.currentTarget) setServeCook(null); }}>
+          <div className="vital-sheet">
+            <button type="button" className="vital-sheet-close" onClick={() => setServeCook(null)} aria-label="Close">×</button>
+            <h2>Serve {serveCook.title}</h2>
+            <p>Logs the whole plate for whoever ate it. Kids still get food logged — not a calorie diet.</p>
+            {members.map((row) => (
+              <div key={row.id} className="vital-row vital-serve-row">
+                <div>
+                  <strong>{row.display_name}</strong>
+                  <span>{row.id === memberId ? 'You' : row.kind === 'child' ? 'Child' : 'Adult'}</span>
+                </div>
+                <div className="vital-meals">
+                  {FAMILY_SERVINGS.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      className={Number(servePortions[row.id]) === size ? 'is-active' : ''}
+                      onClick={() => setServePortions((prev) => ({ ...prev, [row.id]: prev[row.id] === size ? 0 : size }))}
+                    >
+                      {size === 1 ? '1×' : `${size}×`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="vital-btn"
+              disabled={cookBusy}
+              onClick={() => logCookPlate(
+                serveCook,
+                Object.entries(servePortions)
+                  .filter(([, servings]) => Number(servings) > 0)
+                  .map(([id, servings]) => ({ member_id: id, servings }))
+              )}
+            >
+              {cookBusy ? 'Logging…' : 'Serve to household'}
+            </button>
           </div>
         </div>
       )}

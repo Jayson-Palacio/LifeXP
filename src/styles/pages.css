@@ -3663,6 +3663,31 @@ body:has(.quests-app) {
   margin-top: 14px;
 }
 
+.vital-usual {
+  margin-top: 14px;
+}
+
+.vital-usual .vital-kicker {
+  margin: 0 0 8px;
+}
+
+.vital-usual-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vital-chip.is-usual {
+  background: #f4f6f8;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.vital-chip.is-usual:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .vital-move-kinds {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
@@ -3896,6 +3921,7 @@ body:has(.quests-app) {
   display: flex;
   gap: 8px;
   align-items: center;
+  margin-top: 12px;
 }
 
 .vital-weigh-row .vital-btn {
@@ -3994,7 +4020,7 @@ body:has(.quests-app) {
 
 @media (min-width: 740px) {
   .vital-tabs {
-    max-width: 360px;
+    max-width: 480px;
   }
 }
 
@@ -4061,6 +4087,11 @@ body:has(.quests-app) {
     margin: 0 0 12px;
   }
 
+  .vital-tabs button {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+
   .vital-board {
     display: flex;
     flex-direction: column;
@@ -4074,11 +4105,11 @@ body:has(.quests-app) {
     order: 1;
   }
 
-  .vital-journal {
+  .vital-plate {
     order: 2;
   }
 
-  .vital-plate {
+  .vital-journal {
     order: 3;
   }
 
@@ -4089,6 +4120,10 @@ body:has(.quests-app) {
   .vital-quick-foods {
     margin-top: 10px;
     margin-bottom: 4px;
+  }
+
+  .vital-usual {
+    margin-top: 10px;
   }
 
   .vital-chip {
@@ -4357,6 +4392,55 @@ body:has(.quests-app) {
 .vital-plate p {
   color: var(--vital-muted);
   margin-bottom: 12px;
+}
+
+.vital-plate-ings {
+  margin: -4px 0 14px;
+  font-size: 13px;
+  color: var(--vital-ink);
+}
+
+.vital-plate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.vital-plate-actions .vital-btn {
+  margin: 0;
+}
+
+.vital-ring-hit {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.vital-move-page {
+  display: grid;
+  gap: 14px;
+  max-width: 640px;
+}
+
+.vital-move-jump {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #f3f4f7;
+  color: var(--vital-muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
 }
 
 .vital-food-pill .vital-row-actions {

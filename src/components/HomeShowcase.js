@@ -17,7 +17,7 @@ const APPS = [
     name: 'Vital',
     kicker: 'Health',
     headline: 'Health, without the noise.',
-    lede: 'Meals, weight, and a calm plan for everyone under your roof — kids included, without turning dinner into a diet.',
+    lede: 'Meals, movement, and a calm plan for everyone under your roof — kids included, without turning dinner into a diet.',
   },
   {
     id: 'ledger',

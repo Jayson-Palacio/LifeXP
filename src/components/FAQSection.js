@@ -14,7 +14,7 @@ const faqs = [
   },
   {
     question: "What is Vital?",
-    answer: "Vital is household health. Add each person, then log meals in a tap from a kitchen list. Adults can set a weight plan with research-based calorie and protein targets. Kids are treated as growing — we track meals, not diets."
+    answer: "Vital is household health. Eat logs meals in a couple taps, including usual plates. Move is walks and lifts, and does not add calories back. Adults can set a weight plan. Kids are treated as growing — we track meals, not diets."
   },
   {
     question: "What is Ledger?",

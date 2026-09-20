@@ -258,9 +258,14 @@ begin
       select 1 from public.vital_foods nf
       where nf.member_id = m.id and nf.logged_on = f.logged_on and nf.name = f.name and nf.created_at = f.created_at
     );
+  end if;
+end $$;
+
 do $$
 begin
   alter table public.vital_foods drop constraint if exists vital_foods_meal_check;
   alter table public.vital_foods add constraint vital_foods_meal_check
     check (meal in ('breakfast', 'lunch', 'dinner', 'snack', 'drink'));
 end $$;
+
+notify pgrst, 'reload schema';

@@ -418,6 +418,60 @@ export async function logVitalFood(payload) {
   return { success: true, data };
 }
 
+export async function logVitalPlate(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+
+  const owned = await ownedMember(auth.supabase, auth.user.id, payload.member_id);
+  if (owned.error) return fail(owned.error);
+
+  const meal = MEAL_IDS.includes(payload.meal) ? payload.meal : 'snack';
+  const loggedOn = /^\d{4}-\d{2}-\d{2}$/.test(payload.logged_on || '') ? payload.logged_on : localDateISO();
+  const servings = num(payload.servings) || 1;
+  const source = Array.isArray(payload.items) ? payload.items.slice(0, 12) : [];
+  const inserts = [];
+
+  for (const item of source) {
+    const name = String(item?.name || '').trim();
+    if (name.length < 1 || name.length > 120) continue;
+    const scaled = scaleServing({
+      calories: num(item.calories) ?? 0,
+      protein_g: num(item.protein_g) ?? 0,
+      carbs_g: num(item.carbs_g) ?? 0,
+      fat_g: num(item.fat_g) ?? 0,
+      fiber_g: num(item.fiber_g) ?? 0,
+    }, servings);
+    if (scaled.calories < 0 || scaled.calories > 5000) continue;
+    inserts.push({
+      member_id: owned.member.id,
+      owner_id: auth.user.id,
+      name,
+      calories: Math.round(scaled.calories),
+      protein_g: Math.round((scaled.protein_g || 0) * 10) / 10,
+      carbs_g: Math.round((scaled.carbs_g || 0) * 10) / 10,
+      fat_g: Math.round((scaled.fat_g || 0) * 10) / 10,
+      fiber_g: Math.round((scaled.fiber_g || 0) * 10) / 10,
+      meal: MEAL_IDS.includes(item.meal) ? item.meal : meal,
+      logged_on: loggedOn,
+    });
+  }
+
+  if (!inserts.length) return fail('Nothing to log on that plate.');
+
+  let { error } = await auth.supabase.from('vital_foods').insert(inserts);
+  if (error && /fiber_g/i.test(error.message || '')) {
+    ({ error } = await auth.supabase.from('vital_foods').insert(inserts.map((row) => {
+      const copy = { ...row };
+      delete copy.fiber_g;
+      return copy;
+    })));
+  }
+  if (error) return fail(error.message);
+
+  revalidatePath('/vital');
+  return { success: true, data: { count: inserts.length } };
+}
+
 export async function deleteVitalFood(id) {
   const auth = await vitalUser();
   if (auth.error) return fail(auth.error);
@@ -674,53 +728,6 @@ export async function deleteVitalKitchenItem(id) {
   if (error) return fail(error.message);
   revalidatePath('/vital');
   return { success: true };
-}
-
-export async function copyYesterdayMeals(memberId) {
-  const auth = await vitalUser();
-  if (auth.error) return fail(auth.error);
-  const owned = await ownedMember(auth.supabase, auth.user.id, memberId);
-  if (owned.error) return fail(owned.error);
-
-  const today = localDateISO();
-  const yesterdayDate = new Date(`${today}T12:00:00`);
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterday = localDateISO(yesterdayDate);
-
-  const { data: existing } = await auth.supabase
-    .from('vital_foods')
-    .select('id')
-    .eq('member_id', owned.member.id)
-    .eq('logged_on', today)
-    .limit(1);
-  if (existing?.length) return fail('Today already has meals. Remove them first if you want a full copy.');
-
-  let { data: rows, error } = await auth.supabase
-    .from('vital_foods')
-    .select('name, calories, protein_g, carbs_g, fat_g, fiber_g, meal')
-    .eq('member_id', owned.member.id)
-    .eq('logged_on', yesterday);
-  if (error && /fiber_g/i.test(error.message || '')) {
-    ({ data: rows, error } = await auth.supabase
-      .from('vital_foods')
-      .select('name, calories, protein_g, carbs_g, fat_g, meal')
-      .eq('member_id', owned.member.id)
-      .eq('logged_on', yesterday));
-  }
-  if (error) return fail(error.message);
-  if (!rows?.length) return fail('Nothing was logged yesterday to copy.');
-
-  const { error: insertError } = await auth.supabase.from('vital_foods').insert(
-    rows.map((row) => ({
-      ...row,
-      member_id: owned.member.id,
-      owner_id: auth.user.id,
-      logged_on: today,
-    }))
-  );
-  if (insertError) return fail(insertError.message);
-  revalidatePath('/vital');
-  return { success: true, data: { count: rows.length } };
 }
 
 export async function lookupBarcodeFood(barcode) {
