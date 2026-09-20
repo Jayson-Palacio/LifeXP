@@ -1,17 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import GoldCoin from './GoldCoin';
 import { showToast } from '../lib/ui';
-import { changeParentPin, updateAppSettings } from '../app/actions/auth';
-import { submitTicket } from '../app/actions/support';
-import { logout } from '../app/login/actions';
+import { updateAppSettings } from '../app/actions/auth';
 
-// Support & Donation Configuration
-const STRIPE_DONATION_URL = 'https://donate.stripe.com/28EfZg6aG81Of5zd8ggQE00';
-
-// ─── ABOUT ACCORDION ITEM ─────────────────────────────────────────────────────
 function AccordionItem({ icon, title, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   const [hovered, setHovered] = useState(false);
@@ -62,19 +56,19 @@ function AccordionItem({ icon, title, children, defaultOpen = false }) {
   );
 }
 
-// ─── ABOUT SECTION (GAME GUIDE) ───────────────────────────────────────────────
+// â”€â”€â”€ ABOUT SECTION (GAME GUIDE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AboutSection() {
   const tierData = [
-    { range: '1–10',   name: 'The Beginning', symbol: '🌱' },
-    { range: '11–20',  name: 'The Seeker',    symbol: '🧭' },
-    { range: '21–30',  name: 'The Grower',    symbol: '🌿' },
-    { range: '31–40',  name: 'The Aware',     symbol: '👁' },
-    { range: '41–50',  name: 'The Steady',    symbol: '⛰' },
-    { range: '51–60',  name: 'The Wise',      symbol: '🕯' },
-    { range: '61–70',  name: 'The Chosen',    symbol: '✦' },
-    { range: '71–80',  name: 'The Devoted',   symbol: '🌊' },
-    { range: '81–90',  name: 'The Guiding',   symbol: '🏮' },
-    { range: '91–100', name: 'The Everlight', symbol: '☀' },
+    { range: '1â€“10',   name: 'The Beginning', symbol: 'ðŸŒ±' },
+    { range: '11â€“20',  name: 'The Seeker',    symbol: 'ðŸ§­' },
+    { range: '21â€“30',  name: 'The Grower',    symbol: 'ðŸŒ¿' },
+    { range: '31â€“40',  name: 'The Aware',     symbol: 'ðŸ‘' },
+    { range: '41â€“50',  name: 'The Steady',    symbol: 'â›°' },
+    { range: '51â€“60',  name: 'The Wise',      symbol: 'ðŸ•¯' },
+    { range: '61â€“70',  name: 'The Chosen',    symbol: 'âœ¦' },
+    { range: '71â€“80',  name: 'The Devoted',   symbol: 'ðŸŒŠ' },
+    { range: '81â€“90',  name: 'The Guiding',   symbol: 'ðŸ®' },
+    { range: '91â€“100', name: 'The Everlight', symbol: 'â˜€' },
   ];
 
   const ringData = [
@@ -87,7 +81,7 @@ function AboutSection() {
     { name: 'Plasma',       level: 55,  desc: 'Multi-color animated plasma' },
     { name: 'Fire',         level: 70,  desc: 'Flickering fire aura' },
     { name: 'Galaxy',       level: 85,  desc: 'Deep space starfield spin' },
-    { name: '✦ Legendary',  level: 100, desc: 'Full rainbow prismatic spin' },
+    { name: 'âœ¦ Legendary',  level: 100, desc: 'Full rainbow prismatic spin' },
   ];
 
   const colorMilestones = [
@@ -125,7 +119,7 @@ function AboutSection() {
         border: '1px solid rgba(168,85,247,0.2)',
         borderRadius: 'var(--radius-lg)',
       }}>
-        <span style={{ fontSize: '2rem' }}>📖</span>
+        <span style={{ fontSize: '2rem' }}>ðŸ“–</span>
         <div>
           <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-bright)' }}>Kaeluma Academy</div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 2 }}>
@@ -138,9 +132,9 @@ function AboutSection() {
         {/* Core Rules Group */}
         <div>
           <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, paddingLeft: 4 }}>
-            🎮 How Quests works
+            ðŸŽ® How Quests works
           </div>
-          <AccordionItem icon="🌟" title="What is Kaeluma?" defaultOpen={true}>
+          <AccordionItem icon="ðŸŒŸ" title="What is Kaeluma?" defaultOpen={true}>
             <p style={{ margin: '0 0 12px' }}>
               <strong style={{ color: 'var(--text-bright)' }}>Kaeluma</strong> turns family routines into a game kids actually want to play. 
               Parents create <strong style={{ color: 'var(--text-bright)' }}>missions</strong> (chores, routines, learning goals) 
@@ -149,12 +143,12 @@ function AboutSection() {
               completing missions, level up to unlock customization options, and spend coins to redeem real-world rewards.
             </p>
             <p style={{ margin: 0 }}>
-              The goal is to build healthy habits through positive reinforcement — no punishments, only progress. 
-              Every completed mission brings players closer to their next level, tier, and reward. 🚀
+              The goal is to build healthy habits through positive reinforcement â€” no punishments, only progress. 
+              Every completed mission brings players closer to their next level, tier, and reward. ðŸš€
             </p>
           </AccordionItem>
           
-          <AccordionItem icon="🎯" title="Missions & XP">
+          <AccordionItem icon="ðŸŽ¯" title="Missions & XP">
             <p style={{ margin: '0 0 12px' }}>
               Missions are tasks you create for your family. Each mission awards 
               <strong style={{ color: 'var(--gold)' }}> XP (Experience Points)</strong> and 
@@ -163,10 +157,10 @@ function AboutSection() {
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14, marginBottom: 12 }}>
               <div style={{ fontWeight: 700, color: 'var(--text-bright)', marginBottom: 8, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mission Settings</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div>📅 <strong style={{ color: 'var(--text-bright)' }}>Frequency:</strong> Daily, Weekly, Monthly, or Custom Date Range</div>
-                <div>🔁 <strong style={{ color: 'var(--text-bright)' }}>Repeats:</strong> Set how many times per period (e.g. 3x daily)</div>
-                <div>👥 <strong style={{ color: 'var(--text-bright)' }}>Assignment:</strong> Assign to specific players or leave open for all</div>
-                <div>📆 <strong style={{ color: 'var(--text-bright)' }}>Weekly Days:</strong> Choose specific days for weekly missions</div>
+                <div>ðŸ“… <strong style={{ color: 'var(--text-bright)' }}>Frequency:</strong> Daily, Weekly, Monthly, or Custom Date Range</div>
+                <div>ðŸ” <strong style={{ color: 'var(--text-bright)' }}>Repeats:</strong> Set how many times per period (e.g. 3x daily)</div>
+                <div>ðŸ‘¥ <strong style={{ color: 'var(--text-bright)' }}>Assignment:</strong> Assign to specific players or leave open for all</div>
+                <div>ðŸ“† <strong style={{ color: 'var(--text-bright)' }}>Weekly Days:</strong> Choose specific days for weekly missions</div>
               </div>
             </div>
             <p style={{ margin: '0 0 8px' }}>
@@ -174,27 +168,27 @@ function AboutSection() {
               missions show as "pending" until a parent approves them. Turn it off for auto-approve mode.
             </p>
             <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>
-              💡 Tip: Use the Mission Inspiration Library in the Activities tab for 75+ ready-made mission ideas!
+              ðŸ’¡ Tip: Use the Mission Inspiration Library in the Activities tab for 75+ ready-made mission ideas!
             </p>
           </AccordionItem>
           
           <AccordionItem icon={<GoldCoin />} title="Coins & Rewards">
             <p style={{ margin: '0 0 12px' }}>
               <strong style={{ color: 'var(--amber)' }}>Coins</strong> are the in-app currency players earn from completing missions. 
-              They can spend coins to redeem <strong style={{ color: 'var(--text-bright)' }}>Rewards</strong> — real-world treats 
+              They can spend coins to redeem <strong style={{ color: 'var(--text-bright)' }}>Rewards</strong> â€” real-world treats 
               that you define (screen time, ice cream, a trip to the park, etc).
             </p>
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14, marginBottom: 12 }}>
               <div style={{ fontWeight: 700, color: 'var(--text-bright)', marginBottom: 8, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reward Controls</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div>💰 <strong style={{ color: 'var(--text-bright)' }}>Cost:</strong> Set how many coins each reward costs</div>
-                <div>🔒 <strong style={{ color: 'var(--text-bright)' }}>Limits:</strong> Cap redemptions per day, week, month, or total</div>
-                <div>👥 <strong style={{ color: 'var(--text-bright)' }}>Assignment:</strong> Make rewards available to specific players</div>
-                <div>✅ <strong style={{ color: 'var(--text-bright)' }}>Fulfillment:</strong> Mark rewards as "Given" or refund coins</div>
+                <div>ðŸ’° <strong style={{ color: 'var(--text-bright)' }}>Cost:</strong> Set how many coins each reward costs</div>
+                <div>ðŸ”’ <strong style={{ color: 'var(--text-bright)' }}>Limits:</strong> Cap redemptions per day, week, month, or total</div>
+                <div>ðŸ‘¥ <strong style={{ color: 'var(--text-bright)' }}>Assignment:</strong> Make rewards available to specific players</div>
+                <div>âœ… <strong style={{ color: 'var(--text-bright)' }}>Fulfillment:</strong> Mark rewards as "Given" or refund coins</div>
               </div>
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>
-              💡 Tip: Parents can manually add or deduct coins from a player's profile by tapping their card on the overview.
+              ðŸ’¡ Tip: Parents can manually add or deduct coins from a player's profile by tapping their card on the overview.
             </p>
           </AccordionItem>
         </div>
@@ -202,12 +196,12 @@ function AboutSection() {
         {/* Progression Group */}
         <div>
           <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, paddingLeft: 4 }}>
-            📈 Leveling & Customization
+            ðŸ“ˆ Leveling & Customization
           </div>
-          <AccordionItem icon="📈" title="Leveling System (1–100)">
+          <AccordionItem icon="ðŸ“ˆ" title="Leveling System (1â€“100)">
             <p style={{ margin: '0 0 12px' }}>
               Players start at <strong style={{ color: 'var(--text-bright)' }}>Level 1</strong> and can reach 
-              <strong style={{ color: 'var(--text-bright)' }}> Level 100</strong>. XP requirements grow exponentially — 
+              <strong style={{ color: 'var(--text-bright)' }}> Level 100</strong>. XP requirements grow exponentially â€” 
               early levels are quick to motivate beginners, while later levels require more dedication.
             </p>
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14, marginBottom: 12 }}>
@@ -226,13 +220,13 @@ function AboutSection() {
               </div>
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>
-              Level-ups trigger a full-screen celebration with confetti and sound effects! 🎉
+              Level-ups trigger a full-screen celebration with confetti and sound effects! ðŸŽ‰
             </p>
           </AccordionItem>
           
-          <AccordionItem icon="🏅" title="Tiers (10 Ranks)">
+          <AccordionItem icon="ðŸ…" title="Tiers (10 Ranks)">
             <p style={{ margin: '0 0 12px' }}>
-              Every 10 levels, players enter a new <strong style={{ color: 'var(--text-bright)' }}>Tier</strong> — a named 
+              Every 10 levels, players enter a new <strong style={{ color: 'var(--text-bright)' }}>Tier</strong> â€” a named 
               rank that represents their journey. Reaching a new tier triggers a special ceremony!
             </p>
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14 }}>
@@ -248,7 +242,7 @@ function AboutSection() {
             </div>
           </AccordionItem>
           
-          <AccordionItem icon="🎨" title="Theme Colors (23 Unlockables)">
+          <AccordionItem icon="ðŸŽ¨" title="Theme Colors (23 Unlockables)">
             <p style={{ margin: '0 0 12px' }}>
               Players can customize their dashboard color theme as they level up. Start with 3 basic colors and unlock 
               <strong style={{ color: 'var(--text-bright)' }}> 23 total</strong>, including neons, gradients, and 
@@ -264,7 +258,7 @@ function AboutSection() {
             </div>
           </AccordionItem>
           
-          <AccordionItem icon="💫" title="Ring Styles (10 Effects)">
+          <AccordionItem icon="ðŸ’«" title="Ring Styles (10 Effects)">
             <p style={{ margin: '0 0 12px' }}>
               The avatar ring is the glowing border around your child's profile picture. 
               As they level up, more elaborate animated ring effects unlock.
@@ -286,9 +280,9 @@ function AboutSection() {
         {/* Streaks & Secrets Group */}
         <div>
           <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, paddingLeft: 4 }}>
-            🔥 Streaks & Secrets
+            ðŸ”¥ Streaks & Secrets
           </div>
-          <AccordionItem icon="🔥" title="Streaks">
+          <AccordionItem icon="ðŸ”¥" title="Streaks">
             <p style={{ margin: '0 0 12px' }}>
               Completing at least one mission per day builds a <strong style={{ color: 'var(--text-bright)' }}>streak</strong>. 
               Streaks evolve visually as they grow, encouraging consistency:
@@ -296,10 +290,10 @@ function AboutSection() {
             <div style={{ background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', padding: 14 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
-                  { icon: '🔥', range: '1–6 days', label: 'Flame', color: '#fb923c' },
-                  { icon: '⚡', range: '7–29 days', label: 'Lightning', color: '#3b82f6' },
-                  { icon: '💎', range: '30–99 days', label: 'Diamond', color: '#06b6d4' },
-                  { icon: '🌌', range: '100+ days', label: 'Cosmic', color: '#d946ef' },
+                  { icon: 'ðŸ”¥', range: '1â€“6 days', label: 'Flame', color: '#fb923c' },
+                  { icon: 'âš¡', range: '7â€“29 days', label: 'Lightning', color: '#3b82f6' },
+                  { icon: 'ðŸ’Ž', range: '30â€“99 days', label: 'Diamond', color: '#06b6d4' },
+                  { icon: 'ðŸŒŒ', range: '100+ days', label: 'Cosmic', color: '#d946ef' },
                 ].map(s => (
                   <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: `${s.color}12`, border: `1px solid ${s.color}30` }}>
                     <span style={{ fontSize: '1.5rem' }}>{s.icon}</span>
@@ -312,16 +306,16 @@ function AboutSection() {
               </div>
             </div>
             <p style={{ margin: '12px 0 0', fontSize: '0.85rem', opacity: 0.7 }}>
-              ⚠️ Missing 2 consecutive days resets the streak back to 0. Keep it going!
+              âš ï¸ Missing 2 consecutive days resets the streak back to 0. Keep it going!
             </p>
           </AccordionItem>
           
-          <AccordionItem icon="🥚" title="Easter Eggs">
+          <AccordionItem icon="ðŸ¥š" title="Easter Eggs">
             <p style={{ margin: 0 }}>
               Players can discover hidden surprises by tapping their avatar on the dashboard 5 times quickly. 
-              Each tap triggers a random animation effect — glow, spin, color shift, wobble, flip, or shake. 
+              Each tap triggers a random animation effect â€” glow, spin, color shift, wobble, flip, or shake. 
               There's also a special <strong style={{ color: 'var(--gold)' }}>All-Clear Celebration</strong> that 
-              plays when every daily mission has been completed! 🎊
+              plays when every daily mission has been completed! ðŸŽŠ
             </p>
           </AccordionItem>
         </div>
@@ -330,38 +324,11 @@ function AboutSection() {
   );
 }
 
-export default function SettingsTab({ initialSettings, onOpenSupport }) {
-  const router = useRouter();
+export default function SettingsTab({ initialSettings }) {
   const [settings, setSettings] = useState(initialSettings || { require_approval: true, family_name: 'Our Family' });
   const [subTab, setSubTab] = useState('preferences'); // 'preferences' | 'guide'
-  
-  // PIN states
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pinPhase, setPinPhase] = useState('current'); // 'current' | 'new' | 'confirm'
-  const [inputPin, setInputPin] = useState('');
-  const [storedCurrentPin, setStoredCurrentPin] = useState('');
-  const [storedNewPin, setStoredNewPin] = useState('');
-  const [pinError, setPinError] = useState('');
-
-  // Auto-save feedback indicators
-  const [familyNameInput, setFamilyNameInput] = useState(settings.family_name || 'Our Family');
-  const [nameSaving, setNameSaving] = useState('idle'); // 'idle' | 'saving' | 'saved'
   const [tzSaving, setTzSaving] = useState('idle'); // 'idle' | 'saving' | 'saved'
-
-  const [ticketType, setTicketType] = useState('bug');
-  const [ticketMessage, setTicketMessage] = useState('');
-  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
-
-
-  // Read and write tz from localStorage (client only)
   const [tzOffset, setTzOffset] = useState('');
-
-  // Sync state with settings updates
-  useEffect(() => {
-    if (settings.family_name) {
-      setFamilyNameInput(settings.family_name);
-    }
-  }, [settings.family_name]);
 
   // Load timezone client-side
   useEffect(() => {
@@ -370,24 +337,6 @@ export default function SettingsTab({ initialSettings, onOpenSupport }) {
       setTzOffset(v !== null ? v : '');
     }
   }, []);
-
-  const handleSaveName = async () => {
-    const trimmed = familyNameInput.trim();
-    if (trimmed === '') return;
-    if (trimmed === settings.family_name) return;
-    
-    setNameSaving('saving');
-    try {
-      await updateAppSettings({ family_name: trimmed });
-      setSettings(s => ({ ...s, family_name: trimmed }));
-      setNameSaving('saved');
-      showToast('Family name saved! 🏡');
-      setTimeout(() => setNameSaving('idle'), 2000);
-    } catch (err) {
-      setNameSaving('idle');
-      showToast('Failed to save name: ' + err.message, 'error');
-    }
-  };
 
   const handleSaveTz = (newTz) => {
     setTzOffset(newTz);
@@ -399,7 +348,7 @@ export default function SettingsTab({ initialSettings, onOpenSupport }) {
         localStorage.setItem('kaeluma_tz_offset', newTz);
       }
       setTzSaving('saved');
-      showToast('Reset timezone auto-saved! ⏰');
+      showToast('Reset timezone auto-saved! â°');
       setTimeout(() => setTzSaving('idle'), 2000);
     } catch (err) {
       setTzSaving('idle');
@@ -407,397 +356,133 @@ export default function SettingsTab({ initialSettings, onOpenSupport }) {
     }
   };
 
-  const startPinChange = () => {
-    setShowPinModal(true);
-    setPinPhase('current');
-    setInputPin('');
-    setPinError('');
-    setStoredCurrentPin('');
-    setStoredNewPin('');
-  };
-
-  const handlePinKey = async (val) => {
-    if (val === 'del') { setInputPin(p => p.slice(0, -1)); return; }
-    if (inputPin.length >= 4) return;
-    const next = inputPin + val;
-    setInputPin(next);
-    if (next.length < 4) return;
-
-    // Give UI a tick to update dots before action
-    setTimeout(async () => {
-      if (pinPhase === 'current') {
-        setStoredCurrentPin(next);
-        setPinPhase('new');
-        setInputPin('');
-      } else if (pinPhase === 'new') {
-        setStoredNewPin(next);
-        setPinPhase('confirm');
-        setInputPin('');
-      } else {
-        // confirm phase
-        if (next !== storedNewPin) {
-          setPinError('PINs do not match. Try again.');
-          setPinPhase('new');
-          setInputPin('');
-          setStoredNewPin('');
-        } else {
-          const res = await changeParentPin(storedCurrentPin, next);
-          if (res.success) {
-            showToast('PIN changed successfully! 🔒');
-            setShowPinModal(false);
-            setPinPhase('current');
-            setInputPin('');
-            setStoredCurrentPin('');
-            setStoredNewPin('');
-            setPinError('');
-          } else {
-            setPinError(res.error || 'Incorrect current PIN.');
-            setPinPhase('current');
-            setInputPin('');
-            setStoredCurrentPin('');
-          }
-        }
-      }
-    }, 80);
-  };
-
-  const phaseLabels = {
-    current: '🔑 Enter Current PIN',
-    new: '✨ Enter New PIN',
-    confirm: '✅ Confirm New PIN'
-  };
-
   return (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
-      {/* Header */}
       <div style={{ marginBottom: 'var(--space-lg)' }}>
         <p className="quests-kicker">Quests</p>
         <h2 style={{ fontSize: 'clamp(1.6rem, 5vw, 2rem)', fontWeight: 600, letterSpacing: '-0.035em', margin: 0 }}>Settings.</h2>
       </div>
 
-      {/* Segmented Sub-tab Navigation */}
       <div className="segment-control" style={{ position: 'relative', width: '100%', maxWidth: 440, margin: '0 auto var(--space-xl)' }}>
-        <button 
+        <button
           className={`segment-control-btn ${subTab === 'preferences' ? 'active' : ''}`}
           onClick={() => setSubTab('preferences')}
         >
-          🔧 Preferences
+          Preferences
         </button>
-        <button 
+        <button
           className={`segment-control-btn ${subTab === 'guide' ? 'active' : ''}`}
           onClick={() => setSubTab('guide')}
         >
-          📖 Game Guide
+          Game Guide
         </button>
         <div className={`segment-control-indicator ${subTab === 'preferences' ? 'pos-0' : 'pos-1'}`} />
       </div>
 
       {subTab === 'preferences' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-          
-          {/* COMPACT SUPPORT BANNER */}
+          <Link
+            href="/apps?tab=account"
+            className="btn btn-ghost"
+            style={{
+              display: 'block',
+              textAlign: 'left',
+              padding: '16px 18px',
+              textDecoration: 'none',
+            }}
+          >
+            <div style={{ fontWeight: 700, color: 'var(--text-bright)' }}>Household &amp; apps</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
+              Family name, parent PIN, support, and which apps show after sign-in live in Apps â†’ Account.
+            </div>
+          </Link>
+
           <div style={{
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.04) 100%)',
-            border: '1px solid rgba(99, 102, 241, 0.22)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--bg-glass-border)',
             borderRadius: 'var(--radius-lg)',
-            padding: '16px 20px',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 14,
-            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.05)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 300px' }}>
-              <span style={{ fontSize: '1.6rem' }}>💖</span>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-bright)' }}>Support Kaeluma</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, marginTop: 1 }}>
-                  Send a voluntary one-time tip to support development and cover hosting costs.
-                </div>
-              </div>
-            </div>
-            <a
-              href={STRIPE_DONATION_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                background: 'linear-gradient(90deg, #635BFF 0%, #7B73FF 100%)',
-                color: '#fff',
-                fontWeight: 800,
-                padding: '10px 18px',
-                fontSize: '0.85rem',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
-              Support on Stripe
-            </a>
-          </div>
-
-          {/* FAMILY PROFILE */}
-          <div style={{ 
-            background: 'var(--bg-surface)', 
-            border: '1px solid var(--bg-glass-border)', 
-            borderRadius: 'var(--radius-lg)', 
             padding: 'var(--space-lg)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: '1.3rem' }}>🏡</span>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-bright)' }}>Family Profile</div>
-            </div>
-            
-            <div className="input-group" style={{ marginBottom: 16, position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label>Family Name</label>
-                {nameSaving === 'saving' && <span style={{ fontSize: '0.78rem', color: 'var(--primary)' }}>Saving...</span>}
-                {nameSaving === 'saved' && <span style={{ fontSize: '0.78rem', color: 'var(--green)' }}>✓ Auto-saved</span>}
-              </div>
-              <input
-                className="input"
-                value={familyNameInput}
-                onChange={e => setFamilyNameInput(e.target.value)}
-                onBlur={handleSaveName}
-                onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); }}
-                placeholder="e.g. The Johnson Family"
-                style={{ borderColor: nameSaving === 'saved' ? 'var(--green)' : '' }}
-              />
-            </div>
-
-            <div className="input-group" style={{ position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label>Daily Reset Timezone</label>
-                {tzSaving === 'saving' && <span style={{ fontSize: '0.78rem', color: 'var(--primary)' }}>Saving...</span>}
-                {tzSaving === 'saved' && <span style={{ fontSize: '0.78rem', color: 'var(--green)' }}>✓ Auto-saved</span>}
-              </div>
-              <select
-                className="input"
-                value={tzOffset}
-                onChange={e => handleSaveTz(e.target.value)}
-                style={{ borderColor: tzSaving === 'saved' ? 'var(--green)' : '' }}
-              >
-                <option value="">📱 Use device timezone (default)</option>
-                <option value="-12">UTC-12 — Baker Island</option>
-                <option value="-11">UTC-11 — American Samoa</option>
-                <option value="-10">UTC-10 — Hawaii</option>
-                <option value="-9">UTC-9 — Alaska</option>
-                <option value="-8">UTC-8 — Pacific Time (US &amp; Canada)</option>
-                <option value="-7">UTC-7 — Mountain Time (US &amp; Canada)</option>
-                <option value="-6">UTC-6 — Central Time (US &amp; Canada)</option>
-                <option value="-5">UTC-5 — Eastern Time (US &amp; Canada)</option>
-                <option value="-4">UTC-4 — Atlantic Time / Venezuela</option>
-                <option value="-3">UTC-3 — Brazil / Argentina</option>
-                <option value="-2">UTC-2 — South Georgia</option>
-                <option value="-1">UTC-1 — Azores</option>
-                <option value="0">UTC+0 — London / Dublin / Lisbon</option>
-                <option value="1">UTC+1 — Paris / Berlin / Rome / Madrid</option>
-                <option value="2">UTC+2 — Athens / Cairo / Johannesburg</option>
-                <option value="3">UTC+3 — Moscow / Nairobi / Riyadh</option>
-                <option value="4">UTC+4 — Dubai / Baku</option>
-                <option value="4.5">UTC+4:30 — Kabul</option>
-                <option value="5">UTC+5 — Pakistan</option>
-                <option value="5.5">UTC+5:30 — India (IST)</option>
-                <option value="6">UTC+6 — Bangladesh / Almaty</option>
-                <option value="7">UTC+7 — Bangkok / Jakarta</option>
-                <option value="8">UTC+8 — Singapore / Hong Kong / Perth</option>
-                <option value="9">UTC+9 — Tokyo / Seoul</option>
-                <option value="9.5">UTC+9:30 — Adelaide</option>
-                <option value="10">UTC+10 — Sydney / Melbourne</option>
-                <option value="11">UTC+11 — Solomon Islands</option>
-                <option value="12">UTC+12 — Auckland / Fiji</option>
-              </select>
-            </div>
-          </div>
-
-          {/* SECURITY & SYSTEM */}
-          <div style={{ 
-            background: 'var(--bg-surface)', 
-            border: '1px solid var(--bg-glass-border)', 
-            borderRadius: 'var(--radius-lg)', 
-            padding: 'var(--space-lg)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: '1.3rem' }}>🛡️</span>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-bright)' }}>Security &amp; System</div>
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-bright)', marginBottom: 16 }}>
+              Quests
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-bright)' }}>Require Approvals</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                  Missions must be approved by parents before rewards unlock.
+                  Missions must be approved before rewards unlock.
                 </div>
               </div>
               <button
+                type="button"
                 onClick={async () => {
                   const newVal = !settings.require_approval;
                   await updateAppSettings({ require_approval: newVal });
-                  setSettings(s => ({ ...s, require_approval: newVal }));
-                  showToast(newVal ? '✅ Approvals required' : '⚡ Auto-approve on');
+                  setSettings((s) => ({ ...s, require_approval: newVal }));
+                  showToast(newVal ? 'Approvals required' : 'Auto-approve on');
                 }}
                 style={{
                   width: 50, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
                   background: settings.require_approval ? 'var(--green)' : 'var(--bg-surface-alt)',
                   position: 'relative', transition: 'background 0.25s', flexShrink: 0,
-                  boxShadow: settings.require_approval ? 'var(--glow-green)' : 'none',
                 }}
               >
                 <div style={{
                   position: 'absolute', top: 3,
                   left: settings.require_approval ? 27 : 3,
                   width: 20, height: 20, borderRadius: '50%', background: '#fff',
-                  transition: 'left 0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)'
+                  transition: 'left 0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
                 }} />
               </button>
             </div>
 
-            <div style={{ borderTop: '1px solid var(--bg-glass-border)', paddingTop: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-bright)' }}>Parent Dashboard PIN</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Secures parent settings and approvals from children.
-                  </div>
-                </div>
-                <button className="btn btn-ghost btn-sm" onClick={startPinChange} style={{ flexShrink: 0 }}>
-                  Change PIN
-                </button>
+            <div className="input-group" style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label>Daily reset timezone</label>
+                {tzSaving === 'saving' && <span style={{ fontSize: '0.78rem', color: 'var(--primary)' }}>Saving...</span>}
+                {tzSaving === 'saved' && <span style={{ fontSize: '0.78rem', color: 'var(--green)' }}>Saved</span>}
               </div>
+              <select
+                className="input"
+                value={tzOffset}
+                onChange={(e) => handleSaveTz(e.target.value)}
+              >
+                <option value="">Use device timezone</option>
+                <option value="-12">UTC-12 â€” Baker Island</option>
+                <option value="-11">UTC-11 â€” American Samoa</option>
+                <option value="-10">UTC-10 â€” Hawaii</option>
+                <option value="-9">UTC-9 â€” Alaska</option>
+                <option value="-8">UTC-8 â€” Pacific Time (US &amp; Canada)</option>
+                <option value="-7">UTC-7 â€” Mountain Time (US &amp; Canada)</option>
+                <option value="-6">UTC-6 â€” Central Time (US &amp; Canada)</option>
+                <option value="-5">UTC-5 â€” Eastern Time (US &amp; Canada)</option>
+                <option value="-4">UTC-4 â€” Atlantic Time / Venezuela</option>
+                <option value="-3">UTC-3 â€” Brazil / Argentina</option>
+                <option value="-2">UTC-2 â€” South Georgia</option>
+                <option value="-1">UTC-1 â€” Azores</option>
+                <option value="0">UTC+0 â€” London / Dublin / Lisbon</option>
+                <option value="1">UTC+1 â€” Paris / Berlin / Rome / Madrid</option>
+                <option value="2">UTC+2 â€” Athens / Cairo / Johannesburg</option>
+                <option value="3">UTC+3 â€” Moscow / Nairobi / Riyadh</option>
+                <option value="4">UTC+4 â€” Dubai / Baku</option>
+                <option value="4.5">UTC+4:30 â€” Kabul</option>
+                <option value="5">UTC+5 â€” Pakistan</option>
+                <option value="5.5">UTC+5:30 â€” India (IST)</option>
+                <option value="6">UTC+6 â€” Bangladesh / Almaty</option>
+                <option value="7">UTC+7 â€” Bangkok / Jakarta</option>
+                <option value="8">UTC+8 â€” Singapore / Hong Kong / Perth</option>
+                <option value="9">UTC+9 â€” Tokyo / Seoul</option>
+                <option value="9.5">UTC+9:30 â€” Adelaide</option>
+                <option value="10">UTC+10 â€” Sydney / Melbourne</option>
+                <option value="11">UTC+11 â€” Solomon Islands</option>
+                <option value="12">UTC+12 â€” Auckland / Fiji</option>
+              </select>
             </div>
-          </div>
-
-          {/* SUPPORT & FEEDBACK */}
-          <div style={{ 
-            background: 'var(--bg-surface)', 
-            border: '1px solid var(--bg-glass-border)', 
-            borderRadius: 'var(--radius-lg)', 
-            padding: 'var(--space-lg)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: '1.3rem' }}>💬</span>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-bright)' }}>Support &amp; Feedback</div>
-            </div>
-
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-              Report a bug or suggest a feature to make Kaeluma better.
-            </div>
-
-            <select
-              className="input"
-              value={ticketType}
-              onChange={(e) => setTicketType(e.target.value)}
-              style={{ marginBottom: 12 }}
-              disabled={isSubmittingTicket}
-            >
-              <option value="bug">🐛 Report a Bug</option>
-              <option value="feature">💡 Request a Feature</option>
-            </select>
-
-            <textarea
-              className="input"
-              value={ticketMessage}
-              onChange={(e) => setTicketMessage(e.target.value)}
-              placeholder="Tell us what's on your mind..."
-              style={{ marginBottom: 16, minHeight: '100px', resize: 'vertical' }}
-              disabled={isSubmittingTicket}
-            />
-
-            <button 
-              className="btn btn-primary btn-block" 
-              disabled={isSubmittingTicket || !ticketMessage.trim()}
-              onClick={async () => {
-                setIsSubmittingTicket(true);
-                const res = await submitTicket(ticketType, ticketMessage);
-                setIsSubmittingTicket(false);
-                if (res.success) {
-                  showToast(ticketType === 'bug' ? '🐛 Bug reported! Thank you.' : '💡 Idea submitted! Thank you.');
-                  setTicketMessage('');
-                  setTicketType('bug');
-                } else {
-                  showToast(res.error || 'Failed to submit ticket');
-                }
-              }}
-            >
-              {isSubmittingTicket ? 'Sending...' : 'Send Message'}
-            </button>
           </div>
         </div>
       ) : (
         <AboutSection />
-      )}
-
-      {/* ACCOUNT SETTINGS (SIGN OUT) */}
-      <div style={{ marginTop: 'var(--space-2xl)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <button
-          onClick={() => router.push('/apps')}
-          className="btn btn-ghost"
-          style={{ marginBottom: 12 }}
-        >
-          All family apps
-        </button>
-        <button 
-          onClick={async () => {
-            await logout();
-          }}
-          className="btn btn-ghost" 
-          style={{ color: 'var(--red)' }}
-        >
-          Sign Out of Kaeluma
-        </button>
-        <div style={{ marginTop: 'var(--space-lg)', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-          Kaeluma v1.0 · Made with ❤️ for families
-        </div>
-      </div>
-
-      {/* MODAL PIN PAD OVERLAY */}
-      {showPinModal && (
-        <div className="modal-overlay" onPointerDown={(e) => { if (e.target === e.currentTarget) setShowPinModal(false); }}>
-          <div className="modal-content" style={{ maxWidth: 340, textAlign: 'center', animation: 'scaleIn 0.3s var(--ease-bounce)' }}>
-            <h3 className="modal-title" style={{ fontSize: '1.25rem', marginBottom: 12 }}>Change Parent PIN</h3>
-            
-            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--primary)', marginBottom: 16 }}>
-              {phaseLabels[pinPhase]}
-            </div>
-            
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 24 }}>
-              {[0, 1, 2, 3].map(i => (
-                <div key={i} className={`pin-dot ${i < inputPin.length ? 'filled' : ''}`} />
-              ))}
-            </div>
-            
-            <div className="pin-pad" style={{ maxWidth: 280, margin: '0 auto 16px' }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                <button key={n} className="pin-key" type="button" onClick={() => handlePinKey(n.toString())}>{n}</button>
-              ))}
-              <button className="pin-key pin-key-empty" type="button" />
-              <button className="pin-key" type="button" onClick={() => handlePinKey('0')}>0</button>
-              <button className="pin-key pin-key-delete" type="button" onClick={() => handlePinKey('del')}>←</button>
-            </div>
-            
-            {pinError && <div className="pin-error" style={{ marginBottom: 16 }}>{pinError}</div>}
-            
-            <button
-              className="btn btn-ghost btn-block"
-              onClick={() => { setShowPinModal(false); setInputPin(''); setPinError(''); setPinPhase('current'); }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
       )}
     </div>
   );

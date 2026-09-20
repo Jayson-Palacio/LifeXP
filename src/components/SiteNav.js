@@ -8,6 +8,8 @@ export default function SiteNav({
   onSupport,
   account = false,
   onSignOut,
+  onAccount,
+  accountOpen = false,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -22,6 +24,7 @@ export default function SiteNav({
             <a href="/#quests">Quests</a>
             <a href="/#vital">Vital</a>
             <a href="/#ledger">Ledger</a>
+            <a href="/#table">Table</a>
             {onSupport && (
               <button type="button" onClick={onSupport}>
                 Support
@@ -32,9 +35,16 @@ export default function SiteNav({
 
         <div className="site-nav-actions">
           {account ? (
-            <button type="button" className="site-text-btn" onClick={onSignOut}>
-              Sign out
-            </button>
+            <>
+              {onAccount && (
+                <button type="button" className="site-text-btn" onClick={onAccount}>
+                  {accountOpen ? 'Apps' : 'Account'}
+                </button>
+              )}
+              <button type="button" className="site-text-btn" onClick={onSignOut}>
+                Sign out
+              </button>
+            </>
           ) : (
             <>
               <Link href="/login" className="site-text-btn">
@@ -65,6 +75,7 @@ export default function SiteNav({
           <a href="/#quests" onClick={() => setOpen(false)}>Quests</a>
           <a href="/#vital" onClick={() => setOpen(false)}>Vital</a>
           <a href="/#ledger" onClick={() => setOpen(false)}>Ledger</a>
+          <a href="/#table" onClick={() => setOpen(false)}>Table</a>
           {onSupport && (
             <button
               type="button"

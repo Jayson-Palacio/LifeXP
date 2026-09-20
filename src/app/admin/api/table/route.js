@@ -3,6 +3,37 @@ import { createClient } from '../../../../utils/supabase/server'
 
 const ALLOWED_TABLES = ['children', 'missions', 'completions', 'rewards', 'redemptions', 'app_settings', 'users', 'support_tickets']
 
+const ALLOWED_UPDATES = {
+  children: { name: 'string', avatar: 'string', xp: 'number', coins: 'number' },
+  missions: { name: 'string', icon: 'string', xp_reward: 'number', coin_reward: 'number', is_active: 'boolean' },
+  completions: { status: 'string' },
+  rewards: { name: 'string', icon: 'string', image: 'string', cost: 'number', is_active: 'boolean' },
+  redemptions: { status: 'string' },
+  support_tickets: { status: 'string' },
+}
+
+function coerceValue(type, value) {
+  if (value === null || value === undefined) return null
+  if (type === 'boolean') return value === true || value === 'true'
+  if (type === 'number') {
+    if (value === '') return null
+    const n = Number(value)
+    return Number.isFinite(n) ? n : null
+  }
+  return String(value)
+}
+
+function sanitizeUpdates(table, updates) {
+  const schema = ALLOWED_UPDATES[table]
+  if (!schema || !updates || typeof updates !== 'object') return null
+  const clean = {}
+  for (const [key, type] of Object.entries(schema)) {
+    if (!Object.prototype.hasOwnProperty.call(updates, key)) continue
+    clean[key] = coerceValue(type, updates[key])
+  }
+  return Object.keys(clean).length ? clean : null
+}
+
 // Simple in-memory rate limiter
 const ipRequestCounts = new Map();
 const LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -88,12 +119,17 @@ export async function PATCH(request) {
 
   const { table, id, updates } = await request.json()
 
-  if (!ALLOWED_TABLES.includes(table)) {
+  if (!ALLOWED_TABLES.includes(table) || table === 'users') {
     return Response.json({ error: 'Table not allowed' }, { status: 400 })
   }
 
+  const clean = sanitizeUpdates(table, updates)
+  if (!id || !clean) {
+    return Response.json({ error: 'Nothing to update' }, { status: 400 })
+  }
+
   const admin = createAdminClient()
-  const { data, error } = await admin.from(table).update(updates).eq('id', id).select().single()
+  const { data, error } = await admin.from(table).update(clean).eq('id', id).select().single()
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
   return Response.json({ data })

@@ -46,3 +46,6 @@ next-env.d.ts
 scratch_*.mjs
 scratch_db.mjs
 
+# USDA / Open Food Facts import cache
+scripts/.cache/
+

@@ -39,6 +39,7 @@ export default function AppShell({
                   Support
                 </button>
               )}
+              <Link href="/apps?tab=account" className="quests-top-link">Account</Link>
               <Link href="/apps" className="quests-top-link">Apps</Link>
             </>
           }

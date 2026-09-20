@@ -3,143 +3,104 @@ import AdminDashboardClient from '../../components/AdminDashboardClient'
 
 export const dynamic = 'force-dynamic'
 
+function displayNameFrom(user) {
+  const meta = user.raw_user_meta_data || {}
+  if (meta.first_name) return `${meta.first_name} ${meta.last_name || ''}`.trim()
+  if (meta.full_name) return meta.full_name
+  if (meta.name) return meta.name
+  return ''
+}
+
+function uniqueIds(rows, key) {
+  return new Set((rows || []).map((row) => row[key]).filter(Boolean))
+}
+
 export default async function AdminPage() {
   const admin = createAdminClient()
 
-  // Fetch all tables in parallel
   const [
-    { data: children },
-    { data: missions },
-    { data: completions },
-    { data: rewards },
-    { data: redemptions },
-    { data: appSettings },
-    { data: tickets },
+    childrenRes,
+    settingsRes,
+    ticketsRes,
+    vitalRes,
+    ledgerRes,
+    tableRes,
+    profilesRes,
+    usersRes,
   ] = await Promise.all([
-    admin.from('children').select('*').order('created_at', { ascending: false }),
-    admin.from('missions').select('*').order('name'),
-    admin.from('completions').select('*').order('submitted_at', { ascending: false }),
-    admin.from('rewards').select('*').order('name'),
-    admin.from('redemptions').select('*').order('redeemed_at', { ascending: false }),
-    admin.from('app_settings').select('*'),
+    admin.from('children').select('id, name, user_id, created_at'),
+    admin.from('app_settings').select('user_id, family_name, setup_complete'),
     admin.from('support_tickets').select('*').order('created_at', { ascending: false }),
+    admin.from('vital_members').select('owner_id, display_name, kind'),
+    admin.from('ledger_settings').select('owner_id'),
+    admin.from('table_plans').select('owner_id'),
+    admin.from('profiles').select('user_id, first_name, last_name'),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
   ])
 
-  // Fetch auth users via the admin API
-  const { data, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  const rawAuthUsers = data?.users || []
-  
-  let authUsers = rawAuthUsers.map(u => {
-    const meta = u.raw_user_meta_data || {}
-    let displayName = '—'
-    if (meta.first_name) displayName = `${meta.first_name} ${meta.last_name || ''}`.trim()
-    else if (meta.full_name) displayName = meta.full_name
-    else if (meta.name) displayName = meta.name
-    
+  const children = childrenRes.data || []
+  const appSettings = settingsRes.data || []
+  const tickets = ticketsRes.data || []
+  const vitalMembers = vitalRes.data || []
+  const vitalOwners = uniqueIds(vitalMembers, 'owner_id')
+  const ledgerOwners = uniqueIds(ledgerRes.data, 'owner_id')
+  const tableOwners = uniqueIds(tableRes.data, 'owner_id')
+  const rawAuthUsers = usersRes.data?.users || []
+
+  const settingsByUser = Object.fromEntries(appSettings.map((row) => [row.user_id, row]))
+  const profileByUser = Object.fromEntries((profilesRes.data || []).map((row) => [row.user_id, row]))
+
+  const peopleByUser = {}
+  for (const child of children) {
+    if (!child.user_id) continue
+    if (!peopleByUser[child.user_id]) peopleByUser[child.user_id] = []
+    peopleByUser[child.user_id].push({ name: child.name, kind: 'Quests' })
+  }
+  for (const member of vitalMembers) {
+    if (!member.owner_id) continue
+    if (!peopleByUser[member.owner_id]) peopleByUser[member.owner_id] = []
+    peopleByUser[member.owner_id].push({ name: member.display_name, kind: 'Vital' })
+  }
+
+  const households = rawAuthUsers
+    .map((user) => {
+      const family = settingsByUser[user.id]
+      const profile = profileByUser[user.id]
+      const people = peopleByUser[user.id] || []
+      const apps = []
+      if (people.some((p) => p.kind === 'Quests') || family?.setup_complete) apps.push('Quests')
+      if (vitalOwners.has(user.id)) apps.push('Vital')
+      if (ledgerOwners.has(user.id)) apps.push('Ledger')
+      if (tableOwners.has(user.id)) apps.push('Table')
+      const fromProfile = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : ''
+      return {
+        id: user.id,
+        email: user.email || '',
+        display_name: fromProfile || displayNameFrom(user) || '—',
+        family_name: family?.family_name || '—',
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+        apps,
+        people,
+      }
+    })
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+  const householdById = Object.fromEntries(households.map((h) => [h.id, h]))
+  const enrichedTickets = tickets.map((ticket) => {
+    const house = householdById[ticket.user_id]
     return {
-      ...u,
-      display_name: displayName
+      ...ticket,
+      user_email: house?.email || 'Unknown',
+      user_name: house?.display_name && house.display_name !== '—' ? house.display_name : (house?.family_name || 'Unknown'),
+      family_name: house?.family_name || '—',
     }
   })
-
-  // Order users by created date (newest first)
-  authUsers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-  // Map user info to tickets
-  const enrichedTickets = (tickets || []).map(t => {
-    const user = authUsers.find(u => u.id === t.user_id)
-    return {
-      ...t,
-      user_email: user?.email || 'Unknown',
-      user_name: user?.display_name || 'Unknown',
-    }
-  })
-
-  // ── Analytics aggregations ──────────────────────────────────────────────────
-
-  // Signups per day (last 30 days)
-  const now = new Date()
-  const thirtyDaysAgo = new Date(now)
-  thirtyDaysAgo.setDate(now.getDate() - 29)
-
-  const signupsByDay = {}
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(thirtyDaysAgo)
-    d.setDate(thirtyDaysAgo.getDate() + i)
-    signupsByDay[d.toISOString().slice(0, 10)] = 0
-  }
-  ;(authUsers || []).forEach(u => {
-    const day = u.created_at?.slice(0, 10)
-    if (day && signupsByDay[day] !== undefined) signupsByDay[day]++
-  })
-
-  // Completions per day (last 14 days)
-  const fourteenDaysAgo = new Date(now)
-  fourteenDaysAgo.setDate(now.getDate() - 13)
-  const completionsByDay = {}
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(fourteenDaysAgo)
-    d.setDate(fourteenDaysAgo.getDate() + i)
-    completionsByDay[d.toISOString().slice(0, 10)] = 0
-  }
-  ;(completions || []).forEach(c => {
-    const day = c.submitted_at?.slice(0, 10)
-    if (day && completionsByDay[day] !== undefined) completionsByDay[day]++
-  })
-
-  // Top missions by approval count
-  const missionCompletionCounts = {}
-  ;(completions || []).filter(c => c.status === 'approved').forEach(c => {
-    missionCompletionCounts[c.mission_id] = (missionCompletionCounts[c.mission_id] || 0) + 1
-  })
-  const topMissions = Object.entries(missionCompletionCounts)
-    .map(([id, count]) => {
-      const m = (missions || []).find(m => m.id === id)
-      return { id, name: m?.name || 'Unknown', icon: m?.icon || '🎯', count }
-    })
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-
-  // Top rewards by fulfillment count
-  const rewardRedemptionCounts = {}
-  ;(redemptions || []).filter(r => r.status === 'fulfilled').forEach(r => {
-    rewardRedemptionCounts[r.reward_id] = (rewardRedemptionCounts[r.reward_id] || 0) + 1
-  })
-  const topRewards = Object.entries(rewardRedemptionCounts)
-    .map(([id, count]) => {
-      const r = (rewards || []).find(r => r.id === id)
-      return { id, name: r?.name || 'Unknown', icon: r?.icon || '🎁', count }
-    })
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-
-  const stats = {
-    totalUsers: authUsers?.length || 0,
-    totalChildren: children?.length || 0,
-    totalMissions: missions?.length || 0,
-    totalCompletions: (completions || []).filter(c => c.status === 'approved').length,
-    totalCoinsSpent: (redemptions || []).filter(r => r.status === 'fulfilled').reduce((sum, r) => {
-      const reward = (rewards || []).find(rw => rw.id === r.reward_id)
-      return sum + (reward?.cost || 0)
-    }, 0),
-    pendingApprovals: (completions || []).filter(c => c.status === 'pending').length,
-    signupsByDay: Object.entries(signupsByDay).map(([date, count]) => ({ date, count })),
-    completionsByDay: Object.entries(completionsByDay).map(([date, count]) => ({ date, count })),
-    topMissions,
-    topRewards,
-  }
 
   return (
     <AdminDashboardClient
-      authUsers={authUsers || []}
-      children={children || []}
-      missions={missions || []}
-      completions={completions || []}
-      rewards={rewards || []}
-      redemptions={redemptions || []}
-      appSettings={appSettings || []}
-      tickets={enrichedTickets || []}
-      stats={stats}
+      households={households}
+      tickets={enrichedTickets}
     />
   )
 }

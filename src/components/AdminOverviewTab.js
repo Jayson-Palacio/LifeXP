@@ -1,39 +1,31 @@
 'use client'
-import GoldCoin from './GoldCoin'
 
-const S = {
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 32 },
-  card: { background: 'rgba(30,33,53,0.8)', border: '1px solid #2d3148', borderRadius: 14, padding: '20px 24px' },
-  label: { color: '#64748b', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
-  value: { fontSize: '2rem', fontWeight: 800, lineHeight: 1 },
-  sub: { color: '#475569', fontSize: 12, marginTop: 4 },
-  section: { marginBottom: 36 },
-  h3: { color: '#94a3b8', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 },
-  chartWrap: { background: 'rgba(30,33,53,0.5)', border: '1px solid #2d3148', borderRadius: 14, padding: 24 },
-  chartsRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 },
-  topRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 },
-  topItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #1e2130' },
-  bar: (pct, color) => ({ height: 6, borderRadius: 3, background: color, width: pct + '%', minWidth: 4 }),
-}
+const APPS = ['Quests', 'Vital', 'Ledger', 'Table']
 
-function BarChart({ data, color, label }) {
-  const max = Math.max(...data.map(d => d.count), 1)
-  const W = 100 / data.length
+function Chart({ data }) {
+  const max = Math.max(...data.map((d) => d.count), 1)
+  const total = data.reduce((sum, d) => sum + d.count, 0)
   return (
-    <div style={S.chartWrap}>
-      <div style={S.h3}>{label}</div>
-      <svg viewBox={`0 0 ${data.length * 10} 60`} style={{ width: '100%', height: 100 }}>
-        {data.map((d, i) => {
-          const h = Math.max((d.count / max) * 55, 1)
-          return (
-            <g key={d.date}>
-              <title>{d.date}: {d.count}</title>
-              <rect x={i * 10 + 1} y={60 - h} width={8} height={h} rx={2} fill={color} opacity={0.8} />
-            </g>
-          )
-        })}
-      </svg>
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569', fontSize: 10, marginTop: 4 }}>
+    <div className="admin-panel">
+      <div className="admin-panel-head">
+        <h3>Signups · 30 days</h3>
+        <span>{total}</span>
+      </div>
+      {total === 0 ? (
+        <p className="admin-muted">No new households in this window.</p>
+      ) : (
+        <svg className="admin-chart" viewBox={`0 0 ${data.length * 10} 60`}>
+          {data.map((d, i) => {
+            const h = Math.max((d.count / max) * 54, d.count ? 2 : 1)
+            return (
+              <rect key={d.date} x={i * 10 + 1} y={60 - h} width={8} height={h} rx={2} fill="#0d7377" opacity={d.count ? 0.9 : 0.2}>
+                <title>{`${d.date}: ${d.count}`}</title>
+              </rect>
+            )
+          })}
+        </svg>
+      )}
+      <div className="admin-chart-axis">
         <span>{data[0]?.date?.slice(5)}</span>
         <span>{data[data.length - 1]?.date?.slice(5)}</span>
       </div>
@@ -41,78 +33,71 @@ function BarChart({ data, color, label }) {
   )
 }
 
-function LineChart({ data, color, label }) {
-  const max = Math.max(...data.map(d => d.count), 1)
-  const pts = data.map((d, i) => `${(i / (data.length - 1)) * 300},${60 - (d.count / max) * 55}`).join(' ')
-  return (
-    <div style={S.chartWrap}>
-      <div style={S.h3}>{label}</div>
-      <svg viewBox="0 0 300 65" style={{ width: '100%', height: 100 }}>
-        <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-        {data.map((d, i) => (
-          <g key={d.date}>
-            <title>{d.date}: {d.count}</title>
-            <circle cx={(i / (data.length - 1)) * 300} cy={60 - (d.count / max) * 55} r="3" fill={color} />
-          </g>
-        ))}
-      </svg>
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569', fontSize: 10, marginTop: 4 }}>
-        <span>{data[0]?.date?.slice(5)}</span>
-        <span>{data[data.length - 1]?.date?.slice(5)}</span>
-      </div>
-    </div>
-  )
-}
-
-function TopList({ items, color, label }) {
-  const max = Math.max(...items.map(i => i.count), 1)
-  return (
-    <div style={S.chartWrap}>
-      <div style={S.h3}>{label}</div>
-      {items.length === 0 && <p style={{ color: '#475569', fontSize: 13 }}>No data yet</p>}
-      {items.map(item => (
-        <div key={item.id} style={S.topItem}>
-          <span style={{ fontSize: 20 }}>{item.icon}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
-            <div style={{ marginTop: 4 }}><div style={S.bar((item.count / max) * 100, color)} /></div>
-          </div>
-          <span style={{ color, fontWeight: 700, fontSize: 14, minWidth: 28, textAlign: 'right' }}>{item.count}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-export default function AdminOverviewTab({ stats }) {
+export default function AdminOverviewTab({ stats, mounted, relativeTime, onJump }) {
+  const maxApp = Math.max(...APPS.map((app) => stats.appCounts[app] || 0), 1)
   const cards = [
-    { label: 'Total Users', value: stats.totalUsers, color: '#3b82f6', icon: '👤' },
-    { label: 'Total Players', value: stats.totalChildren, color: '#a855f7', icon: '👥' },
-    { label: 'Missions Created', value: stats.totalMissions, color: '#f59e0b', icon: '🎯' },
-    { label: 'Completions', value: stats.totalCompletions, color: '#22c55e', icon: '✅' },
-    { label: 'Coins Spent', value: stats.totalCoinsSpent, color: '#f97316', icon: <GoldCoin size="12px" /> },
-    { label: 'Pending Reviews', value: stats.pendingApprovals, color: '#ef4444', icon: '⏳' },
+    { label: 'Households', value: stats.households, sub: `${stats.signups7d} new this week`, tab: 'households' },
+    { label: 'Signed in · 7 days', value: stats.active7d, sub: `${stats.quiet} quiet for 90+ days`, tab: 'households', filter: 'quiet' },
+    { label: 'Open tickets', value: stats.openTickets, sub: 'Inbox', tab: 'inbox', status: 'open', alert: true },
+    { label: 'No app yet', value: stats.unused, sub: 'Signed up, never started', tab: 'households', filter: 'none' },
   ]
 
   return (
-    <div className="admin-content" style={{ padding: '0 24px 40px' }}>
-      <div className="admin-grid-cards" style={S.grid}>
-        {cards.map(c => (
-          <div key={c.label} style={{ ...S.card, borderTop: `3px solid ${c.color}` }}>
-            <div style={S.label}>{c.icon} {c.label}</div>
-            <div style={{ ...S.value, color: c.color }}>{c.value.toLocaleString()}</div>
-          </div>
+    <div>
+      <div className="admin-grid-cards">
+        {cards.map((card) => (
+          <button
+            key={card.label}
+            type="button"
+            className={`admin-stat${card.alert && card.value ? ' is-alert' : ''}`}
+            onClick={() => onJump(card.tab, { status: card.status, filter: card.filter })}
+          >
+            <p>{card.label}</p>
+            <strong>{card.value.toLocaleString()}</strong>
+            <small>{card.sub}</small>
+          </button>
         ))}
       </div>
 
-      <div className="admin-grid-charts" style={S.chartsRow}>
-        <BarChart data={stats.signupsByDay} color="#3b82f6" label="📈 New Signups (Last 30 Days)" />
-        <LineChart data={stats.completionsByDay} color="#22c55e" label="✅ Completions (Last 14 Days)" />
+      <div className="admin-grid-charts">
+        <div className="admin-panel">
+          <div className="admin-panel-head">
+            <h3>Who is using what</h3>
+            <span>{stats.households} households</span>
+          </div>
+          <div className="admin-apps-meter">
+            {APPS.map((app) => (
+              <button key={app} type="button" onClick={() => onJump('households', { filter: app })}>
+                <span>{app}</span>
+                <div className="admin-bar">
+                  <i style={{ width: `${((stats.appCounts[app] || 0) / maxApp) * 100}%` }} />
+                </div>
+                <strong>{stats.appCounts[app] || 0}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+        <Chart data={stats.signupsByDay} />
       </div>
 
-      <div className="admin-grid-charts" style={S.topRow}>
-        <TopList items={stats.topMissions} color="#f59e0b" label="🏆 Top Missions" />
-        <TopList items={stats.topRewards} color="#a855f7" label="🎁 Top Rewards" />
+      <div className="admin-panel">
+        <div className="admin-panel-head">
+          <h3>Needs a reply</h3>
+          <button type="button" className="admin-text-btn" onClick={() => onJump('inbox', { status: 'open' })}>Inbox</button>
+        </div>
+        {stats.openTicketRows.length === 0 ? (
+          <p className="admin-muted">Nothing waiting.</p>
+        ) : (
+          <div className="admin-feed">
+            {stats.openTicketRows.slice(0, 8).map((ticket) => (
+              <button key={ticket.id} type="button" onClick={() => onJump('inbox', { status: ticket.status })}>
+                <strong>{ticket.user_email}</strong>
+                <time>{relativeTime(ticket.created_at, mounted)}</time>
+                <em>{ticket.ticket_type} · {ticket.message}</em>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

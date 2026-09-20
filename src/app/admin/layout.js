@@ -26,13 +26,8 @@ export default async function AdminLayout({ children }) {
 
   const email = (user.email || '').toLowerCase()
   if (!email || !allowedEmails.includes(email)) {
-    // Return a bare 404-style response — don't reveal admin exists
     redirect('/login')
   }
 
-  return (
-    <div style={{ minHeight: '100dvh', background: '#0f1117', color: '#e2e8f0', fontFamily: 'var(--font-outfit, system-ui, sans-serif)' }}>
-      {children}
-    </div>
-  )
+  return children
 }

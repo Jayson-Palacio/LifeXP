@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '../../lib/authz';
 import { lookupFood } from '../../lib/foods';
+import { barcodeVariants, foodFromProduct, ilikeSafe } from '../../lib/vitalProducts';
 import {
   MEMBER_ACCENTS,
   LEGACY_MOVE_KINDS,
@@ -264,15 +265,17 @@ export async function saveVitalPlan(payload) {
 
   const { error: planError } = await supabase.from('vital_plans').upsert(plan, { onConflict: 'member_id' });
   if (planError) {
-    if (/step_goal/i.test(planError.message || '')) {
-      delete plan.step_goal;
-      const retry = await supabase.from('vital_plans').upsert(plan, { onConflict: 'member_id' });
-      if (retry.error) return fail(retry.error.message);
-    } else if (/method|fiber_target|calorie_override|eat_back|schema cache|does not exist/i.test(planError.message || '')) {
-      return fail('Run the latest vital_schema.sql so methods and custom targets can save.');
-    } else {
-      return fail(planError.message);
-    }
+    const slim = { ...plan };
+    delete slim.step_goal;
+    delete slim.method;
+    delete slim.fiber_target_g;
+    delete slim.calorie_override;
+    delete slim.protein_override;
+    delete slim.carbs_override;
+    delete slim.fat_override;
+    delete slim.eat_back;
+    const retry = await supabase.from('vital_plans').upsert(slim, { onConflict: 'member_id' });
+    if (retry.error) return fail(retry.error.message);
   }
 
   revalidatePath('/vital');
@@ -683,14 +686,15 @@ export async function completeVitalOnboarding(payload) {
   });
   if (!plan.success) return plan;
 
-  if (payload.current_weight) {
-    await logVitalWeight({
-      member_id: created.data.id,
-      weight: payload.current_weight,
-    });
-  }
+  if (!payload.current_weight) return fail('Add a weight so we can start the log.');
+  const weigh = await logVitalWeight({
+    member_id: created.data.id,
+    weight: payload.current_weight,
+  });
+  if (!weigh.success) return weigh;
 
   revalidatePath('/apps');
+  revalidatePath('/vital');
   return { success: true, data: { member: created.data, plan: plan.data } };
 }
 
@@ -717,6 +721,7 @@ export async function saveVitalKitchenItem(payload) {
     return fail(kitchenError.message);
   }
   revalidatePath('/vital');
+  revalidatePath('/table');
   return { success: true };
 }
 
@@ -730,18 +735,53 @@ export async function deleteVitalKitchenItem(id) {
   return { success: true };
 }
 
+async function lookupCatalogBarcode(supabase, code) {
+  const codes = barcodeVariants(code);
+  if (!codes.length) return null;
+  const { data, error } = await supabase
+    .from('vital_products')
+    .select('barcode, name, brand, store, calories, protein_g, carbs_g, fat_g, fiber_g, serving')
+    .in('barcode', codes)
+    .limit(1);
+  if (error) {
+    if (/does not exist|schema cache/i.test(error.message || '')) return null;
+    return null;
+  }
+  return foodFromProduct(data?.[0]);
+}
+
+async function searchCatalogFoods(supabase, query) {
+  const q = ilikeSafe(query);
+  if (q.length < 2) return [];
+  const digits = q.replace(/\D/g, '');
+  let request = supabase
+    .from('vital_products')
+    .select('barcode, name, brand, store, calories, protein_g, carbs_g, fat_g, fiber_g, serving')
+    .limit(8);
+  if (/^\d{8,14}$/.test(digits)) {
+    request = request.in('barcode', barcodeVariants(digits));
+  } else {
+    request = request.or(`name.ilike.%${q}%,brand.ilike.%${q}%`);
+  }
+  const { data, error } = await request;
+  if (error) return [];
+  return (data || []).map(foodFromProduct).filter(Boolean);
+}
+
 export async function lookupBarcodeFood(barcode) {
   const auth = await vitalUser();
   if (auth.error) return fail(auth.error);
   const code = String(barcode || '').replace(/\s/g, '');
   if (!/^\d{8,14}$/.test(code)) return fail('That barcode does not look right.');
 
-  const { data: saved } = await auth.supabase
+  const codes = barcodeVariants(code);
+  const { data: savedRows } = await auth.supabase
     .from('vital_kitchen')
     .select('*')
     .eq('owner_id', auth.user.id)
-    .eq('barcode', code)
-    .maybeSingle();
+    .in('barcode', codes)
+    .limit(1);
+  const saved = savedRows?.[0];
   if (saved) {
     return {
       success: true,
@@ -752,11 +792,14 @@ export async function lookupBarcodeFood(barcode) {
         carbs_g: Number(saved.carbs_g),
         fat_g: Number(saved.fat_g),
         fiber_g: Number(saved.fiber_g || 0),
-        barcode: code,
+        barcode: saved.barcode || code,
         source: 'kitchen',
       },
     };
   }
+
+  const catalog = await lookupCatalogBarcode(auth.supabase, code);
+  if (catalog) return { success: true, data: catalog };
 
   try {
     const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`, {
@@ -780,16 +823,20 @@ export async function searchVitalFoods(query) {
   const auth = await vitalUser();
   if (auth.error) return fail(auth.error);
   const q = String(query || '').trim();
-  if (q.length < 3) return { success: true, data: [] };
+  if (q.length < 2) return { success: true, data: [] };
+
+  const catalog = await searchCatalogFoods(auth.supabase, q);
+  const seen = new Set(catalog.map((item) => item.name.toLowerCase()));
+  const data = [...catalog];
+  if (data.length >= 8 || q.length < 3) return { success: true, data: data.slice(0, 8) };
+
   try {
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8`;
     const response = await fetch(url, {
       headers: { 'User-Agent': 'KaelumaVital/1.0 (family health tracker)' },
     });
-    if (!response.ok) return { success: true, data: [] };
+    if (!response.ok) return { success: true, data };
     const json = await response.json();
-    const seen = new Set();
-    const data = [];
     for (const product of json.products || []) {
       const item = foodFromOff(product);
       if (!item) continue;
@@ -797,11 +844,11 @@ export async function searchVitalFoods(query) {
       if (seen.has(key)) continue;
       seen.add(key);
       data.push(item);
-      if (data.length >= 6) break;
+      if (data.length >= 8) break;
     }
     return { success: true, data };
   } catch {
-    return { success: true, data: [] };
+    return { success: true, data };
   }
 }
 

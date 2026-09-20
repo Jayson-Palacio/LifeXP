@@ -19,13 +19,25 @@ function LedgerPreviewScreen() {
   );
 }
 
+function TablePreviewScreen() {
+  return (
+    <div className="device-shot table-preview">
+      <p>Week of Sep 20</p>
+      <strong>Chicken tacos</strong>
+      <span>Dinner · Sun</span>
+    </div>
+  );
+}
+
 export default function ProductPreview({ app = 'quests' }) {
   const src = PREVIEW_SRC[app] || PREVIEW_SRC.quests;
-  const useLiveShot = app !== 'ledger';
+  const useLiveShot = app !== 'ledger' && app !== 'table';
 
   return (
-    <div className={`device${app === 'vital' || app === 'ledger' ? ` device-${app}` : ''}`} aria-hidden="true">
-      {useLiveShot ? (
+    <div className={`device${app === 'vital' || app === 'ledger' || app === 'table' ? ` device-${app}` : ''}`} aria-hidden="true">
+      {app === 'table' ? (
+        <TablePreviewScreen />
+      ) : useLiveShot ? (
         <img className="device-shot" src={src} alt="" width="402" height="874" />
       ) : (
         <LedgerPreviewScreen />

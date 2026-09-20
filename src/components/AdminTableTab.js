@@ -1,237 +1,294 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { getRelativeTimeString } from '../utils/time'
 
-const S = {
-  wrap: { padding: '0 24px 40px' },
-  search: { width: '100%', maxWidth: 340, background: '#1e2130', border: '1px solid #2d3148', borderRadius: 8, color: '#e2e8f0', padding: '8px 14px', fontSize: 14, marginBottom: 18, outline: 'none' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
-  th: { textAlign: 'left', padding: '10px 12px', background: '#161926', color: '#94a3b8', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid #2d3148' },
-  td: { padding: '10px 12px', borderBottom: '1px solid #1e2130', color: '#cbd5e1', verticalAlign: 'top', wordBreak: 'break-word', maxWidth: 160 },
-  badge: (color) => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: color + '22', color }),
-  btn: (color) => ({ background: 'none', border: `1px solid ${color}44`, color, borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', marginRight: 6 }),
-  editBox: { background: '#1a1f35', border: '1px solid #3b82f6', borderRadius: 8, padding: 16, marginBottom: 8 },
-  input: { background: '#0f1117', border: '1px solid #2d3148', borderRadius: 6, color: '#e2e8f0', padding: '6px 10px', fontSize: 13, width: '100%', marginTop: 4 },
-  label: { color: '#94a3b8', fontSize: 12, display: 'block', marginTop: 10 },
-  page: { display: 'flex', gap: 8, marginTop: 16, alignItems: 'center', justifyContent: 'flex-end' },
-  pageBtn: (active) => ({ background: active ? '#3b82f6' : '#1e2130', border: '1px solid #2d3148', color: active ? '#fff' : '#94a3b8', borderRadius: 6, padding: '4px 12px', fontSize: 13, cursor: 'pointer' }),
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { getRelativeTimeString } from '../utils/time'
+import { isImageValue } from '../lib/adminStats'
+
+const STATUS_COLORS = {
+  pending: '#8a6a2a',
+  approved: '#2f6b4f',
+  fulfilled: '#2f6b4f',
+  rejected: '#8a2f24',
+  refunded: '#3d5a80',
+  open: '#8a6a2a',
+  in_progress: '#3d5a80',
+  resolved: '#2f6b4f',
+  closed: '#6e6e73',
+  bug: '#8a2f24',
+  feature: '#3d5a80',
 }
 
-const STATUS_COLORS = { pending: '#f59e0b', approved: '#22c55e', fulfilled: '#22c55e', rejected: '#ef4444', refunded: '#6366f1' }
 const PAGE_SIZE = 25
 
 function ExpandableText({ text }) {
   const [expanded, setExpanded] = useState(false)
-  if (text.length <= 10) return <span>{text}</span>
+  if (text.length <= 48) return <span>{text}</span>
   return (
-    <span 
-      onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }} 
-      style={{ cursor: 'pointer', color: expanded ? '#fff' : '#cbd5e1' }}
-      title={expanded ? "Click to collapse" : "Click to expand"}
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }}
+      style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
     >
-      {expanded ? text : text.slice(0, 10) + '…'}
-      {!expanded && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>more</span>}
-    </span>
+      {expanded ? text : `${text.slice(0, 48)}…`}
+    </button>
   )
 }
 
-function isImageUrl(val) {
-  if (typeof val !== 'string') return false
-  const s = val.trim()
-  if (s.startsWith('data:image/')) return true
-  return (
-    s.startsWith('http://') || 
-    s.startsWith('https://') || 
-    s.startsWith('/')
-  ) && (
-    s.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i) || 
-    s.includes('/avatars/') || 
-    s.includes('/rewards/')
-  )
-}
-
-function fmt(val, mounted) {
-  if (val === null || val === undefined) return <span style={{ color: '#475569' }}>—</span>
-  if (typeof val === 'boolean') return val ? '✅' : '❌'
-  if (typeof val === 'object') return <ExpandableText text={JSON.stringify(val)} />
-  const s = String(val)
-  
-  if (isImageUrl(s)) {
-    return (
-      <a href={s} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }} title="Click to view full size">
-        <div 
-          style={{ 
-            position: 'relative', 
-            width: 40, 
-            height: 40, 
-            borderRadius: 8, 
-            overflow: 'hidden', 
-            border: '1px solid #2d3148',
-            background: '#0d0d14',
-            transition: 'transform 0.15s var(--ease-out)',
-            cursor: 'pointer'
-          }}
-          onMouseOver={e => e.currentTarget.style.transform = 'scale(1.15)'}
-          onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <img src={s} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
-      </a>
-    )
+function CellValue({ value, mounted }) {
+  if (value === null || value === undefined || value === '') {
+    return <span className="admin-muted">—</span>
   }
-
-  if (s.match(/^\d{4}-\d{2}-\d{2}T/)) {
-    const rel = getRelativeTimeString(s, mounted)
-    const abs = new Date(s).toLocaleString()
+  if (typeof value === 'boolean') {
     return (
-      <span title={abs} style={{ cursor: 'help', borderBottom: '1px dotted #475569' }}>
-        {rel}
+      <span className="admin-badge" style={{ background: value ? 'rgba(47,107,79,.12)' : '#f2f2f7', color: value ? '#2f6b4f' : '#6e6e73' }}>
+        {value ? 'Yes' : 'No'}
       </span>
     )
   }
-  if (s.length > 15) return <ExpandableText text={s} />
+  if (typeof value === 'object') return <ExpandableText text={JSON.stringify(value)} />
+  const s = String(value)
+  if (isImageValue(s)) {
+    return (
+      <a href={s} target="_blank" rel="noopener noreferrer" className="admin-thumb">
+        <img src={s} alt="" />
+      </a>
+    )
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    return <span title={new Date(s).toLocaleString()}>{getRelativeTimeString(s, mounted)}</span>
+  }
+  if (STATUS_COLORS[s]) {
+    return <span className="admin-badge" style={{ background: `${STATUS_COLORS[s]}22`, color: STATUS_COLORS[s] }}>{s.replace('_', ' ')}</span>
+  }
+  if (s.includes(', ') && ['Quests', 'Vital', 'Ledger'].some((app) => s.includes(app))) {
+    return (
+      <span className="admin-apps">
+        {s.split(', ').map((app) => <span key={app}>{app}</span>)}
+      </span>
+    )
+  }
+  if (s.length > 48) return <ExpandableText text={s} />
   return s
 }
 
-export default function AdminTableTab({ rows = [], columns, statusField, onDelete, onEdit }) {
+function coerceForSave(columns, draft) {
+  const updates = {}
+  for (const col of columns.filter((c) => c.editable)) {
+    const raw = draft[col.key]
+    if (col.type === 'boolean') updates[col.key] = raw === true || raw === 'true'
+    else if (col.type === 'number') updates[col.key] = raw === '' || raw == null ? null : Number(raw)
+    else updates[col.key] = raw
+  }
+  return updates
+}
+
+export default function AdminTableTab({
+  rows = [],
+  columns,
+  statusField,
+  statusOptions,
+  presetStatus = '',
+  defaultStatus = '',
+  onDelete,
+  onEdit,
+  rowName,
+  empty = 'No results',
+}) {
   const [q, setQ] = useState('')
+  const [status, setStatus] = useState(presetStatus || defaultStatus)
+  const [sortKey, setSortKey] = useState(columns[0]?.key)
+  const [sortDir, setSortDir] = useState('desc')
   const [editId, setEditId] = useState(null)
   const [editData, setEditData] = useState({})
   const [saving, setSaving] = useState(false)
   const [page, setPage] = useState(0)
   const [mounted, setMounted] = useState(false)
 
+  useEffect(() => { setMounted(true) }, [])
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setStatus(presetStatus || defaultStatus)
+    setPage(0)
+  }, [presetStatus])
 
-  const filtered = rows.filter(r => !q || JSON.stringify(r).toLowerCase().includes(q.toLowerCase()))
-  const pages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const statuses = statusOptions || (statusField
+    ? [...new Set(rows.map((r) => r[statusField]).filter(Boolean))]
+    : [])
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase()
+    const next = rows.filter((row) => {
+      if (status && row[statusField] !== status) return false
+      if (!needle) return true
+      return columns.some((col) => {
+        const value = row[col.key]
+        if (isImageValue(value)) return false
+        return String(value ?? '').toLowerCase().includes(needle)
+      })
+    })
+    next.sort((a, b) => {
+      const av = a[sortKey]
+      const bv = b[sortKey]
+      if (av == null && bv == null) return 0
+      if (av == null) return 1
+      if (bv == null) return -1
+      if (typeof av === 'number' && typeof bv === 'number') return sortDir === 'asc' ? av - bv : bv - av
+      return sortDir === 'asc'
+        ? String(av).localeCompare(String(bv))
+        : String(bv).localeCompare(String(av))
+    })
+    return next
+  }, [rows, q, status, statusField, columns, sortKey, sortDir])
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, pages - 1)
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
+  const editableCols = columns.filter((c) => c.editable)
+
+  function toggleSort(key) {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else {
+      setSortKey(key)
+      setSortDir('desc')
+    }
+  }
 
   async function saveEdit(row) {
     setSaving(true)
-    await onEdit(row.id, editData)
-    setSaving(false)
-    setEditId(null)
+    try {
+      await onEdit(row.id, coerceForSave(editableCols, editData))
+      setEditId(null)
+    } catch {
+      // Error toast is handled by the dashboard.
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const editableCols = columns.filter(c => c.editable)
-
   return (
-    <div className="admin-content admin-table-wrap" style={S.wrap}>
-      <style dangerouslySetInnerHTML={{__html: `
-        .admin-table-search {
-          width: 100%;
-          max-width: 340px;
-          background: #1e2130;
-          border: 1px solid #2d3148;
-          border-radius: 8px;
-          color: #e2e8f0;
-          padding: 8px 14px;
-          font-size: 14px;
-          margin-bottom: 18px;
-          outline: none;
-        }
-        @media (max-width: 640px) {
-          .admin-table-search {
-            max-width: 100%;
-            font-size: 13px;
-            padding: 6px 10px;
-            margin-bottom: 12px;
-          }
-          .admin-table th {
-            padding: 6px 4px !important;
-            font-size: 9px !important;
-            letter-spacing: 0.5px !important;
-          }
-          .admin-table td {
-            padding: 6px 4px !important;
-            font-size: 11px !important;
-          }
-          .admin-table-wrap {
-            padding: 0 12px 24px !important;
-          }
-        }
-      `}} />
-      <input 
-        className="admin-table-search" 
-        placeholder="Search…" 
-        value={q} 
-        onChange={e => { setQ(e.target.value); setPage(0) }} 
-      />
-      <div style={{ overflowX: 'auto' }}>
-        <table className="admin-table" style={S.table}>
+    <div>
+      <div className="admin-toolbar">
+        <input
+          className="admin-search"
+          placeholder="Search this table"
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setPage(0) }}
+        />
+        {statuses.length > 0 && (
+          <div className="admin-chips">
+            <button type="button" className={!status ? 'is-on' : ''} onClick={() => { setStatus(''); setPage(0) }}>All</button>
+            {statuses.map((s) => (
+              <button key={s} type="button" className={status === s ? 'is-on' : ''} onClick={() => { setStatus(s); setPage(0) }}>
+                {String(s).replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+        )}
+        <span className="admin-row-meta">{filtered.length} of {rows.length}</span>
+      </div>
+      <div className="admin-table-scroller">
+        <table className="admin-table">
           <thead>
-            <tr>{columns.map(c => <th key={c.key} style={S.th}>{c.label}</th>)}
-              <th style={S.th}>Actions</th>
+            <tr>
+              {columns.map((c) => (
+                <th key={c.key} className={sortKey === c.key ? 'is-sort' : ''} onClick={() => toggleSort(c.key)}>
+                  {c.label}{sortKey === c.key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </th>
+              ))}
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {paged.map(row => (
-              <>
-                <tr key={row.id} style={{ background: editId === row.id ? '#1a1f35' : 'transparent' }}>
-                  {columns.map(c => (
-                    <td key={c.key} style={S.td}>
+            {paged.map((row) => (
+              <Fragment key={row.id}>
+                <tr className={editId === row.id ? 'is-edit' : ''}>
+                  {columns.map((c) => (
+                    <td key={c.key} style={c.wrap ? { whiteSpace: 'normal', maxWidth: 360, overflow: 'visible' } : undefined}>
                       {c.key === statusField
-                        ? <span style={S.badge(STATUS_COLORS[row[c.key]] || '#94a3b8')}>{row[c.key]}</span>
-                        : fmt(row[c.key], mounted)}
+                        ? <span className="admin-badge" style={{ background: `${STATUS_COLORS[row[c.key]] || '#6e6e73'}18`, color: STATUS_COLORS[row[c.key]] || '#6e6e73' }}>{String(row[c.key] || '—').replace('_', ' ')}</span>
+                        : <CellValue value={row[c.key]} mounted={mounted} />}
                     </td>
                   ))}
-                  <td style={S.td}>
-                    {onEdit && editableCols.length > 0 && (
-                      <button style={S.btn('#3b82f6')} onClick={() => {
-                        if (editId === row.id) { setEditId(null); return }
-                        setEditId(row.id)
-                        const d = {}
-                        editableCols.forEach(c => { d[c.key] = row[c.key] })
-                        setEditData(d)
-                      }}>{editId === row.id ? 'Cancel' : 'Edit'}</button>
-                    )}
-                    {onDelete && (
-                      <button style={S.btn('#ef4444')} onClick={() => {
-                        if (confirm(`Delete row ${row.id}?`)) onDelete(row.id)
-                      }}>Delete</button>
-                    )}
+                  <td>
+                    <div className="admin-actions">
+                      {onEdit && editableCols.length > 0 && (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-blue"
+                          onClick={() => {
+                            if (editId === row.id) { setEditId(null); return }
+                            setEditId(row.id)
+                            const d = {}
+                            editableCols.forEach((c) => { d[c.key] = row[c.key] })
+                            setEditData(d)
+                          }}
+                        >
+                          {editId === row.id ? 'Cancel' : 'Edit'}
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-red"
+                          onClick={() => {
+                            const label = rowName ? rowName(row) : row.name || row.email || row.id
+                            if (confirm(`Delete ${label}? This cannot be undone.`)) onDelete(row.id)
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 {editId === row.id && (
-                  <tr key={row.id + '-edit'}>
+                  <tr>
                     <td colSpan={columns.length + 1} style={{ padding: 0 }}>
-                      <div style={S.editBox}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
-                          {editableCols.map(c => (
+                      <div className="admin-edit">
+                        <div className="admin-edit-grid">
+                          {editableCols.map((c) => (
                             <div key={c.key}>
-                              <label style={S.label}>{c.label}</label>
-                              <input 
-                                style={S.input} 
-                                value={editData[c.key] ?? ''} 
-                                onChange={e => setEditData(p => ({ ...p, [c.key]: e.target.value }))} 
-                              />
+                              <label>{c.label}</label>
+                              {c.type === 'boolean' ? (
+                                <select value={String(editData[c.key] !== false && editData[c.key] !== 'false')} onChange={(e) => setEditData((p) => ({ ...p, [c.key]: e.target.value === 'true' }))}>
+                                  <option value="true">Yes</option>
+                                  <option value="false">No</option>
+                                </select>
+                              ) : c.options ? (
+                                <select value={editData[c.key] ?? ''} onChange={(e) => setEditData((p) => ({ ...p, [c.key]: e.target.value }))}>
+                                  {c.options.map((opt) => <option key={opt} value={opt}>{opt.replace('_', ' ')}</option>)}
+                                </select>
+                              ) : (
+                                <input
+                                  type={c.type === 'number' ? 'number' : 'text'}
+                                  value={editData[c.key] ?? ''}
+                                  onChange={(e) => setEditData((p) => ({ ...p, [c.key]: e.target.value }))}
+                                />
+                              )}
                             </div>
                           ))}
                         </div>
-                        <button style={{ ...S.btn('#22c55e'), marginTop: 14 }} onClick={() => saveEdit(row)} disabled={saving}>
-                          {saving ? 'Saving…' : 'Save Changes'}
+                        <button type="button" className="admin-btn admin-btn-green" style={{ marginTop: 14 }} onClick={() => saveEdit(row)} disabled={saving}>
+                          {saving ? 'Saving…' : 'Save changes'}
                         </button>
                       </div>
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
             {paged.length === 0 && (
-              <tr><td colSpan={columns.length + 1} style={{ ...S.td, textAlign: 'center', color: '#475569', padding: 32 }}>No results</td></tr>
+              <tr>
+                <td colSpan={columns.length + 1} className="admin-empty">{empty}</td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
       {pages > 1 && (
-        <div style={S.page}>
-          <span style={{ color: '#64748b', fontSize: 13 }}>{filtered.length} rows</span>
-          {Array.from({ length: pages }, (_, i) => (
-            <button key={i} style={S.pageBtn(i === page)} onClick={() => setPage(i)}>{i + 1}</button>
-          ))}
+        <div className="admin-pager">
+          <button type="button" disabled={safePage === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>Prev</button>
+          <span className="admin-muted">Page {safePage + 1} of {pages}</span>
+          <button type="button" disabled={safePage >= pages - 1} onClick={() => setPage((p) => p + 1)}>Next</button>
         </div>
       )}
     </div>

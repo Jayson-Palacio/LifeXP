@@ -1,6 +1,7 @@
 import { createClient } from '../../utils/supabase/server';
 import { redirect } from 'next/navigation';
 import AppLauncherClient from '../../components/AppLauncherClient';
+import { normalizeHiddenApps } from '../../lib/apps';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,12 +14,25 @@ export default async function AppsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: settings } = await supabase
+  let settings = null;
+  const withHidden = await supabase
     .from('app_settings')
-    .select('setup_complete, family_name')
+    .select('setup_complete, family_name, hidden_apps')
     .order('setup_complete', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (withHidden.error) {
+    const fallback = await supabase
+      .from('app_settings')
+      .select('setup_complete, family_name')
+      .order('setup_complete', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    settings = fallback.data;
+  } else {
+    settings = withHidden.data;
+  }
 
   const { count: vitalCount } = await supabase
     .from('vital_members')
@@ -31,6 +45,7 @@ export default async function AppsPage() {
   return (
     <AppLauncherClient
       familyName={settings?.family_name || 'your family'}
+      hiddenApps={normalizeHiddenApps(settings?.hidden_apps)}
       questsReady={Boolean(settings?.setup_complete)}
       vitalReady={Boolean(vitalCount)}
       ledgerReady={Boolean(ledgerCount)}

@@ -22,7 +22,17 @@ Kaeluma turns your family's daily routine into a living RPG — kids earn gold c
 
 ---
 
-## 🎯 The 4 Metrics That Matter
+## 📣 Marketing Agent (admin)
+
+Open **Admin → Marketing** for a calendar coach built from `marketing/*.md`:
+
+- Sets warm-up **Day 0** (default `2026-06-01`)
+- Tracks status (Planned → Drafting → Ready → Done / Skipped) in browser localStorage
+- Agent priority: unfinished setup → overdue → today → drafting → next up
+- Copy-ready captions for Day 1–10 shorts + launch assets
+
+Source of truth for copy remains the markdown playbooks; the agent is the operating surface.
+
 
 Every marketing and product decision should optimize for these four metrics:
 

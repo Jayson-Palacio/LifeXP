@@ -26,6 +26,13 @@ const APPS = [
     headline: 'What goes out, what you keep.',
     lede: 'Track monthly spending, then see the yearly savings you are on pace for — this month’s leftover, times 12.',
   },
+  {
+    id: 'table',
+    name: 'Table',
+    kicker: 'Meals',
+    headline: 'Dinner, then the list.',
+    lede: 'Plan the week at the household table. Groceries come from the plates you picked — check them off as you shop.',
+  },
 ];
 
 const INTERVAL = 7000;
@@ -85,6 +92,7 @@ export default function HomeShowcase() {
       <span id="quests" className="site-showcase-anchor" />
       <span id="vital" className="site-showcase-anchor" />
       <span id="ledger" className="site-showcase-anchor" />
+      <span id="table" className="site-showcase-anchor" />
 
       <div className="site-showcase-intro">
         <p className="site-kicker">Kaeluma</p>

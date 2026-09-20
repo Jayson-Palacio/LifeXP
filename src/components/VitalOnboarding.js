@@ -145,9 +145,14 @@ function paceChips(draft) {
   }];
 }
 
+function isChildDraft(draft) {
+  if (draft.kind === 'child') return true;
+  const years = Number(draft.age);
+  return Number.isFinite(years) && years >= 2 && years < 18;
+}
+
 function stepsFor(draft) {
-  const child = draft.kind === 'child' || Number(draft.age) < 18;
-  if (child) return ['welcome', 'you', 'body', 'style', 'ready'];
+  if (isChildDraft(draft)) return ['welcome', 'you', 'body', 'style', 'ready'];
   return ['welcome', 'you', 'body', 'goal', 'style', 'ready'];
 }
 
@@ -157,7 +162,7 @@ export default function VitalOnboarding({ firstName, member, plan, onDone, onCan
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const child = draft.kind === 'child' || Number(draft.age) < 18;
+  const child = isChildDraft(draft);
   const steps = stepsFor(draft);
   const active = steps.includes(step) ? step : (child ? 'style' : 'goal');
   const index = Math.max(0, steps.indexOf(active));
@@ -184,21 +189,29 @@ export default function VitalOnboarding({ firstName, member, plan, onDone, onCan
   const set = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
 
   const canContinue = () => {
-    if (active === 'you') return draft.display_name.trim().length > 0;
-    if (active === 'body') {
-      return Boolean(draft.sex && Number(draft.age) >= 2 && heightValue(draft) > 0 && Number(draft.weight) > 0);
+    if (active === 'you') {
+      if (!draft.display_name.trim()) return 'Add a name to continue.';
+      return '';
     }
-    if (active === 'goal') return Boolean(draft.intent);
-    if (active === 'style') return Boolean(draft.activity_level);
-    return true;
+    if (active === 'body') {
+      if (!draft.sex) return 'Pick female or male — it is only used for the calorie estimate.';
+      if (!(Number(draft.age) >= 2)) return 'Add an age.';
+      if (!(heightValue(draft) > 0)) return 'Add a height.';
+      if (!(Number(draft.weight) > 0)) return 'Add a weight.';
+      return '';
+    }
+    if (active === 'goal' && !draft.intent) return 'Pick a goal.';
+    if (active === 'style' && !draft.activity_level) return 'Pick a usual activity level.';
+    return '';
   };
 
   const goNext = () => {
-    setError('');
-    if (!canContinue()) {
-      setError('Fill this in to continue.');
+    const blocked = canContinue();
+    if (blocked) {
+      setError(blocked);
       return;
     }
+    setError('');
     const next = steps[index + 1];
     if (next) setStep(next);
   };
@@ -210,6 +223,15 @@ export default function VitalOnboarding({ firstName, member, plan, onDone, onCan
   };
 
   const finish = async () => {
+    const blocked = canContinue();
+    if (blocked) {
+      setError(blocked);
+      return;
+    }
+    if (!preview) {
+      setError('Go back and add age, height, and weight so we can set a target.');
+      return;
+    }
     setBusy(true);
     setError('');
     const intent = child ? 'grow' : draft.intent;
@@ -385,7 +407,6 @@ export default function VitalOnboarding({ firstName, member, plan, onDone, onCan
                   step="0.1"
                   value={draft.heightIn}
                   onChange={(e) => set({ heightIn: e.target.value })}
-                  required
                 />
               </div>
             </div>
@@ -544,7 +565,7 @@ export default function VitalOnboarding({ firstName, member, plan, onDone, onCan
         <button
           type="button"
           className="vital-btn"
-          disabled={busy || (last && !preview)}
+          disabled={busy}
           onClick={last ? finish : goNext}
         >
           {busy ? 'Saving…' : last ? 'Start logging' : 'Continue'}

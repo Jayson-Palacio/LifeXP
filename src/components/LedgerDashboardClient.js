@@ -226,6 +226,7 @@ export default function LedgerDashboardClient({
           <BrandLogo href="/apps" size="sm" tone="ink" />
           <span>Ledger</span>
         </div>
+        <Link href="/apps?tab=account" className="vital-text-btn">Account</Link>
         <Link href="/apps" className="vital-text-btn">Apps</Link>
       </header>
 
