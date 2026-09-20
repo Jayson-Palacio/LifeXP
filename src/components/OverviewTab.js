@@ -1,7 +1,9 @@
 "use client";
 
 import AvatarDisplay from './AvatarDisplay';
+import GuildGuideCard from './GuildGuideCard';
 import { getLevelForXP, getXPProgress } from '../lib/levels';
+import { guildGuideNote } from '../lib/guildGuide';
 import { getStreakIcon, getStreakStyles } from '../lib/streaks';
 import GoldCoin from './GoldCoin';
 
@@ -14,9 +16,37 @@ export default function OverviewTab({
   const hasApprovals = pending.length > 0;
   const hasRedemptions = pendingRedemptions.length > 0;
   const queueCount = pending.length + pendingRedemptions.length;
+  const guide = guildGuideNote({
+    children,
+    missions,
+    rewards,
+    pending,
+    pendingRedemptions,
+    familyName: settings?.family_name,
+  });
+
+  const onGuideAction = (action) => {
+    if (!action) return;
+    if (action.type === 'add_child') setModal({ type: 'child', data: null });
+    if (action.type === 'add_mission') {
+      setModal({
+        type: 'mission',
+        data: action.prefill
+          ? {
+              name: action.prefill.name,
+              icon: action.prefill.icon,
+              category: action.prefill.category,
+              coin_reward: action.prefill.coin_reward,
+            }
+          : null,
+      });
+    }
+    if (action.type === 'add_reward') setModal({ type: 'reward', data: null });
+  };
 
   return (
     <div className="page page-enter" style={{ paddingTop: 'var(--space-xl)' }}>
+      <GuildGuideCard note={guide} onAction={onGuideAction} />
       {(hasApprovals || hasRedemptions) && (
         <div style={{ marginBottom: 'var(--space-xl)' }}>
           <p className="quests-kicker">Needs you</p>

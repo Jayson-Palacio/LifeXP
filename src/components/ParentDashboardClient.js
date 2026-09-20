@@ -331,9 +331,9 @@ export default function ParentDashboardClient({ initialChildren, initialMissions
         <div className="modal-overlay" onPointerDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="modal-content">
             <h3 className="modal-title" style={{ textAlign: 'center', fontSize: '1.5rem' }}>
-              {modal.type === 'mission' ? (modal.data ? 'Edit Mission' : 'New Mission') :
-               modal.type === 'reward' ? (modal.data ? 'Edit Reward' : 'New Reward') :
-               (modal.data ? 'Edit Player Profile' : 'Add Player to Family')}
+              {modal.type === 'mission' ? (modal.data?.id ? 'Edit Mission' : 'New Mission') :
+               modal.type === 'reward' ? (modal.data?.id ? 'Edit Reward' : 'New Reward') :
+               (modal.data?.id ? 'Edit Player Profile' : 'Add Player to Family')}
             </h3>
             {modal.type === 'mission' && 
               <MissionModal 
