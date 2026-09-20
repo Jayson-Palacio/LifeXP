@@ -34,8 +34,9 @@ import {
 } from '../lib/nutrition';
 import { activityWeek, adaptiveCheck, familyWeek, memberInsights } from '../lib/vitalAnalytics';
 import { coachNote, weekSentence } from '../lib/vitalCoach';
-import { cookTonight, encodeKitchenRecipe, safeHttpUrl, searchCookRecipes } from '../lib/vitalSuggest';
+import { encodeKitchenRecipe, safeHttpUrl, searchCookRecipes } from '../lib/vitalSuggest';
 import { usualPlates } from '../lib/vitalPlates';
+import { dayPlates, TABLE_LOCAL_KEY } from '../lib/table';
 import {
   deleteVitalActivity,
   deleteVitalFood,
@@ -225,6 +226,7 @@ export default function VitalDashboardClient({
   kitchen = [],
   activities = [],
   moves = [],
+  tableWeek = null,
   suggestedKids = [],
   tableMissing,
   kitchenMissing,
@@ -235,13 +237,13 @@ export default function VitalDashboardClient({
   const today = localDateISO();
   const [memberId, setMemberId] = useState(members[0]?.id || '');
   const [tab, setTab] = useState('eat');
-  const [cookIndex, setCookIndex] = useState(0);
   const [cookBusy, setCookBusy] = useState(false);
-  const [cookQuery, setCookQuery] = useState('');
-  const [cookPick, setCookPick] = useState(null);
-  const [showCookAdd, setShowCookAdd] = useState(false);
+  const [recipeQuery, setRecipeQuery] = useState('');
+  const [showRecipeAdd, setShowRecipeAdd] = useState(false);
   const [cookRecipe, setCookRecipe] = useState(() => emptyCookRecipe());
-  const [serveCook, setServeCook] = useState(null);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logMode, setLogMode] = useState('food');
+  const [tableLocal, setTableLocal] = useState({});
   const [showPerson, setShowPerson] = useState(false);
   const [person, setPerson] = useState(() => emptyPerson());
   const [personError, setPersonError] = useState('');
@@ -296,12 +298,18 @@ export default function VitalDashboardClient({
   }, [memberId, members, plans]);
 
   useEffect(() => {
-    setCookIndex(0);
-    setCookPick(null);
-    setCookQuery('');
-    setShowCookAdd(false);
+    setRecipeQuery('');
+    setShowRecipeAdd(false);
     setCookRecipe(emptyCookRecipe());
   }, [memberId, meal]);
+
+  useEffect(() => {
+    try {
+      setTableLocal(JSON.parse(window.localStorage.getItem(TABLE_LOCAL_KEY) || '{}'));
+    } catch {
+      setTableLocal({});
+    }
+  }, [logOpen, logYesterday]);
 
   useEffect(() => {
     try {
@@ -465,6 +473,14 @@ export default function VitalDashboardClient({
   const focusLog = (mealId) => {
     if (mealId) setMeal(mealId);
     setTab('eat');
+    setLogOpen(true);
+    setLogMode('food');
+    setQuery('');
+    setRecipeQuery('');
+    setShowCustom(false);
+    setShowRecipeAdd(false);
+    setCustom(emptyCustom());
+    setFoodError('');
     window.setTimeout(() => foodRef.current?.focus(), 30);
   };
 
@@ -512,7 +528,8 @@ export default function VitalDashboardClient({
       servings: hasMacros ? 1 : portion,
       meal: extras.meal || mealForLog(item, meal),
       logged_on: logDate,
-      barcode: item.barcode,
+      barcode: extras.once ? null : item.barcode,
+      once: Boolean(extras.once),
     });
     if (!result.success) {
       setFoodError(result.error);
@@ -521,42 +538,25 @@ export default function VitalDashboardClient({
     setQuery('');
     setShowCustom(false);
     setCustom(emptyCustom());
+    if (extras.close) {
+      setLogOpen(false);
+      setShowRecipeAdd(false);
+    }
     router.refresh();
     return true;
   };
 
-  const logCookPlate = async (dish, targets) => {
-    if (!member || !dish?.items?.length) return;
+  const logDish = async (dish, { once = true, mealId } = {}) => {
+    if (!member || !dish) return;
     setCookBusy(true);
     setFoodError('');
-    const people = targets?.length ? targets : [{ member_id: member.id, servings: 1 }];
-    for (const target of people) {
-      const portion = Number(target.servings) || 1;
-      if (portion <= 0) continue;
-      for (const item of dish.items) {
-        const scaled = scaleServing(item, portion);
-        const result = await logVitalFood({
-          member_id: target.member_id,
-          name: item.name,
-          calories: scaled.calories,
-          protein_g: scaled.protein_g,
-          carbs_g: scaled.carbs_g,
-          fat_g: scaled.fat_g,
-          fiber_g: scaled.fiber_g,
-          servings: 1,
-          meal: dish.meal || meal,
-          logged_on: logDate,
-        });
-        if (!result.success) {
-          setFoodError(result.error);
-          setCookBusy(false);
-          return;
-        }
-      }
-    }
+    const ok = await addFood({
+      name: dish.title || dish.name,
+      calories: dish.kcal ?? dish.calories,
+      protein_g: dish.protein ?? dish.protein_g,
+    }, { meal: mealId || meal, once, close: true });
     setCookBusy(false);
-    setServeCook(null);
-    router.refresh();
+    return ok;
   };
 
   const handleCustomFood = async (event) => {
@@ -566,9 +566,9 @@ export default function VitalDashboardClient({
       return;
     }
     if (!showCustom && query.trim()) {
-      setShowCustom(true);
+      setLogMode('once');
       setCustom((prev) => ({ ...prev, name: query }));
-      setFoodError('No catalog match yet. Add calories to save it.');
+      setFoodError('');
       return;
     }
     const item = { ...custom, name: custom.name || query };
@@ -584,6 +584,20 @@ export default function VitalDashboardClient({
       return;
     }
     await addFood(payload);
+  };
+
+  const handleOnce = async (event) => {
+    event.preventDefault();
+    const item = { ...custom, name: custom.name || query };
+    if (!String(item.name || '').trim()) {
+      setFoodError('Name it.');
+      return;
+    }
+    if (item.calories === '' || Number(item.calories) < 0) {
+      setFoodError('Add calories.');
+      return;
+    }
+    await addFood(item, { once: true, close: true });
   };
 
   const handleScanFound = async (item) => {
@@ -604,25 +618,27 @@ export default function VitalDashboardClient({
     });
     setPlateBusy(false);
     if (!result.success) setFoodError(result.error);
-    else router.refresh();
+    else {
+      setLogOpen(false);
+      router.refresh();
+    }
   };
 
-  const handleSaveCookRecipe = async (event, { logAfter = true } = {}) => {
+  const handleSaveCookRecipe = async (event) => {
     event.preventDefault();
-    if (!member || !cookSlot) return;
+    if (!member) return;
     const name = String(cookRecipe.name || '').trim();
-    const plates = Math.max(1, Math.min(24, Number(cookRecipe.servings) || 1));
     const totalKcal = Number(cookRecipe.calories);
     if (!name) {
-      setFoodError('Give this recipe a name.');
+      setFoodError('Name the recipe.');
       return;
     }
     if (!Number.isFinite(totalKcal) || totalKcal < 0) {
-      setFoodError('Add calories for the pot, or for one plate.');
+      setFoodError('Add calories for one plate.');
       return;
     }
     if (cookRecipe.protein_g === '' || Number(cookRecipe.protein_g) < 0) {
-      setFoodError('Add protein for the pot, or for one plate.');
+      setFoodError('Add protein for one plate.');
       return;
     }
     const linkRaw = String(cookRecipe.url || '').trim();
@@ -630,23 +646,20 @@ export default function VitalDashboardClient({
       setFoodError('Use a web link that starts with http.');
       return;
     }
-    const per = (value) => Math.round(((Number(value) || 0) / plates) * 10) / 10;
+    const slot = meal === 'breakfast' || meal === 'lunch' || meal === 'dinner' ? meal : 'dinner';
     setCookBusy(true);
     setFoodError('');
     const payload = {
       name,
-      calories: Math.round(totalKcal / plates),
-      protein_g: per(cookRecipe.protein_g),
-      carbs_g: per(cookRecipe.carbs_g),
-      fat_g: per(cookRecipe.fat_g),
-      fiber_g: per(cookRecipe.fiber_g),
-      meal: cookSlot,
+      calories: Math.round(totalKcal),
+      protein_g: Math.round((Number(cookRecipe.protein_g) || 0) * 10) / 10,
+      meal: slot,
       barcode: encodeKitchenRecipe({
         ingredients: cookRecipe.ingredients,
         url: linkRaw,
         notes: cookRecipe.notes,
-        servings: plates,
-        meal: cookSlot,
+        servings: 1,
+        meal: slot,
       }),
     };
     const saved = await saveVitalKitchenItem(payload);
@@ -655,15 +668,10 @@ export default function VitalDashboardClient({
       setCookBusy(false);
       return;
     }
-    if (logAfter) {
-      const ok = await addFood(payload, { meal: cookSlot });
-      setCookBusy(false);
-      if (!ok) return;
-    } else {
-      setCookBusy(false);
-      router.refresh();
-    }
-    setShowCookAdd(false);
+    const ok = await addFood(payload, { meal: slot, close: true });
+    setCookBusy(false);
+    if (!ok) return;
+    setShowRecipeAdd(false);
     setCookRecipe(emptyCookRecipe());
   };
 
@@ -804,24 +812,21 @@ export default function VitalDashboardClient({
   const fiberTarget = memberPlan?.fiber_target_g || 0;
   const kcalLeft = calorieTarget ? Math.round(calorieTarget - eaten.calories) : null;
   const proteinLeft = proteinTarget ? Math.round(proteinTarget - eaten.protein) : null;
-  const cookSlot = meal === 'breakfast' || meal === 'lunch' || meal === 'dinner' ? meal : null;
-  const cook = cookTonight({
-    kitchen,
-    remainingKcal: simple ? null : kcalLeft,
-    remainingProtein: proteinLeft,
-    child,
-    hour,
-    slot: cookSlot || undefined,
-    simple,
-  });
-  const cookHits = useMemo(
-    () => (cookSlot && cookQuery.trim().length >= 2
-      ? searchCookRecipes(cookQuery, { slot: cookSlot, child, kitchen, hay: kitchen.map((row) => row.name).join(' | ') })
-      : []),
-    [cookQuery, cookSlot, child, kitchen]
+  const tableDay = useMemo(
+    () => dayPlates(tableWeek ? [tableWeek] : [], logDate, tableLocal),
+    [tableWeek, logDate, tableLocal]
   );
-  const idea = cookPick
-    || (cook.ideas.length ? cook.ideas[cookIndex % cook.ideas.length] : null);
+  const tablePlate = (meal === 'breakfast' || meal === 'lunch' || meal === 'dinner') ? tableDay[meal] : null;
+  const tableLogged = Boolean(
+    tablePlate
+    && journalFoods.some((row) => row.meal === meal && String(row.name || '').toLowerCase() === String(tablePlate.title || '').toLowerCase())
+  );
+  const recipeHits = useMemo(() => {
+    const q = recipeQuery.trim();
+    if (q.length < 2) return [];
+    const slot = meal === 'breakfast' || meal === 'lunch' || meal === 'dinner' ? meal : 'dinner';
+    return searchCookRecipes(q, { slot, child, kitchen, simple: true }).slice(0, 8);
+  }, [recipeQuery, meal, child, kitchen]);
   const weekLine = weekSentence({ insights, child });
   const coach = coachNote({
     member,
@@ -1063,447 +1068,28 @@ export default function VitalDashboardClient({
             </nav>
 
             {tab === 'eat' && (
-              <section className="vital-board">
-                <div className="vital-board-log">
-                  <form onSubmit={showCustom ? handleSaveCustom : handleCustomFood} className="vital-card vital-composer">
-                    <div className="vital-card-head">
-                      <p className="vital-kicker">{logYesterday ? 'Logging yesterday' : 'Log a meal'}</p>
-                      <div className="vital-meals">
-                        <button type="button" className={!logYesterday ? 'is-active' : ''} onClick={() => setLogYesterday(false)}>Today</button>
-                        <button type="button" className={logYesterday ? 'is-active' : ''} onClick={() => setLogYesterday(true)}>Yesterday</button>
-                      </div>
-                    </div>
-                    <div className="vital-composer-search">
-                      <input
-                        id="vital-food"
-                        ref={foodRef}
-                        className="vital-input vital-input-lg"
-                        value={showCustom ? custom.name : query}
-                        onChange={(e) => {
-                          if (showCustom) setCustom({ ...custom, name: e.target.value });
-                          else setQuery(e.target.value);
-                        }}
-                        placeholder="What did you eat?"
-                        autoComplete="off"
-                      />
-                      <button type="button" className="vital-icon-btn" onClick={() => setShowScan(true)}>
-                        Scan
-                      </button>
-                    </div>
-                    {meal !== 'drink' && !query.trim() && !showCustom && usuals.length > 0 && (
-                      <div className="vital-usual">
-                        <p className="vital-kicker">Usual</p>
-                        <div className="vital-usual-chips">
-                          {usuals.map((plate) => (
-                            <button
-                              key={plate.id}
-                              type="button"
-                              className="vital-chip is-usual"
-                              disabled={plateBusy}
-                              onClick={() => handleUsualPlate(plate)}
-                            >
-                              {plate.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {meal !== 'drink' && (quickFoods.length > 0 || recents.length > 0 || kitchen.length > 0) && (
-                      <div className="vital-quick-foods">
-                        {quickFoods.map((row) => (
-                          <button
-                            key={row.id || row.name}
-                            type="button"
-                            className={`vital-chip${pinNames.some((name) => name.toLowerCase() === row.name.toLowerCase()) ? ' is-pinned' : ''}`}
-                            onClick={() => addFood(row)}
-                          >
-                            {row.name}
-                          </button>
-                        ))}
-                        {recents.filter((row) => !quickFoods.some((item) => item.name.toLowerCase() === row.name.toLowerCase())).slice(0, 3).map((row) => (
-                          <button key={row.id} type="button" className="vital-chip" onClick={() => addFood(row)}>
-                            {row.name}
-                          </button>
-                        ))}
-                        <button type="button" className="vital-text-btn" onClick={() => {
-                          setPinIds((prev) => (prev.length ? prev : dbPins.map((row) => row.name)));
-                          setShowQuickEdit(true);
-                        }}>
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                    {meal === 'drink' && !child && (
-                      <div className="vital-quick-foods">
-                        {DRINK_FOODS.map((row) => (
-                          <button key={row.name} type="button" className="vital-chip" onClick={() => addFood({ ...row, meal: 'drink' })}>
-                            {row.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="vital-composer-meta">
-                      <div className="vital-meals">
-                        {(child ? MEALS.filter((item) => item.id !== 'drink') : MEALS).map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            className={meal === item.id ? 'is-active' : ''}
-                            onClick={() => setMeal(item.id)}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="vital-meals">
-                        {SERVING_OPTIONS.map((size) => (
-                          <button
-                            key={size}
-                            type="button"
-                            className={servings === size ? 'is-active' : ''}
-                            onClick={() => setServings(size)}
-                          >
-                            {size === 1 ? '1×' : `${size}×`}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {showCustom && (
-                      <div className="vital-grid">
-                        <div>
-                          <label htmlFor="custom_kcal">Calories</label>
-                          <input id="custom_kcal" className="vital-input" type="number" min="0" value={custom.calories} onChange={(e) => setCustom({ ...custom, calories: e.target.value })} required />
-                        </div>
-                        <div>
-                          <label htmlFor="custom_p">Protein</label>
-                          <input id="custom_p" className="vital-input" type="number" min="0" step="0.1" value={custom.protein_g} onChange={(e) => setCustom({ ...custom, protein_g: e.target.value })} />
-                        </div>
-                        <div>
-                          <label htmlFor="custom_c">Carbs</label>
-                          <input id="custom_c" className="vital-input" type="number" min="0" step="0.1" value={custom.carbs_g} onChange={(e) => setCustom({ ...custom, carbs_g: e.target.value })} />
-                        </div>
-                        <div>
-                          <label htmlFor="custom_f">Fat</label>
-                          <input id="custom_f" className="vital-input" type="number" min="0" step="0.1" value={custom.fat_g} onChange={(e) => setCustom({ ...custom, fat_g: e.target.value })} />
-                        </div>
-                        <div>
-                          <label htmlFor="custom_fiber">Fiber</label>
-                          <input id="custom_fiber" className="vital-input" type="number" min="0" step="0.1" value={custom.fiber_g} onChange={(e) => setCustom({ ...custom, fiber_g: e.target.value })} />
-                        </div>
-                      </div>
-                    )}
-                    {!showCustom && query.trim() && (
-                      <div className="vital-matches">
-                        {matches.map((item) => {
-                          const preview = scaleServing(item, servings);
-                          return (
-                            <button key={`${item.source || 'x'}-${item.id || item.name}`} type="button" onClick={() => addFood(item)}>
-                              <span>
-                                {item.name}
-                                {item.source === 'kitchen' && <i>Kitchen</i>}
-                                {item.source === 'store' && <i>{item.brand || (item.store === 'sams' ? "Sam's" : 'Walmart')}</i>}
-                                {item.source === 'search' && <i>{item.serving === '100g' ? '100g' : 'Database'}</i>}
-                              </span>
-                              <em>{preview.calories}</em>
-                            </button>
-                          );
-                        })}
-                        {matches.length === 0 && (
-                          <p className="vital-muted vital-match-empty">
-                            {remoteBusy || query.trim().length < 2
-                              ? `Looking up “${query.trim()}”…`
-                              : 'No match. Tap New food and add calories to save it.'}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {foodError && <p className="vital-err">{foodError}</p>}
-                    <div className="vital-composer-actions">
-                      <button type="submit" className="vital-btn" disabled={showCustom ? !custom.calories : !query.trim()}>
-                        {showCustom ? 'Save and log' : 'Log it'}
-                      </button>
-                      {logYesterday ? (
-                        <span className="vital-muted">Adds to yesterday’s journal.</span>
-                      ) : null}
-                      {showCustom ? (
-                        <button type="button" className="vital-text-btn" onClick={() => setShowCustom(false)}>Cancel</button>
-                      ) : (
-                        <button type="button" className="vital-text-btn" onClick={() => { setShowCustom(true); setCustom((prev) => ({ ...prev, name: query })); }}>
-                          New food
-                        </button>
-                      )}
-                    </div>
-                  </form>
-
-                  {cookSlot && !logYesterday && (
-                    <div className="vital-card vital-plate">
-                      <div className="vital-card-head">
-                        <p className="vital-kicker">{cook.kicker}</p>
-                        <div className="vital-plate-head-actions">
-                          {!showCookAdd && !cookQuery.trim() && cook.ideas.length > 1 && (
-                            <button type="button" className="vital-text-btn" onClick={() => { setCookPick(null); setCookIndex((index) => index + 1); }}>
-                              Another idea
-                            </button>
-                          )}
-                          <Link href="/table" className="vital-text-btn">Plan week</Link>
-                          <button
-                            type="button"
-                            className="vital-text-btn"
-                            onClick={() => {
-                              setShowCookAdd((open) => {
-                                const next = !open;
-                                if (next) {
-                                  const fromSearch = cookQuery.trim();
-                                  if (fromSearch) {
-                                    setCookRecipe((prev) => ({ ...prev, name: prev.name || fromSearch }));
-                                  }
-                                } else {
-                                  setCookRecipe(emptyCookRecipe());
-                                  setFoodError('');
-                                }
-                                return next;
-                              });
-                              setCookQuery('');
-                            }}
-                          >
-                            {showCookAdd ? 'Cancel' : 'Add recipe'}
-                          </button>
-                        </div>
-                      </div>
-                      {!showCookAdd && (
-                        <div className="vital-cook-search">
-                          <label htmlFor="vital-cook-search" className="vital-sr">Search recipes</label>
-                          <input
-                            id="vital-cook-search"
-                            className="vital-input"
-                            value={cookQuery}
-                            onChange={(e) => { setCookQuery(e.target.value); setCookPick(null); }}
-                            placeholder="Search recipes"
-                            autoComplete="off"
-                          />
-                        </div>
-                      )}
-                      {showCookAdd ? (
-                        <form onSubmit={(event) => handleSaveCookRecipe(event, { logAfter: true })} className="vital-cook-add">
-                          <p>Save a {cookSlot} you cook. Numbers are for the whole pot if you make more than one plate.</p>
-                          <label htmlFor="cook_recipe_name">Recipe name</label>
-                          <input
-                            id="cook_recipe_name"
-                            className="vital-input"
-                            value={cookRecipe.name}
-                            onChange={(e) => setCookRecipe({ ...cookRecipe, name: e.target.value })}
-                            placeholder="Turkey chili"
-                            maxLength={120}
-                            required
-                          />
-                          <label htmlFor="cook_recipe_ings">Ingredients</label>
-                          <textarea
-                            id="cook_recipe_ings"
-                            className="vital-input"
-                            rows={3}
-                            value={cookRecipe.ingredients}
-                            onChange={(e) => setCookRecipe({ ...cookRecipe, ingredients: e.target.value })}
-                            placeholder="Ground turkey, beans, chili powder"
-                          />
-                          <label htmlFor="cook_recipe_url">Recipe link</label>
-                          <input
-                            id="cook_recipe_url"
-                            className="vital-input"
-                            type="text"
-                            inputMode="url"
-                            value={cookRecipe.url}
-                            onChange={(e) => setCookRecipe({ ...cookRecipe, url: e.target.value })}
-                            placeholder="https://"
-                          />
-                          <label htmlFor="cook_recipe_notes">How you cook it</label>
-                          <textarea
-                            id="cook_recipe_notes"
-                            className="vital-input"
-                            rows={3}
-                            value={cookRecipe.notes}
-                            onChange={(e) => setCookRecipe({ ...cookRecipe, notes: e.target.value })}
-                            placeholder="Brown the turkey, simmer 20 minutes"
-                            maxLength={400}
-                          />
-                          <div className="vital-grid">
-                            <div>
-                              <label htmlFor="cook_recipe_servings">Plates this makes</label>
-                              <input
-                                id="cook_recipe_servings"
-                                className="vital-input"
-                                type="number"
-                                min="1"
-                                max="24"
-                                value={cookRecipe.servings}
-                                onChange={(e) => setCookRecipe({ ...cookRecipe, servings: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="cook_recipe_kcal">Calories</label>
-                              <input
-                                id="cook_recipe_kcal"
-                                className="vital-input"
-                                type="number"
-                                min="0"
-                                value={cookRecipe.calories}
-                                onChange={(e) => setCookRecipe({ ...cookRecipe, calories: e.target.value })}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="cook_recipe_p">Protein</label>
-                              <input
-                                id="cook_recipe_p"
-                                className="vital-input"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value={cookRecipe.protein_g}
-                                onChange={(e) => setCookRecipe({ ...cookRecipe, protein_g: e.target.value })}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="cook_recipe_c">Carbs</label>
-                              <input
-                                id="cook_recipe_c"
-                                className="vital-input"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value={cookRecipe.carbs_g}
-                                onChange={(e) => setCookRecipe({ ...cookRecipe, carbs_g: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="cook_recipe_f">Fat</label>
-                              <input
-                                id="cook_recipe_f"
-                                className="vital-input"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value={cookRecipe.fat_g}
-                                onChange={(e) => setCookRecipe({ ...cookRecipe, fat_g: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="cook_recipe_fiber">Fiber</label>
-                              <input
-                                id="cook_recipe_fiber"
-                                className="vital-input"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value={cookRecipe.fiber_g}
-                                onChange={(e) => setCookRecipe({ ...cookRecipe, fiber_g: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                          {Number(cookRecipe.servings) > 1 && Number(cookRecipe.calories) > 0 && (
-                            <p className="vital-muted">
-                              One plate saves as {macrosLabel(
-                                Number(cookRecipe.calories) / Math.max(1, Number(cookRecipe.servings) || 1),
-                                Number(cookRecipe.protein_g || 0) / Math.max(1, Number(cookRecipe.servings) || 1)
-                              )}.
-                            </p>
-                          )}
-                          {foodError && <p className="vital-err">{foodError}</p>}
-                          <div className="vital-cook-add-actions">
-                            <button
-                              type="button"
-                              className="vital-btn vital-btn-quiet"
-                              disabled={cookBusy || !cookRecipe.name.trim() || cookRecipe.calories === '' || cookRecipe.protein_g === ''}
-                              onClick={(event) => handleSaveCookRecipe(event, { logAfter: false })}
-                            >
-                              {cookBusy ? 'Saving…' : 'Save recipe'}
-                            </button>
-                            <button type="submit" className="vital-btn" disabled={cookBusy || !cookRecipe.name.trim() || cookRecipe.calories === '' || cookRecipe.protein_g === ''}>
-                              {cookBusy ? 'Saving…' : 'Save and log'}
-                            </button>
-                          </div>
-                        </form>
-                      ) : cookHits.length > 0 ? (
-                        <div className="vital-matches vital-cook-hits">
-                          {cookHits.map((hit) => (
-                            <button
-                              key={hit.id || hit.title}
-                              type="button"
-                              onClick={() => { setCookPick(hit); setCookQuery(''); }}
-                            >
-                              <span>
-                                {hit.title}
-                                <i>{hit.saved ? 'Yours' : (hit.recipeSource || 'Recipe')}</i>
-                              </span>
-                              <em>{macrosLabel(hit.kcal, hit.protein)}</em>
-                            </button>
-                          ))}
-                        </div>
-                      ) : cookQuery.trim().length >= 2 ? (
-                        <p className="vital-muted">No recipe for that. Add one, or try chili, tacos, eggs.</p>
-                      ) : idea ? (
-                        <>
-                          <h2>{idea.title}</h2>
-                          <p className="vital-plate-macros">{macrosLabel(idea.kcal, idea.protein)}</p>
-                          {idea.why ? <p>{idea.why}</p> : null}
-                          {idea.notes ? <p className="vital-plate-notes">{idea.notes}</p> : null}
-                          {idea.ingredients.length > 0 && (
-                            <p className="vital-plate-ings">{idea.ingredients.join(' · ')}</p>
-                          )}
-                          <div className="vital-plate-actions">
-                            {idea.recipeUrl && (
-                              <a
-                                className="vital-btn vital-btn-quiet"
-                                href={idea.recipeUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Recipe{idea.recipeSource ? ` · ${idea.recipeSource}` : ''}
-                              </a>
-                            )}
-                            {idea.items.length > 0 && (
-                              <button type="button" className="vital-btn" disabled={cookBusy} onClick={() => logCookPlate(idea)}>
-                                {cookBusy ? 'Logging…' : 'Log this plate'}
-                              </button>
-                            )}
-                            {members.length > 1 && idea.items.length > 0 && (
-                              <button
-                                type="button"
-                                className="vital-btn vital-btn-quiet"
-                                onClick={() => {
-                                  const next = {};
-                                  members.forEach((row) => { next[row.id] = 1; });
-                                  setServePortions(next);
-                                  setServeCook(idea);
-                                }}
-                              >
-                                Serve
-                              </button>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <p className="vital-muted">Search a recipe, or add one you cook.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
+              <section className="vital-board vital-board-today">
                 <aside className="vital-journal">
                   <div className="vital-card vital-journal-card">
                     <div className="vital-card-head">
                       <p className="vital-kicker">{logYesterday ? 'Yesterday' : 'Today'}</p>
-                      <span>
-                        {calorieTarget
-                          ? `${Math.round(journalEaten.calories).toLocaleString()} / ${calorieTarget.toLocaleString()} kcal · ${Math.round(journalEaten.protein)}g protein`
-                          : `${Math.round(journalEaten.calories)} kcal · ${Math.round(journalEaten.protein)}g protein`}
-                      </span>
+                      <div className="vital-meals">
+                        <button type="button" className={!logYesterday ? 'is-active' : ''} onClick={() => setLogYesterday(false)}>Today</button>
+                        <button type="button" className={logYesterday ? 'is-active' : ''} onClick={() => setLogYesterday(true)}>Yesterday</button>
+                        <Link href="/table" className="vital-text-btn">Table</Link>
+                      </div>
                     </div>
+                    <span className="vital-journal-sum">
+                      {calorieTarget
+                        ? `${Math.round(journalEaten.calories).toLocaleString()} / ${calorieTarget.toLocaleString()} kcal · ${Math.round(journalEaten.protein)}g protein`
+                        : `${Math.round(journalEaten.calories)} kcal · ${Math.round(journalEaten.protein)}g protein`}
+                    </span>
                     <div className="vital-meal-board">
                       {MEALS.filter((item) => item.id !== 'drink').map((group) => {
                         const rows = journalFoods.filter((row) => row.meal === group.id || (group.id === 'snack' && row.meal === 'drink'));
                         const mealKcal = rows.reduce((sum, row) => sum + Number(row.calories || 0), 0);
                         const mealProtein = rows.reduce((sum, row) => sum + Number(row.protein_g || 0), 0);
+                        const planned = (group.id === 'breakfast' || group.id === 'lunch' || group.id === 'dinner') ? tableDay[group.id] : null;
                         return (
                           <div key={group.id} className="vital-meal-col">
                             <div className="vital-meal-col-head">
@@ -1513,7 +1099,13 @@ export default function VitalDashboardClient({
                                 +
                               </button>
                             </div>
-                            {rows.length === 0 && (
+                            {rows.length === 0 && planned?.title ? (
+                              <button type="button" className="vital-meal-plan" onClick={() => logDish(planned, { once: !planned.saved, mealId: group.id })}>
+                                <strong>{planned.title}</strong>
+                                <em>On the table · tap to log</em>
+                              </button>
+                            ) : null}
+                            {rows.length === 0 && !planned?.title && (
                               <button type="button" className="vital-meal-empty" onClick={() => focusLog(group.id)}>
                                 Add
                               </button>
@@ -2325,46 +1917,295 @@ export default function VitalDashboardClient({
         </div>
       )}
 
-      {serveCook && (
-        <div className="vital-overlay" onPointerDown={(e) => { if (e.target === e.currentTarget) setServeCook(null); }}>
-          <div className="vital-sheet">
-            <button type="button" className="vital-sheet-close" onClick={() => setServeCook(null)} aria-label="Close">×</button>
-            <h2>Serve {serveCook.title}</h2>
-            <p className="vital-plate-macros">{macrosLabel(serveCook.kcal, serveCook.protein)}</p>
-            <p>Logs the whole plate for whoever ate it. Kids still get food logged — not a calorie diet.</p>
-            {members.map((row) => (
-              <div key={row.id} className="vital-row vital-serve-row">
-                <div>
-                  <strong>{row.display_name}</strong>
-                  <span>{row.id === memberId ? 'You' : row.kind === 'child' ? 'Child' : 'Adult'}</span>
+      {logOpen && (
+        <div
+          className="vital-overlay"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) setLogOpen(false);
+          }}
+        >
+          <div className="vital-sheet vital-log-sheet">
+            <button type="button" className="vital-sheet-close" onClick={() => setLogOpen(false)} aria-label="Close">×</button>
+            <h2>{MEALS.find((item) => item.id === meal)?.label || 'Add'}</h2>
+            {logYesterday ? <p>Adds to yesterday.</p> : null}
+            {tablePlate && !tableLogged ? (
+              <button
+                type="button"
+                className="vital-table-suggest"
+                disabled={cookBusy}
+                onClick={() => logDish(tablePlate, { once: !tablePlate.saved })}
+              >
+                <span>On the table</span>
+                <strong>{tablePlate.title}</strong>
+                <em>{macrosLabel(tablePlate.kcal, tablePlate.protein)}</em>
+              </button>
+            ) : null}
+            <div className="vital-meals">
+              <button type="button" className={logMode === 'food' ? 'is-active' : ''} onClick={() => { setLogMode('food'); setShowRecipeAdd(false); setFoodError(''); }}>Food</button>
+              {meal !== 'drink' ? (
+                <button type="button" className={logMode === 'recipe' ? 'is-active' : ''} onClick={() => { setLogMode('recipe'); setShowCustom(false); setFoodError(''); }}>Recipe</button>
+              ) : null}
+              <button
+                type="button"
+                className={logMode === 'once' ? 'is-active' : ''}
+                onClick={() => {
+                  setLogMode('once');
+                  setShowCustom(false);
+                  setShowRecipeAdd(false);
+                  setCustom((prev) => ({ ...prev, name: prev.name || query }));
+                  setFoodError('');
+                }}
+              >
+                Once
+              </button>
+            </div>
+
+            {logMode === 'food' && (
+              <form onSubmit={showCustom ? handleSaveCustom : handleCustomFood}>
+                <div className="vital-composer-search">
+                  <label htmlFor="vital-food" className="vital-sr">What did you eat?</label>
+                  <input
+                    id="vital-food"
+                    ref={foodRef}
+                    className="vital-input vital-input-lg"
+                    value={showCustom ? custom.name : query}
+                    onChange={(e) => {
+                      if (showCustom) setCustom({ ...custom, name: e.target.value });
+                      else setQuery(e.target.value);
+                    }}
+                    placeholder="Search food"
+                    autoComplete="off"
+                  />
+                  <button type="button" className="vital-icon-btn" onClick={() => setShowScan(true)}>Scan</button>
                 </div>
+                {!query.trim() && !showCustom && usuals.length > 0 && (
+                  <div className="vital-usual">
+                    {usuals.map((plate) => (
+                      <button
+                        key={plate.id}
+                        type="button"
+                        className="vital-chip is-usual"
+                        disabled={plateBusy}
+                        onClick={() => handleUsualPlate(plate)}
+                      >
+                        {plate.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!query.trim() && !showCustom && (quickFoods.length > 0 || recents.length > 0) && (
+                  <div className="vital-quick-foods">
+                    {quickFoods.map((row) => (
+                      <button
+                        key={row.id || row.name}
+                        type="button"
+                        className={`vital-chip${pinNames.some((name) => name.toLowerCase() === row.name.toLowerCase()) ? ' is-pinned' : ''}`}
+                        onClick={() => addFood(row)}
+                      >
+                        {row.name}
+                      </button>
+                    ))}
+                    {recents.filter((row) => !quickFoods.some((item) => item.name.toLowerCase() === row.name.toLowerCase())).slice(0, 3).map((row) => (
+                      <button key={row.id} type="button" className="vital-chip" onClick={() => addFood(row)}>
+                        {row.name}
+                      </button>
+                    ))}
+                    <button type="button" className="vital-text-btn" onClick={() => {
+                      setPinIds((prev) => (prev.length ? prev : dbPins.map((row) => row.name)));
+                      setShowQuickEdit(true);
+                    }}>
+                      Edit
+                    </button>
+                  </div>
+                )}
+                {meal === 'drink' && !child && !query.trim() && (
+                  <div className="vital-quick-foods">
+                    {DRINK_FOODS.map((row) => (
+                      <button key={row.name} type="button" className="vital-chip" onClick={() => addFood({ ...row, meal: 'drink' })}>
+                        {row.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="vital-meals">
-                  {FAMILY_SERVINGS.map((size) => (
+                  {SERVING_OPTIONS.map((size) => (
                     <button
                       key={size}
                       type="button"
-                      className={Number(servePortions[row.id]) === size ? 'is-active' : ''}
-                      onClick={() => setServePortions((prev) => ({ ...prev, [row.id]: prev[row.id] === size ? 0 : size }))}
+                      className={servings === size ? 'is-active' : ''}
+                      onClick={() => setServings(size)}
                     >
                       {size === 1 ? '1×' : `${size}×`}
                     </button>
                   ))}
                 </div>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="vital-btn"
-              disabled={cookBusy}
-              onClick={() => logCookPlate(
-                serveCook,
-                Object.entries(servePortions)
-                  .filter(([, servings]) => Number(servings) > 0)
-                  .map(([id, servings]) => ({ member_id: id, servings }))
-              )}
-            >
-              {cookBusy ? 'Logging…' : 'Serve to household'}
-            </button>
+                {showCustom && (
+                  <div className="vital-grid">
+                    <div>
+                      <label htmlFor="custom_kcal">Calories</label>
+                      <input id="custom_kcal" className="vital-input" type="number" min="0" value={custom.calories} onChange={(e) => setCustom({ ...custom, calories: e.target.value })} required />
+                    </div>
+                    <div>
+                      <label htmlFor="custom_p">Protein</label>
+                      <input id="custom_p" className="vital-input" type="number" min="0" step="0.1" value={custom.protein_g} onChange={(e) => setCustom({ ...custom, protein_g: e.target.value })} />
+                    </div>
+                  </div>
+                )}
+                {!showCustom && query.trim() && (
+                  <div className="vital-matches">
+                    {matches.map((item) => {
+                      const preview = scaleServing(item, servings);
+                      return (
+                        <button key={`${item.source || 'x'}-${item.id || item.name}`} type="button" onClick={() => addFood(item)}>
+                          <span>
+                            {item.name}
+                            {item.source === 'kitchen' && <i>Kitchen</i>}
+                            {item.source === 'store' && <i>{item.brand || (item.store === 'sams' ? "Sam's" : 'Walmart')}</i>}
+                            {item.source === 'search' && <i>{item.serving === '100g' ? '100g' : 'Database'}</i>}
+                          </span>
+                          <em>{preview.calories}</em>
+                        </button>
+                      );
+                    })}
+                    {matches.length === 0 && (
+                      <p className="vital-muted vital-match-empty">
+                        {remoteBusy || query.trim().length < 2
+                          ? `Looking up “${query.trim()}”…`
+                          : 'No match. Log it once, or save it.'}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {foodError ? <p className="vital-err">{foodError}</p> : null}
+                <div className="vital-composer-actions">
+                  <button type="submit" className="vital-btn" disabled={showCustom ? !custom.calories : !query.trim()}>
+                    {showCustom ? 'Save and log' : 'Log it'}
+                  </button>
+                  {showCustom ? (
+                    <button type="button" className="vital-text-btn" onClick={() => setShowCustom(false)}>Cancel</button>
+                  ) : (
+                    <button type="button" className="vital-text-btn" onClick={() => { setShowCustom(true); setCustom((prev) => ({ ...prev, name: query })); }}>
+                      Save food
+                    </button>
+                  )}
+                </div>
+              </form>
+            )}
+
+            {logMode === 'recipe' && (
+              showRecipeAdd ? (
+                <form className="vital-cook-add" onSubmit={handleSaveCookRecipe}>
+                  <label htmlFor="cook_recipe_name">Recipe name</label>
+                  <input
+                    id="cook_recipe_name"
+                    className="vital-input"
+                    value={cookRecipe.name}
+                    onChange={(e) => setCookRecipe({ ...cookRecipe, name: e.target.value })}
+                    placeholder="Turkey chili"
+                    required
+                  />
+                  <label htmlFor="cook_recipe_ings">Ingredients</label>
+                  <textarea
+                    id="cook_recipe_ings"
+                    className="vital-input"
+                    rows={2}
+                    value={cookRecipe.ingredients}
+                    onChange={(e) => setCookRecipe({ ...cookRecipe, ingredients: e.target.value })}
+                    placeholder="Ground turkey, beans, chili powder"
+                  />
+                  <div className="vital-grid">
+                    <div>
+                      <label htmlFor="cook_recipe_kcal">Calories</label>
+                      <input id="cook_recipe_kcal" className="vital-input" type="number" min="0" value={cookRecipe.calories} onChange={(e) => setCookRecipe({ ...cookRecipe, calories: e.target.value })} required />
+                    </div>
+                    <div>
+                      <label htmlFor="cook_recipe_p">Protein</label>
+                      <input id="cook_recipe_p" className="vital-input" type="number" min="0" step="0.1" value={cookRecipe.protein_g} onChange={(e) => setCookRecipe({ ...cookRecipe, protein_g: e.target.value })} required />
+                    </div>
+                  </div>
+                  {foodError ? <p className="vital-err">{foodError}</p> : null}
+                  <div className="vital-composer-actions">
+                    <button className="vital-btn" type="submit" disabled={cookBusy}>
+                      {cookBusy ? 'Saving…' : 'Save and log'}
+                    </button>
+                    <button type="button" className="vital-text-btn" onClick={() => { setShowRecipeAdd(false); setFoodError(''); }}>Cancel</button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <label htmlFor="vital-recipe-search" className="vital-sr">Search recipes</label>
+                  <input
+                    id="vital-recipe-search"
+                    className="vital-input vital-input-lg"
+                    value={recipeQuery}
+                    onChange={(e) => setRecipeQuery(e.target.value)}
+                    placeholder="Search recipes"
+                    autoComplete="off"
+                  />
+                  <div className="vital-matches vital-cook-hits">
+                    {recipeHits.map((hit) => (
+                      <button
+                        key={hit.id || hit.title}
+                        type="button"
+                        disabled={cookBusy}
+                        onClick={() => logDish(hit, { once: !hit.saved })}
+                      >
+                        <span>
+                          {hit.title}
+                          <i>{hit.saved ? 'Yours' : (hit.recipeSource || 'Recipe')}</i>
+                        </span>
+                        <em>{macrosLabel(hit.kcal, hit.protein)}</em>
+                      </button>
+                    ))}
+                  </div>
+                  {recipeQuery.trim().length >= 2 && recipeHits.length === 0 ? (
+                    <p className="vital-muted">No recipe for that.</p>
+                  ) : null}
+                  {foodError ? <p className="vital-err">{foodError}</p> : null}
+                  <div className="vital-composer-actions">
+                    <button
+                      type="button"
+                      className="vital-text-btn"
+                      onClick={() => {
+                        setShowRecipeAdd(true);
+                        setCookRecipe((prev) => ({ ...prev, name: prev.name || recipeQuery.trim() }));
+                      }}
+                    >
+                      Add recipe
+                    </button>
+                  </div>
+                </>
+              )
+            )}
+
+            {logMode === 'once' && (
+              <form onSubmit={handleOnce}>
+                <p>Logs this plate only. It will not stay in your kitchen.</p>
+                <label htmlFor="once_name">What you ate</label>
+                <input
+                  id="once_name"
+                  className="vital-input"
+                  value={custom.name}
+                  onChange={(e) => setCustom({ ...custom, name: e.target.value })}
+                  placeholder="Burrito"
+                  required
+                />
+                <div className="vital-grid">
+                  <div>
+                    <label htmlFor="once_kcal">Calories</label>
+                    <input id="once_kcal" className="vital-input" type="number" min="0" value={custom.calories} onChange={(e) => setCustom({ ...custom, calories: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label htmlFor="once_p">Protein</label>
+                    <input id="once_p" className="vital-input" type="number" min="0" step="0.1" value={custom.protein_g} onChange={(e) => setCustom({ ...custom, protein_g: e.target.value })} />
+                  </div>
+                </div>
+                {foodError ? <p className="vital-err">{foodError}</p> : null}
+                <div className="vital-composer-actions">
+                  <button className="vital-btn" type="submit">Log once</button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -407,15 +407,17 @@ export async function logVitalFood(payload) {
 
   if (error) return fail(error.message);
 
-  await rememberKitchen(auth.supabase, auth.user.id, {
-    name,
-    calories: Math.round((calories || 0) / servings),
-    protein_g: Math.round(((protein ?? 0) / servings) * 10) / 10,
-    carbs_g: Math.round(((carbs ?? 0) / servings) * 10) / 10,
-    fat_g: Math.round(((fat ?? 0) / servings) * 10) / 10,
-    fiber_g: Math.round(((fiber ?? 0) / servings) * 10) / 10,
-    barcode: payload.barcode || null,
-  });
+  if (!payload.once) {
+    await rememberKitchen(auth.supabase, auth.user.id, {
+      name,
+      calories: Math.round((calories || 0) / servings),
+      protein_g: Math.round(((protein ?? 0) / servings) * 10) / 10,
+      carbs_g: Math.round(((carbs ?? 0) / servings) * 10) / 10,
+      fat_g: Math.round(((fat ?? 0) / servings) * 10) / 10,
+      fiber_g: Math.round(((fiber ?? 0) / servings) * 10) / 10,
+      barcode: payload.barcode || null,
+    });
+  }
 
   revalidatePath('/vital');
   return { success: true, data };

@@ -220,7 +220,7 @@ export function familyStatusLine({ plan, eaten, mealCount, child, minutes = 0 })
 
 export function weekSentence({ insights, child }) {
   if (!insights?.loggedDays) {
-    return child ? 'Log a meal or play to start the week.' : 'Log a meal or a walk to start the week.';
+    return child ? 'Add food or play to start the week.' : 'Add food or a walk to start the week.';
   }
   if (child) {
     if ((insights.moveMinutes || 0) < 120) return 'Meals are landing. Play is the gap this week.';

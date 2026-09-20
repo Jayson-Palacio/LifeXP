@@ -1,6 +1,8 @@
 import { createClient } from '../../utils/supabase/server';
 import { redirect } from 'next/navigation';
 import VitalDashboardClient from '../../components/VitalDashboardClient';
+import { localYmd } from '../../lib/time';
+import { weekStartOn } from '../../lib/table';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,8 +28,9 @@ export default async function VitalPage() {
   const since = new Date();
   since.setDate(since.getDate() - 60);
   const sinceDay = since.toISOString().slice(0, 10);
+  const weekStart = weekStartOn(localYmd());
 
-  const [membersRes, plansRes, foodsRes, weightsRes, childrenRes, kitchenRes, activityRes, movesRes] = await Promise.all([
+  const [membersRes, plansRes, foodsRes, weightsRes, childrenRes, kitchenRes, activityRes, movesRes, tableRes] = await Promise.all([
     query(supabase.from('vital_members').select('*').order('created_at', { ascending: true })),
     query(supabase.from('vital_plans').select('*')),
     query(supabase.from('vital_foods').select('*').gte('logged_on', sinceDay).order('created_at', { ascending: false })),
@@ -36,6 +39,7 @@ export default async function VitalPage() {
     query(supabase.from('vital_kitchen').select('*').order('times_logged', { ascending: false })),
     query(supabase.from('vital_activity').select('*').gte('logged_on', sinceDay).order('created_at', { ascending: false })),
     query(supabase.from('vital_moves').select('*').order('times_logged', { ascending: false })),
+    query(supabase.from('table_plans').select('week_start, meals').eq('week_start', weekStart).maybeSingle()),
   ]);
 
   const isMissing = (res) => res.error && /does not exist|schema cache|timed out/i.test(res.error.message || '');
@@ -58,6 +62,7 @@ export default async function VitalPage() {
       kitchen={kitchenRes.error ? [] : (kitchenRes.data || [])}
       activities={activityRes.error ? [] : (activityRes.data || [])}
       moves={movesRes.error ? [] : (movesRes.data || [])}
+      tableWeek={tableRes.error ? null : (tableRes.data || null)}
       suggestedKids={suggestedKids}
       tableMissing={tableMissing}
       kitchenMissing={kitchenMissing && !tableMissing}

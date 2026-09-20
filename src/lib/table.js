@@ -35,6 +35,8 @@ export function weekDays(weekStart) {
   return Array.from({ length: 7 }, (_, index) => shiftYmd(weekStart, index));
 }
 
+export const TABLE_LOCAL_KEY = 'kaeluma.table.v1';
+
 export function emptyMeals(weekStart) {
   const meals = {};
   for (const ymd of weekDays(weekStart)) {
@@ -54,6 +56,17 @@ export function mergeMeals(weekStart, meals) {
     };
   }
   return next;
+}
+
+export function dayPlates(plans = [], ymd, local = {}) {
+  const empty = { breakfast: null, lunch: null, dinner: null };
+  if (!ymd) return empty;
+  const start = weekStartOn(ymd);
+  const saved = local?.[start];
+  const source = saved?.meals
+    || (plans || []).find((item) => String(item.week_start).slice(0, 10) === start)?.meals;
+  if (!source) return empty;
+  return mergeMeals(start, source)[ymd] || empty;
 }
 
 export function copyMeals(fromMeals, fromWeek, toWeek) {
