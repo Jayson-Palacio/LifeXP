@@ -5533,6 +5533,48 @@ body:has(.quests-app) {
   color: var(--vital-muted);
 }
 
+.table-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.table-labels i {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--vital-muted);
+  border: 1px solid var(--table-line);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.table-label-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 2px;
+}
+
+.table-label-btn {
+  border: 1px solid var(--table-line);
+  background: #fff;
+  color: var(--vital-muted);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.table-label-btn.is-on {
+  border-color: var(--table-ink);
+  background: var(--table-ink);
+  color: #fff;
+}
+
 .table-cell strong {
   font-size: 15px;
   font-weight: 600;
@@ -5752,7 +5794,8 @@ body:has(.quests-app) {
   color: var(--vital-muted);
 }
 
-.table-pick-add label {
+.table-pick-add label,
+.table-pick-add > span {
   display: block;
   margin-top: 10px;
   font-size: 13px;

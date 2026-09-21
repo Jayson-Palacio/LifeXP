@@ -1,6 +1,6 @@
 import { localYmd } from './time';
 import { addShopItem, formatShopNeed, parseShopLine } from './tableShop';
-import { COOK_RECIPES, cookTonight, plateForRecipe, searchCookRecipes } from './vitalSuggest';
+import { COOK_RECIPES, cookTonight, isKitchenRecipe, kitchenRecipeMeta, plateForRecipe, searchCookRecipes } from './vitalSuggest';
 
 export const TABLE_SLOTS = [
   { id: 'breakfast', label: 'Breakfast' },
@@ -9,6 +9,50 @@ export const TABLE_SLOTS = [
 ];
 
 export const TABLE_AISLES = ['Produce', 'Meat & fish', 'Dairy & eggs', 'Bread', 'Frozen', 'Pantry', 'Other'];
+
+export const TABLE_LABELS = [
+  { id: 'crockpot', label: 'Crockpot' },
+  { id: 'easy', label: 'Easy' },
+  { id: 'chicken', label: 'Chicken' },
+  { id: 'beef', label: 'Beef' },
+  { id: 'pork', label: 'Pork' },
+  { id: 'turkey', label: 'Turkey' },
+  { id: 'veg', label: 'Veg' },
+  { id: 'soup', label: 'Soup' },
+  { id: 'pasta', label: 'Pasta' },
+  { id: 'taco', label: 'Tacos' },
+  { id: 'chili', label: 'Chili' },
+];
+
+const LABEL_TAGS = {
+  crockpot: ['crockpot', 'slow-cooker'],
+  easy: ['easy'],
+  chicken: ['chicken'],
+  beef: ['beef'],
+  pork: ['pork'],
+  turkey: ['turkey'],
+  veg: ['veg', 'vegetarian', 'lentil', 'tofu'],
+  soup: ['soup', 'stew'],
+  pasta: ['pasta'],
+  taco: ['taco'],
+  chili: ['chili'],
+};
+
+const MEAT_TAGS = ['chicken', 'beef', 'pork', 'turkey', 'sausage', 'shrimp', 'fish', 'meatball'];
+
+export function recipeLabels(tags = []) {
+  const hay = new Set((tags || []).map((tag) => String(tag || '').trim().toLowerCase()).filter(Boolean));
+  const meat = MEAT_TAGS.some((tag) => hay.has(tag));
+  const out = [];
+  for (const row of TABLE_LABELS) {
+    if (row.id === 'veg' && meat) continue;
+    const keys = LABEL_TAGS[row.id] || [row.id];
+    if (keys.some((key) => hay.has(key) || hay.has(row.label.toLowerCase()))) {
+      out.push(row.label);
+    }
+  }
+  return out.slice(0, 4);
+}
 
 const AISLE_RULES = [
   { aisle: 'Meat & fish', re: /\b(chicken|beef|pork|turkey|salmon|shrimp|tuna|sausage|bacon|ham|meatballs?|kielbasa|fish|ground)\b/i },
@@ -89,6 +133,7 @@ export function plateSnapshot(idea) {
   const ingredients = Array.isArray(idea.ingredients)
     ? idea.ingredients.map((part) => String(part || '').trim()).filter(Boolean).slice(0, 16)
     : [];
+  const labels = recipeLabels([...(idea.tags || []), ...(idea.labels || [])]);
   return {
     id: idea.id || null,
     title: String(idea.title || '').trim().slice(0, 120),
@@ -96,6 +141,7 @@ export function plateSnapshot(idea) {
     recipeUrl: idea.recipeUrl || null,
     recipeSource: idea.recipeSource || null,
     notes: String(idea.notes || '').trim().slice(0, 400) || null,
+    labels,
     kcal: Math.round(Number(idea.kcal) || 0),
     protein: Math.round(Number(idea.protein) || 0),
     saved: Boolean(idea.saved),
@@ -208,11 +254,54 @@ export function suggestDinners(weekStart, count = 7, usedTitles = [], salt = 0) 
   return picked;
 }
 
-export function searchPlates(query, { slot = 'dinner', kitchen = [] } = {}) {
+export function searchPlates(query, { slot = 'dinner', kitchen = [], label = '' } = {}) {
   const q = String(query || '').trim();
+  const tag = String(label || '').trim().toLowerCase();
+  const wanted = TABLE_LABELS.find((row) => row.id === tag || row.label.toLowerCase() === tag);
+  const hasLabel = (row) => {
+    if (!wanted) return true;
+    return (row.labels || []).some((name) => String(name).toLowerCase() === wanted.label.toLowerCase());
+  };
+
   if (q.length >= 2) {
-    return searchCookRecipes(q, { slot, kitchen, simple: true }).map(plateSnapshot).filter((row) => row?.title);
+    return searchCookRecipes(q, { slot, kitchen, simple: true }).map(plateSnapshot).filter((row) => row?.title && hasLabel(row));
   }
+
+  if (wanted) {
+    const pack = COOK_RECIPES
+      .filter((recipe) => recipeLabels(recipe.tags).includes(wanted.label))
+      .slice(0, 24)
+      .map((recipe) => plateSnapshot(plateForRecipe(recipe, slot)));
+    const saved = (kitchen || [])
+      .filter(isKitchenRecipe)
+      .map((row) => {
+        const meta = kitchenRecipeMeta(row);
+        return plateSnapshot({
+          id: row.id,
+          title: row.name,
+          ingredients: meta.ingredients,
+          recipeUrl: meta.url,
+          recipeSource: meta.url ? 'Your recipe' : null,
+          notes: meta.notes,
+          tags: meta.tags,
+          kcal: row.calories,
+          protein: row.protein_g,
+          saved: true,
+        });
+      })
+      .filter((row) => row?.title && hasLabel(row));
+    const seen = new Set();
+    const out = [];
+    for (const row of [...saved, ...pack]) {
+      const key = String(row.title || '').toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(row);
+      if (out.length >= 16) break;
+    }
+    return out;
+  }
+
   const hour = slot === 'breakfast' ? 8 : slot === 'lunch' ? 12 : 18;
   return cookTonight({ kitchen, slot, hour, simple: true }).ideas.slice(0, 10).map(plateSnapshot);
 }

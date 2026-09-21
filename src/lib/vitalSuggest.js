@@ -1,4 +1,5 @@
 import { lookupFood } from './foods';
+import { CROCKPOT_RECIPES } from './crockpotRecipes';
 
 const RECIPE_DOMAINS = [
   'budgetbytes.com',
@@ -42,17 +43,20 @@ export function parseIngredientList(text) {
 export function kitchenRecipeMeta(row) {
   const raw = String(row?.barcode || '');
   if (raw === 'recipe') {
-    return { recipe: true, ingredients: [], url: null, notes: '', servings: 1, meal: null };
+    return { recipe: true, ingredients: [], url: null, notes: '', servings: 1, meal: null, tags: [] };
   }
-  if (!raw.startsWith('{')) return { recipe: false, ingredients: [], url: null, notes: '', servings: 1, meal: null };
+  if (!raw.startsWith('{')) return { recipe: false, ingredients: [], url: null, notes: '', servings: 1, meal: null, tags: [] };
   try {
     const data = JSON.parse(raw);
     if (data.t !== 'recipe' && data.kind !== 'recipe') {
-      return { recipe: false, ingredients: [], url: null, notes: '', servings: 1, meal: null };
+      return { recipe: false, ingredients: [], url: null, notes: '', servings: 1, meal: null, tags: [] };
     }
     const ingredients = Array.isArray(data.ings)
       ? data.ings.map((part) => String(part || '').trim()).filter(Boolean)
       : parseIngredientList(data.ings || data.ingredients);
+    const tags = Array.isArray(data.tags)
+      ? data.tags.map((part) => String(part || '').trim().toLowerCase()).filter(Boolean).slice(0, 8)
+      : [];
     return {
       recipe: true,
       ingredients: ingredients.slice(0, 24),
@@ -60,9 +64,10 @@ export function kitchenRecipeMeta(row) {
       notes: String(data.notes || '').trim().slice(0, 400),
       servings: Math.max(1, Number(data.servings) || 1),
       meal: data.meal || null,
+      tags,
     };
   } catch {
-    return { recipe: false, ingredients: [], url: null, notes: '', servings: 1, meal: null };
+    return { recipe: false, ingredients: [], url: null, notes: '', servings: 1, meal: null, tags: [] };
   }
 }
 
@@ -70,12 +75,16 @@ export function isKitchenRecipe(row) {
   return kitchenRecipeMeta(row).recipe;
 }
 
-export function encodeKitchenRecipe({ ingredients = [], url = '', notes = '', servings = 1, meal = null } = {}) {
+export function encodeKitchenRecipe({ ingredients = [], url = '', notes = '', servings = 1, meal = null, tags = [] } = {}) {
   const ings = parseIngredientList(Array.isArray(ingredients) ? ingredients.join('\n') : ingredients);
   const link = safeHttpUrl(url);
   const how = String(notes || '').trim().slice(0, 400);
   const plates = Math.max(1, Math.min(24, Number(servings) || 1));
-  if (!ings.length && !link && !how && plates <= 1 && !meal) return 'recipe';
+  const labels = (Array.isArray(tags) ? tags : String(tags || '').split(/[\n,;]+/))
+    .map((part) => String(part || '').trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, 8);
+  if (!ings.length && !link && !how && plates <= 1 && !meal && !labels.length) return 'recipe';
   return JSON.stringify({
     t: 'recipe',
     ings: ings.length ? ings : undefined,
@@ -83,6 +92,7 @@ export function encodeKitchenRecipe({ ingredients = [], url = '', notes = '', se
     notes: how || undefined,
     servings: plates > 1 ? plates : undefined,
     meal: meal || undefined,
+    tags: labels.length ? labels : undefined,
   });
 }
 
@@ -110,6 +120,7 @@ function ideaFromKitchen(row, ctx) {
     kcal: Math.round(Number(row.calories) || 0),
     protein: Math.round(Number(row.protein_g) || 0),
     saved: true,
+    tags: meta.tags || [],
   };
 }
 
@@ -122,7 +133,7 @@ function itemsFor(recipe) {
   return [...fromNames, ...(recipe.logItems || [])];
 }
 
-export const COOK_RECIPES = [
+const PACK_RECIPES = [
   {
     id: 'sheet-pan-greek-chicken',
     title: 'Sheet-pan Greek chicken and vegetables',
@@ -1970,7 +1981,7 @@ export const COOK_RECIPES = [
     title: 'Slow cooker carnitas',
     meal: 'dinner',
     kidOk: true,
-    tags: ['pork', 'taco', 'orange', 'tortilla'],
+    tags: ['pork', 'taco', 'orange', 'tortilla', 'crockpot'],
     ingredients: ['Pork shoulder', 'Orange', 'Onion', 'Tortillas'],
     recipeUrl: 'https://www.budgetbytes.com/slow-cooker-carnitas/',
     recipeSource: 'Budget Bytes',
@@ -2020,7 +2031,7 @@ export const COOK_RECIPES = [
     meals: ['lunch', 'dinner'],
     kidOk: true,
     quiet: true,
-    tags: ['chicken', 'salsa', 'bean', 'rice'],
+    tags: ['chicken', 'salsa', 'bean', 'rice', 'crockpot'],
     ingredients: ['Chicken', 'Salsa verde', 'Black beans', 'Rice'],
     recipeUrl: 'https://www.budgetbytes.com/slow-cooker-salsa-verde-chicken/',
     recipeSource: 'Budget Bytes',
@@ -2262,7 +2273,7 @@ export const COOK_RECIPES = [
     title: 'Crockpot mac and cheese',
     meal: 'dinner',
     kidOk: true,
-    tags: ['easy', 'kid', 'pasta', 'cheese'],
+    tags: ['easy', 'kid', 'pasta', 'cheese', 'crockpot'],
     ingredients: ['Macaroni', 'Cheddar', 'Milk', 'Butter'],
     recipeUrl: 'https://www.budgetbytes.com/crockpot-mac-and-cheese/',
     recipeSource: 'Budget Bytes',
@@ -2728,7 +2739,7 @@ export const COOK_RECIPES = [
     title: 'Slow cooker meatball subs',
     meal: 'dinner',
     kidOk: true,
-    tags: ['easy', 'kid', 'beef', 'sandwich', 'meatball'],
+    tags: ['easy', 'kid', 'beef', 'sandwich', 'meatball', 'crockpot'],
     ingredients: ['Meatballs', 'Marinara', 'Hoagie rolls', 'Mozzarella'],
     recipeUrl: 'https://www.budgetbytes.com/slow-cooker-meatball-subs/',
     recipeSource: 'Budget Bytes',
@@ -2913,7 +2924,7 @@ export const COOK_RECIPES = [
     title: 'Slow cooker chicken and dumplings',
     meal: 'dinner',
     kidOk: true,
-    tags: ['easy', 'kid', 'chicken', 'soup'],
+    tags: ['easy', 'kid', 'chicken', 'soup', 'crockpot'],
     ingredients: ['Chicken', 'Biscuits', 'Carrots', 'Peas'],
     recipeUrl: 'https://www.budgetbytes.com/slow-cooker-chicken-dumplings/',
     recipeSource: 'Budget Bytes',
@@ -3042,7 +3053,7 @@ export const COOK_RECIPES = [
     title: 'Slow cooker hamburger stew',
     meal: 'dinner',
     kidOk: true,
-    tags: ['easy', 'kid', 'beef', 'stew', 'potato'],
+    tags: ['easy', 'kid', 'beef', 'stew', 'potato', 'crockpot'],
     ingredients: ['Ground beef', 'Potatoes', 'Carrots', 'Broth'],
     recipeUrl: 'https://www.budgetbytes.com/slow-cooker-hamburger-stew/',
     recipeSource: 'Budget Bytes',
@@ -3111,7 +3122,7 @@ export const COOK_RECIPES = [
     title: 'Slow cooker pulled pork',
     meal: 'dinner',
     kidOk: true,
-    tags: ['easy', 'kid', 'pork', 'bbq', 'sandwich'],
+    tags: ['easy', 'kid', 'pork', 'bbq', 'sandwich', 'crockpot'],
     ingredients: ['Pork shoulder', 'BBQ sauce', 'Buns'],
     recipeUrl: 'https://www.budgetbytes.com/slow-cooker-pulled-pork/',
     recipeSource: 'Budget Bytes',
@@ -3289,6 +3300,8 @@ export const COOK_RECIPES = [
   },
 ];
 
+export const COOK_RECIPES = [...PACK_RECIPES, ...CROCKPOT_RECIPES];
+
 function mealSlot(hour) {
   if (hour < 10) return 'breakfast';
   if (hour < 15) return 'lunch';
@@ -3380,6 +3393,7 @@ function formatIdea(recipe, ctx) {
     kcal: Math.round(kcal),
     protein: Math.round(protein),
     saved: Boolean(recipe.saved),
+    tags: recipe.tags || [],
   };
 }
 
@@ -3455,7 +3469,7 @@ export function searchCookRecipes(query, ctx = {}) {
     .filter(isKitchenRecipe)
     .filter((row) => {
       const meta = kitchenRecipeMeta(row);
-      const hay = `${row.name} ${meta.ingredients.join(' ')} ${meta.notes}`.toLowerCase();
+      const hay = `${row.name} ${meta.ingredients.join(' ')} ${meta.notes} ${(meta.tags || []).join(' ')}`.toLowerCase();
       return words.every((word) => hay.includes(word));
     })
     .slice(0, 6)

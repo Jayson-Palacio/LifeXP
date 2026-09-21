@@ -7,6 +7,7 @@ import { saveTableWeek } from '../app/actions/table';
 import { saveVitalKitchenItem } from '../app/actions/vital';
 import {
   TABLE_AISLES,
+  TABLE_LABELS,
   TABLE_SLOTS,
   copyMeals,
   countPlates,
@@ -87,6 +88,17 @@ function shopParts(row) {
   return { amount: need, item: name };
 }
 
+function RecipeLabels({ labels, className = 'table-labels' }) {
+  if (!labels?.length) return null;
+  return (
+    <span className={className}>
+      {labels.map((label) => (
+        <i key={label}>{label}</i>
+      ))}
+    </span>
+  );
+}
+
 function emptyRecipe(name = '') {
   return {
     name,
@@ -96,6 +108,7 @@ function emptyRecipe(name = '') {
     servings: '4',
     calories: '',
     protein_g: '',
+    labels: [],
   };
 }
 
@@ -133,6 +146,7 @@ export default function TableDashboardClient({
   const [copied, setCopied] = useState(false);
   const [picker, setPicker] = useState(null);
   const [query, setQuery] = useState('');
+  const [label, setLabel] = useState('');
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState(() => emptyRecipe());
   const [pickError, setPickError] = useState('');
@@ -167,14 +181,15 @@ export default function TableDashboardClient({
   const protein = weekProtein(meals);
   const lastWeek = shiftYmd(weekStart, -7);
   const hits = useMemo(
-    () => (picker ? searchPlates(query, { slot: picker.slot, kitchen: ownKitchen }) : []),
-    [picker, query, ownKitchen]
+    () => (picker ? searchPlates(query, { slot: picker.slot, kitchen: ownKitchen, label }) : []),
+    [picker, query, ownKitchen, label]
   );
 
   const openSlot = (ymd, slot) => {
     playClick?.();
     setPicker({ ymd, slot: slot.id || slot, label: slot.label || TABLE_SLOTS.find((row) => row.id === slot)?.label || 'Dinner' });
     setQuery('');
+    setLabel('');
     setAdding(false);
     setDraft(emptyRecipe());
     setPickError('');
@@ -245,6 +260,7 @@ export default function TableDashboardClient({
         notes: draft.notes,
         servings: platesMade,
         meal: picker.slot,
+        tags: draft.labels,
       }),
     };
     const saved = await saveVitalKitchenItem(payload);
@@ -262,6 +278,7 @@ export default function TableDashboardClient({
       recipeUrl: safeHttpUrl(linkRaw),
       recipeSource: safeHttpUrl(linkRaw) ? undefined : 'Your recipe',
       notes: String(draft.notes || '').trim(),
+      tags: draft.labels,
       kcal,
       protein,
       saved: true,
@@ -415,6 +432,7 @@ export default function TableDashboardClient({
                       {plate ? (
                         <>
                           <strong>{plate.title}</strong>
+                          <RecipeLabels labels={(plate.labels || []).filter((name) => name !== 'Easy').slice(0, 2)} />
                           {macrosLabel(plate.kcal, plate.protein) ? <em>{macrosLabel(plate.kcal, plate.protein)}</em> : null}
                         </>
                       ) : null}
@@ -515,6 +533,29 @@ export default function TableDashboardClient({
                   onChange={(e) => setDraft({ ...draft, url: e.target.value })}
                   placeholder="https://"
                 />
+                <span>Labels</span>
+                <div className="table-label-picks" role="group" aria-label="Recipe labels">
+                  {TABLE_LABELS.map((row) => {
+                    const on = (draft.labels || []).includes(row.id);
+                    return (
+                      <button
+                        key={row.id}
+                        type="button"
+                        className={`table-label-btn${on ? ' is-on' : ''}`}
+                        onClick={() => {
+                          setDraft((prev) => ({
+                            ...prev,
+                            labels: on
+                              ? prev.labels.filter((id) => id !== row.id)
+                              : [...(prev.labels || []), row.id],
+                          }));
+                        }}
+                      >
+                        {row.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <label htmlFor="table-recipe-notes">How you cook it</label>
                 <textarea
                   id="table-recipe-notes"
@@ -580,6 +621,7 @@ export default function TableDashboardClient({
                     <strong>{current.title}</strong>
                     {macrosLabel(current.kcal, current.protein) ? <p>{macrosLabel(current.kcal, current.protein)}</p> : null}
                     {current.ingredients?.length ? <p>{current.ingredients.join(' · ')}</p> : null}
+                    <RecipeLabels labels={current.labels} />
                     {current.notes ? <p>{current.notes}</p> : null}
                     <RecipeLink plate={current} />
                   </div>
@@ -593,6 +635,18 @@ export default function TableDashboardClient({
                   placeholder="Search"
                   autoComplete="off"
                 />
+                <div className="table-label-picks" role="group" aria-label="Filter recipes">
+                  {TABLE_LABELS.map((row) => (
+                    <button
+                      key={row.id}
+                      type="button"
+                      className={`table-label-btn${label === row.id ? ' is-on' : ''}`}
+                      onClick={() => setLabel((prev) => (prev === row.id ? '' : row.id))}
+                    >
+                      {row.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="table-pick-add-actions">
                   <button
                     type="button"
@@ -630,6 +684,7 @@ export default function TableDashboardClient({
                         }}
                       >
                         <strong>{hit.title}</strong>
+                        <RecipeLabels labels={hit.labels} />
                         {macrosLabel(hit.kcal, hit.protein) ? <em>{macrosLabel(hit.kcal, hit.protein)}</em> : null}
                       </button>
                       {safeHttpUrl(hit.recipeUrl) ? (

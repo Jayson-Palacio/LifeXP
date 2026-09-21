@@ -26,6 +26,9 @@ function cleanPlate(plate) {
     recipeUrl: plate.recipeUrl ? String(plate.recipeUrl).slice(0, 300) : null,
     recipeSource: plate.recipeSource ? String(plate.recipeSource).slice(0, 80) : null,
     notes: plate.notes ? String(plate.notes).trim().slice(0, 400) : null,
+    labels: Array.isArray(plate.labels)
+      ? plate.labels.map((part) => String(part || '').trim()).filter(Boolean).slice(0, 6)
+      : [],
     kcal: Math.max(0, Math.min(4000, Math.round(Number(plate.kcal) || 0))),
     protein: Math.max(0, Math.min(400, Math.round(Number(plate.protein) || 0))),
     saved: Boolean(plate.saved),

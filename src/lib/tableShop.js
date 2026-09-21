@@ -172,7 +172,8 @@ const SHOP_DEFAULTS = [
   { re: /hominy/i, name: 'Hominy', qty: 1, unit: 'can' },
   { re: /olives/i, name: 'Olives', qty: 1, unit: 'jar' },
   { re: /pickles|relish|capers/i, name: 'Pickles', qty: 1, unit: 'jar', staple: true },
-  { re: /green chiles/i, name: 'Green chiles', qty: 1, unit: 'can' },
+  { re: /pepperoncini/i, name: 'Pepperoncini', qty: 1, unit: 'jar' },
+  { re: /buffalo|hot sauce/i, name: 'Hot sauce', qty: 1, unit: 'bottle', staple: true },
 
   { re: /bbq sauce/i, name: 'BBQ sauce', qty: 1, unit: 'bottle', staple: true },
   { re: /soy sauce/i, name: 'Soy sauce', qty: 1, unit: 'bottle', staple: true },
