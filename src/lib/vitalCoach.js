@@ -1,4 +1,5 @@
 import { ageFromBirthYear } from './nutrition';
+import { weekGap } from './vitalAnalytics';
 
 /**
  * Calm, specific guidance. Not medical advice — estimates from energy-balance
@@ -15,6 +16,7 @@ export function coachNote({
   child,
   hour = 12,
   adaptive = null,
+  insights = null,
 }) {
   const name = member?.display_name || 'This person';
   const age = ageFromBirthYear(member?.birth_year);
@@ -155,6 +157,13 @@ export function coachNote({
     };
   }
 
+  if (insights) {
+    const gap = weekGap({ insights, child: isChild });
+    if (gap.id !== 'steady' && gap.id !== 'empty') {
+      return { kicker: name, title: gap.title, body: gap.body };
+    }
+  }
+
   if (proteinGap != null && proteinGap > 30 && (remaining == null || remaining > 200)) {
     return {
       kicker: name,
@@ -219,22 +228,5 @@ export function familyStatusLine({ plan, eaten, mealCount, child, minutes = 0 })
 }
 
 export function weekSentence({ insights, child }) {
-  if (!insights?.loggedDays) {
-    return child ? 'Add food or play to start the week.' : 'Add food or a walk to start the week.';
-  }
-  if (child) {
-    if ((insights.moveMinutes || 0) < 120) return 'Meals are landing. Play is the gap this week.';
-    return 'Ordinary meals and play — that’s a good week.';
-  }
-  const logged = insights.loggedDays || 0;
-  const proteinOk = (insights.proteinDays || insights.onTarget || 0) >= Math.max(1, Math.ceil(logged * 0.6));
-  const liftGap = (insights.strengthDays || 0) < (insights.strengthGoal || 2);
-  const moveGap = (insights.moveModerate || 0) < ((insights.moveGoal || 150) * 0.5);
-  if (proteinOk && liftGap) return 'Protein was fine. Lift is the gap.';
-  if (proteinOk && moveGap) return 'Protein was fine. Walking is the gap.';
-  if (!proteinOk && !liftGap) return 'Lifts are in. Protein is the gap.';
-  if (insights.weekUnder != null && insights.weekUnder < -400) return 'The week is running hot. Quieter plates, keep lifting.';
-  if (insights.weekUnder != null && insights.weekUnder > 400) return 'You are under for the week. Eat a real dinner — leftover calories are not a prize.';
-  if (insights.streak) return `${insights.streak}-day logging streak. Keep the average honest.`;
-  return 'The week is underway. The average matters more than Tuesday.';
+  return weekGap({ insights, child }).body;
 }

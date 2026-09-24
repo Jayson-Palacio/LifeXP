@@ -271,7 +271,9 @@ export default function VitalDashboardClient({
   const [showQuickEdit, setShowQuickEdit] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
   const [pinIds, setPinIds] = useState([]);
-  const [logYesterday, setLogYesterday] = useState(false);
+  const [logOffset, setLogOffset] = useState(0);
+  const [showMoveForm, setShowMoveForm] = useState(false);
+  const [undo, setUndo] = useState(null);
   const [remoteMatches, setRemoteMatches] = useState([]);
   const [remoteBusy, setRemoteBusy] = useState(false);
   const [serveFood, setServeFood] = useState(null);
@@ -309,7 +311,7 @@ export default function VitalDashboardClient({
     } catch {
       setTableLocal({});
     }
-  }, [logOpen, logYesterday]);
+  }, [logOpen, logOffset]);
 
   useEffect(() => {
     try {
@@ -387,7 +389,11 @@ export default function VitalDashboardClient({
     return list;
   }, [memberFoods]);
 
-  const logDate = logYesterday ? shiftDay(today, -1) : today;
+  const logDate = shiftDay(today, logOffset);
+  const logDayLabel = logOffset === 0 ? 'Today' : logOffset === -1 ? 'Yesterday' : logDate.slice(5);
+  const dayMove = memberActivity.filter((row) => row.logged_on === logDate);
+  const dayWorkouts = dayMove.filter((row) => !isStepLog(row));
+  const daySteps = dayMove.reduce((sum, row) => sum + Number(row.steps || 0), 0);
   const usuals = useMemo(
     () => usualPlates({ foods: memberFoods, meal, logDate, today }),
     [memberFoods, meal, logDate, today]
@@ -446,8 +452,8 @@ export default function VitalDashboardClient({
     [memberPlan, memberFoods, memberWeights, memberActivity, today, units, child]
   );
   const houseWeek = useMemo(
-    () => familyWeek({ members, plans, foods, activities, today }),
-    [members, plans, foods, activities, today]
+    () => familyWeek({ members, plans, foods, activities, weighIns, today }),
+    [members, plans, foods, activities, weighIns, today]
   );
   const adaptive = useMemo(
     () => adaptiveCheck({ plan: memberPlan, member, insights, child }),
@@ -466,7 +472,6 @@ export default function VitalDashboardClient({
 
   const selectMember = (id) => {
     setMemberId(id);
-    setTab('eat');
     try { window.localStorage.setItem('vital-member', id); } catch { /* ignore */ }
   };
 
@@ -554,7 +559,7 @@ export default function VitalDashboardClient({
       name: dish.title || dish.name,
       calories: dish.kcal ?? dish.calories,
       protein_g: dish.protein ?? dish.protein_g,
-    }, { meal: mealId || meal, once, close: true });
+    }, { meal: mealId || meal, once });
     setCookBusy(false);
     return ok;
   };
@@ -597,7 +602,7 @@ export default function VitalDashboardClient({
       setFoodError('Add calories.');
       return;
     }
-    await addFood(item, { once: true, close: true });
+    await addFood(item, { once: true });
   };
 
   const handleScanFound = async (item) => {
@@ -618,10 +623,7 @@ export default function VitalDashboardClient({
     });
     setPlateBusy(false);
     if (!result.success) setFoodError(result.error);
-    else {
-      setLogOpen(false);
-      router.refresh();
-    }
+    else router.refresh();
   };
 
   const handleSaveCookRecipe = async (event) => {
@@ -668,7 +670,7 @@ export default function VitalDashboardClient({
       setCookBusy(false);
       return;
     }
-    const ok = await addFood(payload, { meal: slot, close: true });
+    const ok = await addFood(payload, { meal: slot });
     setCookBusy(false);
     if (!ok) return;
     setShowRecipeAdd(false);
@@ -685,11 +687,12 @@ export default function VitalDashboardClient({
       minutes: moveMinutes,
       effort: moveEffort,
       note: moveNote,
-      logged_on: today,
+      logged_on: logDate,
     });
     if (!result.success) setMoveError(result.error);
     else {
       setMoveNote('');
+      setShowMoveForm(false);
       router.refresh();
     }
   };
@@ -703,7 +706,7 @@ export default function VitalDashboardClient({
       kind: 'steps',
       steps,
       effort: 'moderate',
-      logged_on: today,
+      logged_on: logDate,
     });
     if (!result.success) setMoveError(result.error);
     else {
@@ -746,10 +749,88 @@ export default function VitalDashboardClient({
       minutes: row.minutes,
       effort: row.effort,
       label: row.label,
-      logged_on: today,
+      logged_on: logDate,
     });
     if (!result.success) setMoveError(result.error);
     else router.refresh();
+  };
+
+  const rememberUndo = (entry) => {
+    setUndo(entry);
+    window.setTimeout(() => {
+      setUndo((current) => (current?.id === entry.id ? null : current));
+    }, 5000);
+  };
+
+  const removeFood = async (row) => {
+    const result = await deleteVitalFood(row.id);
+    if (!result?.success) return;
+    rememberUndo({
+      id: row.id,
+      label: row.name,
+      restore: () => logVitalFood({
+        member_id: row.member_id,
+        name: row.name,
+        calories: row.calories,
+        protein_g: row.protein_g,
+        carbs_g: row.carbs_g,
+        fat_g: row.fat_g,
+        fiber_g: row.fiber_g,
+        meal: row.meal,
+        logged_on: row.logged_on,
+        once: true,
+      }),
+    });
+    router.refresh();
+  };
+
+  const removeMove = async (row) => {
+    const result = await deleteVitalActivity(row.id);
+    if (!result?.success) return;
+    rememberUndo({
+      id: row.id,
+      label: row.note || row.kind,
+      restore: () => logVitalActivity({
+        member_id: row.member_id,
+        kind: row.kind,
+        minutes: row.minutes,
+        effort: row.effort,
+        note: row.note,
+        steps: row.steps,
+        logged_on: row.logged_on,
+      }),
+    });
+    router.refresh();
+  };
+
+  const copyMeal = async (mealId) => {
+    if (!member) return;
+    const source = shiftDay(logDate, -1);
+    const rows = memberFoods.filter((row) => row.logged_on === source && row.meal === mealId);
+    for (const row of rows) {
+      await logVitalFood({
+        member_id: member.id,
+        name: row.name,
+        calories: row.calories,
+        protein_g: row.protein_g,
+        carbs_g: row.carbs_g,
+        fat_g: row.fat_g,
+        fiber_g: row.fiber_g,
+        meal: mealId,
+        logged_on: logDate,
+        once: true,
+      });
+    }
+    router.refresh();
+  };
+
+  const serveEveryone = async (row) => {
+    const portions = members
+      .filter((personRow) => personRow.id !== row.member_id)
+      .map((personRow) => ({ member_id: personRow.id, servings: 1 }));
+    if (!portions.length) return;
+    await serveVitalFood({ food_id: row.id, portions });
+    router.refresh();
   };
 
   const handleWeight = async (event) => {
@@ -839,6 +920,7 @@ export default function VitalDashboardClient({
     child,
     hour,
     adaptive,
+    insights,
   });
   const savedMoves = moves.length ? moves : DEFAULT_MOVES;
   const rings = [];
@@ -923,8 +1005,8 @@ export default function VitalDashboardClient({
     });
   }
 
-  const needsFirstRun = !tableMissing && (!members.length || !plans.some((row) => row.calorie_target));
-  const onboardOpen = needsFirstRun || showOnboard;
+  const needsName = !tableMissing && members.length === 0;
+  const onboardOpen = showOnboard;
   const onboardMember = member || members[0] || null;
   const onboardPlan = plans.find((row) => row.member_id === onboardMember?.id) || null;
 
@@ -939,7 +1021,30 @@ export default function VitalDashboardClient({
         <Link href="/apps" className="vital-text-btn">Apps</Link>
       </header>
 
-      {onboardOpen ? (
+      {needsName ? (
+        <form className="vital-card vital-name-gate" onSubmit={addPerson}>
+          <p className="vital-kicker">Vital</p>
+          <h1>Who is eating?</h1>
+          <p>Add a name. Meals can start now. A plan can wait.</p>
+          <label htmlFor="gate_name">Name</label>
+          <input
+            id="gate_name"
+            className="vital-input"
+            value={person.display_name}
+            onChange={(e) => setPerson({ ...person, display_name: e.target.value })}
+            required
+          />
+          <div className="vital-meals">
+            {['adult', 'child'].map((kind) => (
+              <button key={kind} type="button" className={person.kind === kind ? 'is-active' : ''} onClick={() => setPerson({ ...person, kind })}>
+                {kind === 'adult' ? 'Adult' : 'Child'}
+              </button>
+            ))}
+          </div>
+          {personError && <p className="vital-err">{personError}</p>}
+          <button type="submit" className="vital-btn" disabled={personBusy}>{personBusy ? 'Saving…' : 'Start logging'}</button>
+        </form>
+      ) : onboardOpen ? (
         <VitalOnboarding
           firstName={firstName}
           member={onboardMember}
@@ -948,7 +1053,7 @@ export default function VitalDashboardClient({
             setShowOnboard(false);
             router.refresh();
           }}
-          onCancel={needsFirstRun ? undefined : () => setShowOnboard(false)}
+          onCancel={() => setShowOnboard(false)}
         />
       ) : (
       <main className="vital-main">
@@ -962,6 +1067,23 @@ export default function VitalDashboardClient({
           <div className="vital-card vital-warn">
             <strong>Kitchen is not saved yet.</strong>
             <p>Run the latest <code>vital_schema.sql</code> so custom foods, barcodes, and your kitchen list persist.</p>
+          </div>
+        )}
+        {undo && (
+          <div className="vital-card vital-undo">
+            <span>Removed {undo.label}</span>
+            <button
+              type="button"
+              className="vital-text-btn"
+              onClick={async () => {
+                const entry = undo;
+                setUndo(null);
+                await entry.restore();
+                router.refresh();
+              }}
+            >
+              Undo
+            </button>
           </div>
         )}
         {activityMissing && (
@@ -1031,9 +1153,9 @@ export default function VitalDashboardClient({
                 ) : null}
                 <button type="button" className="vital-hero-link" onClick={() => setTab('week')}>
                   {insights.streak
-                    ? `${insights.weekScore}/5 this week · ${insights.streak}-day streak`
+                    ? `${insights.weekScore}/${insights.checks.length} this week · ${insights.streak}-day streak`
                     : insights.loggedDays
-                      ? `${insights.weekScore}/5 this week · Week`
+                      ? `${insights.weekScore}/${insights.checks.length} this week · Week`
                       : 'Open Week'}
                 </button>
               </div>
@@ -1072,12 +1194,26 @@ export default function VitalDashboardClient({
                 <aside className="vital-journal">
                   <div className="vital-card vital-journal-card">
                     <div className="vital-card-head">
-                      <p className="vital-kicker">{logYesterday ? 'Yesterday' : 'Today'}</p>
-                      <div className="vital-meals">
-                        <button type="button" className={!logYesterday ? 'is-active' : ''} onClick={() => setLogYesterday(false)}>Today</button>
-                        <button type="button" className={logYesterday ? 'is-active' : ''} onClick={() => setLogYesterday(true)}>Yesterday</button>
-                        <Link href="/table" className="vital-text-btn">Table</Link>
-                      </div>
+                      <p className="vital-kicker">{logDayLabel}</p>
+                      <Link href="/table" className="vital-text-btn">Table</Link>
+                    </div>
+                    <div className="vital-week-strip" aria-label="Choose a day">
+                      {Array.from({ length: 7 }, (_, index) => {
+                        const offset = index - 6;
+                        const day = shiftDay(today, offset);
+                        const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        const label = names[new Date(`${day}T12:00:00`).getDay()];
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            className={`vital-week-day${offset === 0 ? ' is-today' : ''}${logOffset === offset ? ' is-picked' : ''}`}
+                            onClick={() => setLogOffset(offset)}
+                          >
+                            <span>{label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                     <span className="vital-journal-sum">
                       {calorieTarget
@@ -1085,11 +1221,22 @@ export default function VitalDashboardClient({
                         : `${Math.round(journalEaten.calories)} kcal · ${Math.round(journalEaten.protein)}g protein`}
                     </span>
                     <div className="vital-meal-board">
-                      {MEALS.filter((item) => item.id !== 'drink').map((group) => {
-                        const rows = journalFoods.filter((row) => row.meal === group.id || (group.id === 'snack' && row.meal === 'drink'));
+                      {(child ? MEALS.filter((item) => item.id !== 'drink') : MEALS).map((group) => {
+                        const rows = journalFoods.filter((row) => row.meal === group.id || (child && group.id === 'snack' && row.meal === 'drink'));
                         const mealKcal = rows.reduce((sum, row) => sum + Number(row.calories || 0), 0);
                         const mealProtein = rows.reduce((sum, row) => sum + Number(row.protein_g || 0), 0);
                         const planned = (group.id === 'breakfast' || group.id === 'lunch' || group.id === 'dinner') ? tableDay[group.id] : null;
+                        const seen = new Set();
+                        const repeats = [];
+                        for (const row of memberFoods) {
+                          if (row.meal !== group.id) continue;
+                          const key = String(row.name || '').toLowerCase();
+                          if (!key || seen.has(key) || rows.some((item) => item.name.toLowerCase() === key)) continue;
+                          seen.add(key);
+                          repeats.push(row);
+                          if (repeats.length >= 3) break;
+                        }
+                        const yesterdayRows = memberFoods.filter((row) => row.logged_on === shiftDay(logDate, -1) && row.meal === group.id);
                         return (
                           <div key={group.id} className="vital-meal-col">
                             <div className="vital-meal-col-head">
@@ -1099,6 +1246,20 @@ export default function VitalDashboardClient({
                                 +
                               </button>
                             </div>
+                            {repeats.length > 0 && (
+                              <div className="vital-chips">
+                                {repeats.map((row) => (
+                                  <button key={row.id} type="button" className="vital-chip" onClick={() => addFood(row, { meal: group.id, servings: 1 })}>
+                                    {row.name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {rows.length === 0 && yesterdayRows.length > 0 && (
+                              <button type="button" className="vital-meal-empty" onClick={() => copyMeal(group.id)}>
+                                Same as yesterday
+                              </button>
+                            )}
                             {rows.length === 0 && planned?.title ? (
                               <button type="button" className="vital-meal-plan" onClick={() => logDish(planned, { once: !planned.saved, mealId: group.id })}>
                                 <strong>{planned.title}</strong>
@@ -1122,6 +1283,11 @@ export default function VitalDashboardClient({
                                 <div className="vital-row-actions">
                                   <button type="button" className="vital-text-btn" onClick={() => setEditFood(row)}>Size</button>
                                   {members.length > 1 && (
+                                    <button type="button" className="vital-text-btn" onClick={() => serveEveryone(row)}>
+                                      Everyone
+                                    </button>
+                                  )}
+                                  {members.length > 1 && (
                                     <button
                                       type="button"
                                       className="vital-text-btn"
@@ -1140,10 +1306,7 @@ export default function VitalDashboardClient({
                                   <button
                                     type="button"
                                     className="vital-text-btn"
-                                    onClick={async () => {
-                                      await deleteVitalFood(row.id);
-                                      router.refresh();
-                                    }}
+                                    onClick={() => removeFood(row)}
                                   >
                                     Remove
                                   </button>
@@ -1154,7 +1317,7 @@ export default function VitalDashboardClient({
                         );
                       })}
                     </div>
-                    {!logYesterday && (todayWorkouts.length > 0 || todaySteps > 0) && (
+                    {logOffset === 0 && (todayWorkouts.length > 0 || todaySteps > 0) && (
                       <button type="button" className="vital-move-jump" onClick={() => setTab('move')}>
                         {todaySteps > 0 ? `${todaySteps.toLocaleString()} steps` : ''}
                         {todaySteps > 0 && todayMinutes ? ' · ' : ''}
@@ -1174,26 +1337,34 @@ export default function VitalDashboardClient({
                     <p className="vital-kicker">{child ? 'Play' : 'Training'}</p>
                     <span>{todayMinutes ? `${todayMinutes} min logged` : 'Doesn’t add calories back'}</span>
                   </div>
-                  <div className="vital-week-strip" aria-label="This week’s movement">
-                    {weekStrip.map((day) => (
-                      <div key={day.day} className={`vital-week-day${day.isToday ? ' is-today' : ''}${day.strength ? ' is-strength' : ''}`}>
-                        <i style={{ height: `${Math.max(day.minutes ? 18 : 4, Math.min(48, day.minutes / 2))}px` }} />
-                        <span>{day.label}</span>
-                        <em>{day.minutes || (day.steps ? `${Math.round(day.steps / 1000)}k` : '·')}</em>
-                      </div>
-                    ))}
+                  <div className="vital-week-strip" aria-label="Choose a day">
+                    {weekStrip.map((day) => {
+                      const offset = Math.round((new Date(`${day.day}T12:00:00`) - new Date(`${today}T12:00:00`)) / 86400000);
+                      return (
+                        <button
+                          key={day.day}
+                          type="button"
+                          className={`vital-week-day${day.isToday ? ' is-today' : ''}${day.strength ? ' is-strength' : ''}${logOffset === offset ? ' is-picked' : ''}`}
+                          onClick={() => setLogOffset(offset)}
+                        >
+                          <i style={{ height: `${Math.max(day.minutes ? 18 : 4, Math.min(48, day.minutes / 2))}px` }} />
+                          <span>{day.label}</span>
+                          <em>{day.minutes || (day.steps ? `${Math.round(day.steps / 1000)}k` : '·')}</em>
+                        </button>
+                      );
+                    })}
                   </div>
                   <div className="vital-steps">
                     <div className="vital-steps-head">
                       <strong>Steps</strong>
-                      <span>{todaySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
+                      <span>{daySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
                     </div>
                     <div className="vital-meter" aria-hidden="true">
-                      <div className="vital-meter-fill" style={{ width: `${Math.min(100, (todaySteps / stepGoal) * 100)}%` }} />
+                      <div className="vital-meter-fill" style={{ width: `${Math.min(100, (daySteps / stepGoal) * 100)}%` }} />
                     </div>
                     <div className="vital-meals">
                       {STEP_PRESETS.map((count) => (
-                        <button key={count} type="button" className={todaySteps === count ? 'is-active' : ''} onClick={() => handleSteps(count)}>
+                        <button key={count} type="button" className={daySteps === count ? 'is-active' : ''} onClick={() => handleSteps(count)}>
                           {(count / 1000).toFixed(0)}k
                         </button>
                       ))}
@@ -1214,6 +1385,20 @@ export default function VitalDashboardClient({
                       </button>
                     </div>
                   </div>
+                  {savedMoves.length > 0 && (
+                    <div className="vital-chips">
+                      {savedMoves.slice(0, 8).map((row) => (
+                        <button key={row.id || row.label} type="button" className="vital-chip" onClick={() => logShortcut(row)}>
+                          {row.label}
+                        </button>
+                      ))}
+                      <button type="button" className="vital-text-btn" onClick={() => setShowMoveForm((open) => !open)}>
+                        {showMoveForm ? 'Hide' : 'Other'}
+                      </button>
+                    </div>
+                  )}
+                  {showMoveForm && (
+                    <>
                   <p className="vital-kicker">Workout</p>
                   <div className="vital-move-kinds">
                     {moveKinds.map((item) => (
@@ -1296,27 +1481,20 @@ export default function VitalDashboardClient({
                       </button>
                     )}
                   </div>
-                  {savedMoves.length > 0 && (
-                    <div className="vital-chips">
-                      {savedMoves.slice(0, 8).map((row) => (
-                        <button key={row.id || row.label} type="button" className="vital-chip" onClick={() => logShortcut(row)}>
-                          {row.label}
-                        </button>
-                      ))}
-                    </div>
+                    </>
                   )}
                 </form>
-                {!logYesterday && (todayWorkouts.length > 0 || todaySteps > 0) && (
+                {(dayWorkouts.length > 0 || daySteps > 0) && (
                   <div className="vital-card vital-journal-move">
-                    {todaySteps > 0 && (
+                    {daySteps > 0 && (
                       <div className="vital-food-pill">
                         <div>
                           <strong>Steps</strong>
-                          <span>{todaySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
+                          <span>{daySteps.toLocaleString()} of {stepGoal.toLocaleString()}</span>
                         </div>
                       </div>
                     )}
-                    {todayWorkouts.map((row) => (
+                    {dayWorkouts.map((row) => (
                       <div key={row.id} className="vital-food-pill">
                         <div>
                           <strong>{row.note || (row.kind[0].toUpperCase() + row.kind.slice(1))}</strong>
@@ -1325,10 +1503,7 @@ export default function VitalDashboardClient({
                         <button
                           type="button"
                           className="vital-text-btn"
-                          onClick={async () => {
-                            await deleteVitalActivity(row.id);
-                            router.refresh();
-                          }}
+                          onClick={() => removeMove(row)}
                         >
                           Remove
                         </button>
@@ -1343,8 +1518,16 @@ export default function VitalDashboardClient({
               <section className="vital-bento">
                 <div className="vital-card vital-bento-score">
                   <p className="vital-kicker">This week</p>
-                  <p className="vital-number">{insights.weekScore}<span>/5</span></p>
+                  <p className="vital-number">{insights.weekScore}<span>/{insights.checks.length}</span></p>
                   <p className="vital-hero-sub">{weekLine}</p>
+                  <ul className="vital-checks">
+                    {insights.checks.map((check) => (
+                      <li key={check.id} className={check.ok ? 'is-ok' : ''}>
+                        <span>{check.label}</span>
+                        <em>{check.detail}</em>
+                      </li>
+                    ))}
+                  </ul>
                   {insights.streak ? (
                     <p className="vital-muted">{insights.streak}-day logging streak</p>
                   ) : null}
@@ -1361,9 +1544,12 @@ export default function VitalDashboardClient({
                     {todayWeight && insights.lostLabel ? ` · ${insights.lostLabel}` : ''}
                     {insights.remainingLabel ? ` · ${insights.remainingLabel}` : ''}
                   </p>
-                  {insights.weightPoints.length > 1 && (
+                  {insights.weightSeries.length > 1 && (
                     <VitalChart
-                      values={insights.weightPoints.map((kg) => (units === 'metric' ? kg : kgToLb(kg)))}
+                      values={insights.weightSeries.map((row) => (units === 'metric' ? row.kg : kgToLb(row.kg)))}
+                      trend={insights.weightSeries.map((row) => (units === 'metric' ? row.trendKg : kgToLb(row.trendKg)))}
+                      labels={insights.weightSeries.map((row) => row.label)}
+                      unit={units === 'metric' ? 'kg · 7-day mean' : 'lb · 7-day mean'}
                       color="#3d5a80"
                       height={88}
                     />
@@ -1399,8 +1585,10 @@ export default function VitalDashboardClient({
                 </div>
                 <div className="vital-card vital-bento-metric">
                   <p className="vital-kicker">Steps</p>
-                  <p className="vital-number">{Math.round((insights.weekSteps || 0) / 1000)}k</p>
-                  <p className="vital-muted">This week{insights.lastWeekSteps ? ` · was ${Math.round(insights.lastWeekSteps / 1000)}k` : ''}</p>
+                  <p className="vital-number">{(insights.weekSteps || 0).toLocaleString()}</p>
+                  <p className="vital-muted">
+                    of {(stepGoal * 7).toLocaleString()} this week · was {(insights.lastWeekSteps || 0).toLocaleString()}
+                  </p>
                 </div>
                 {!child && (
                   <div className="vital-card vital-bento-metric">
@@ -1422,6 +1610,11 @@ export default function VitalDashboardClient({
                       <span>Avg energy</span>
                       <strong>{insights.avgKcal || '—'}</strong>
                       {insights.prevAvg ? <em>was {insights.prevAvg}</em> : null}
+                    </div>
+                    <div>
+                      <span>Avg protein</span>
+                      <strong>{insights.proteinTarget ? `${insights.avgProtein}g` : (insights.avgProtein || '—')}</strong>
+                      {insights.proteinTarget ? <em>/ {insights.proteinTarget}g · {insights.proteinDays}/{insights.loggedDays || 0} days</em> : null}
                     </div>
                     <div>
                       <span>Movement</span>
@@ -1478,15 +1671,34 @@ export default function VitalDashboardClient({
                   </div>
                 )}
 
-                {!simple && (
-                  <div className="vital-card vital-bento-wide">
-                    <p className="vital-kicker">Energy · 14 days</p>
-                    <VitalChart values={insights.energyPoints} target={insights.target} color="#0d7377" height={128} />
-                    <p className="vital-muted">
-                      {insights.intakePace || 'Dashed line is the daily target. The week that wins is the average, not Tuesday.'}
-                    </p>
+                <div className="vital-card vital-bento-wide">
+                  <p className="vital-kicker">{simple ? 'Log · 14 days' : 'Energy · 14 days'}</p>
+                  {!simple && (
+                    <VitalChart
+                      values={insights.energyPoints}
+                      labels={insights.energyLabels}
+                      target={insights.target}
+                      unit="kcal · logged days"
+                      color="#0d7377"
+                      height={128}
+                    />
+                  )}
+                  <div className="vital-day-strip" aria-label="14 day log">
+                    {insights.energy.map((day) => (
+                      <span key={day.day} className={`vital-day vital-day-${day.status}`} title={`${day.day} ${day.status}`} />
+                    ))}
                   </div>
-                )}
+                  <p className="vital-muted">
+                    {insights.loggedDays < 4
+                      ? `${insights.loggedDays} of 7 days logged — not enough to judge the week.`
+                      : (insights.intakePace || 'Filled days are logged. A brighter mark is inside the target band. Gaps are missing logs.')}
+                  </p>
+                  {insights.mealGap && (
+                    <p className="vital-muted">
+                      {insights.mealGap.meal[0].toUpperCase() + insights.mealGap.meal.slice(1)} is {insights.mealGap.avg}g protein against about {insights.mealGap.target}g.
+                    </p>
+                  )}
+                </div>
 
                 {members.length > 1 && (
                   <div className="vital-card vital-bento-wide">
@@ -1502,7 +1714,11 @@ export default function VitalDashboardClient({
                           <span className="vital-avatar" style={{ background: row.person.accent }}>{row.person.display_name.slice(0, 1)}</span>
                           <span>
                             <strong>{row.person.display_name}</strong>
-                            <em>{row.logged} day{row.logged === 1 ? '' : 's'}{row.weekMinutes ? ` · ${row.weekMinutes} min` : ''}</em>
+                            <em>
+                              {row.logged}/7 logged · {row.onBand} in band
+                              {row.weighed ? ' · weighed' : ''}
+                              {row.weekMinutes ? ` · ${row.weekMinutes} min` : ''}
+                            </em>
                           </span>
                         </button>
                       ))}
@@ -1510,30 +1726,20 @@ export default function VitalDashboardClient({
                   </div>
                 )}
 
-                {kitchen.length > 0 && (
+                {(insights.foodDrivers.length > 0 || insights.drinkKcal > 0) && (
                   <div className="vital-card vital-bento-wide">
-                    <p className="vital-kicker">Kitchen</p>
+                    <p className="vital-kicker">What drove the calories</p>
                     <div className="vital-tile-grid">
-                      {kitchen.slice(0, 12).map((row) => (
-                        <div key={row.id} className="vital-tile">
+                      {insights.foodDrivers.map((row) => (
+                        <div key={row.name} className="vital-tile">
                           <strong>{row.name}</strong>
-                          <span>{row.calories} kcal · {row.times_logged}×</span>
-                          <span className="vital-row-actions">
-                            <button type="button" className="vital-text-btn" onClick={() => setEditKitchen({ ...row })}>Edit</button>
-                            <button
-                              type="button"
-                              className="vital-text-btn"
-                              onClick={async () => {
-                                await deleteVitalKitchenItem(row.id);
-                                router.refresh();
-                              }}
-                            >
-                              Remove
-                            </button>
-                          </span>
+                          <span>{row.calories} kcal · {row.count}× · {row.proteinPer100}g protein / 100 kcal</span>
                         </div>
                       ))}
                     </div>
+                    {insights.drinkKcal > 0 && (
+                      <p className="vital-muted">Drinks added {insights.drinkKcal.toLocaleString()} kcal this week.</p>
+                    )}
                   </div>
                 )}
 
@@ -1563,6 +1769,7 @@ export default function VitalDashboardClient({
             )}
 
             {tab === 'plan' && (
+              <>
               <form onSubmit={handlePlan} className="vital-plan-board">
                 <div className="vital-card">
                   <div className="vital-card-head">
@@ -1707,6 +1914,33 @@ export default function VitalDashboardClient({
                   </button>
                 </div>
               </form>
+              {kitchen.length > 0 && (
+                <div className="vital-card" style={{ marginTop: 12 }}>
+                  <p className="vital-kicker">Kitchen</p>
+                  <div className="vital-tile-grid">
+                    {kitchen.slice(0, 12).map((row) => (
+                      <div key={row.id} className="vital-tile">
+                        <strong>{row.name}</strong>
+                        <span>{row.calories} kcal · {row.times_logged}×</span>
+                        <span className="vital-row-actions">
+                          <button type="button" className="vital-text-btn" onClick={() => setEditKitchen({ ...row })}>Edit</button>
+                          <button
+                            type="button"
+                            className="vital-text-btn"
+                            onClick={async () => {
+                              await deleteVitalKitchenItem(row.id);
+                              router.refresh();
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              </>
             )}
 
           </>
@@ -1927,7 +2161,7 @@ export default function VitalDashboardClient({
           <div className="vital-sheet vital-log-sheet">
             <button type="button" className="vital-sheet-close" onClick={() => setLogOpen(false)} aria-label="Close">×</button>
             <h2>{MEALS.find((item) => item.id === meal)?.label || 'Add'}</h2>
-            {logYesterday ? <p>Adds to yesterday.</p> : null}
+            {logOffset !== 0 ? <p>Adds to {logDayLabel}.</p> : null}
             {tablePlate && !tableLogged ? (
               <button
                 type="button"

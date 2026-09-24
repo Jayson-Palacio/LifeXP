@@ -3684,6 +3684,65 @@ body:has(.quests-app) {
   display: block;
 }
 
+.vital-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--vital-muted);
+}
+
+.vital-checks {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.vital-checks li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.vital-checks em {
+  font-style: normal;
+  color: var(--vital-muted);
+}
+
+.vital-checks li.is-ok span::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--vital-move, #2f5d50);
+}
+
+.vital-day-strip {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.vital-day {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(29, 29, 31, 0.08);
+}
+
+.vital-day-band {
+  background: #0d7377;
+}
+
+.vital-day-off {
+  background: #b8734a;
+}
+
 .vital-hero-card .vital-number {
   font-size: 44px;
   color: #5e5ce6;
@@ -4715,6 +4774,37 @@ body:has(.quests-app) {
   justify-content: flex-end;
   gap: 4px;
   min-height: 72px;
+}
+
+button.vital-week-day {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.vital-journal .vital-week-strip,
+.vital-journal .vital-week-day {
+  min-height: 0;
+}
+
+.vital-week-day.is-picked span {
+  color: inherit;
+  font-weight: 700;
+}
+
+.vital-name-gate,
+.vital-undo {
+  margin: 24px auto;
+  max-width: 420px;
+}
+
+.vital-undo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .vital-week-day i {

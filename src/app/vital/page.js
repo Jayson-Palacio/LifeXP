@@ -34,7 +34,7 @@ export default async function VitalPage() {
     query(supabase.from('vital_members').select('*').order('created_at', { ascending: true })),
     query(supabase.from('vital_plans').select('*')),
     query(supabase.from('vital_foods').select('*').gte('logged_on', sinceDay).order('created_at', { ascending: false })),
-    query(supabase.from('vital_weights').select('*').gte('logged_on', sinceDay).order('logged_on', { ascending: true })),
+    query(supabase.from('vital_weights').select('*').order('logged_on', { ascending: true })),
     query(supabase.from('children').select('id, name').order('name')),
     query(supabase.from('vital_kitchen').select('*').order('times_logged', { ascending: false })),
     query(supabase.from('vital_activity').select('*').gte('logged_on', sinceDay).order('created_at', { ascending: false })),
