@@ -5553,8 +5553,208 @@ button.vital-week-day {
   align-items: center;
 }
 
-.play-grid-4 {
+.play-lobby {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.play-lobby-card {
+  display: grid;
+  gap: 4px;
+  min-height: 132px;
+  padding: 16px;
+  border: 0;
+  border-radius: 22px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.play-lobby-card i {
+  width: 36px;
+  height: 10px;
+  border-radius: 99px;
+  background: var(--play-hue);
+}
+
+.play-lobby-card strong {
+  font-size: 26px;
+  letter-spacing: -0.04em;
+}
+
+.play-lobby-card span {
+  color: var(--vital-muted);
+  font-size: 14px;
+}
+
+.play-hud {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.play-hud strong {
+  font-size: 32px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.play-hud span {
+  flex: 1;
+  color: var(--vital-muted);
+}
+
+.play-hud button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #1d1d1f;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.play-field {
+  position: relative;
+  height: 460px;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    radial-gradient(420px 220px at 50% 110%, rgba(227, 106, 69, 0.45), transparent 70%),
+    #1b2433;
+}
+
+.play-bubble {
+  position: absolute;
+  bottom: -90px;
+  width: 104px;
+  height: 104px;
+  margin-left: -52px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff7ee;
+  color: #1c1c1e;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  cursor: pointer;
+  animation: play-rise 7s linear forwards;
+}
+
+.play-bubble.is-shake {
+  animation: play-shake 0.28s linear;
+}
+
+@keyframes play-rise {
+  to { transform: translateY(-560px); }
+}
+
+@keyframes play-shake {
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+.play-built,
+.play-sum {
+  margin: 0;
+  min-height: 64px;
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+.play-built.is-bad {
+  color: #c4483a;
+}
+
+.play-letter {
+  width: 72px;
+  height: 72px;
+  font-size: 32px;
+  background: #1d1d1f;
+  color: #fff;
+}
+
+.play-echo {
+  max-width: 420px;
+  gap: 12px;
+}
+
+.play-echo-pad {
+  min-height: 120px;
+  font-size: 22px;
+  border-radius: 22px;
+}
+
+.play-echo-pad.is-lit {
+  transform: scale(0.96);
+  filter: brightness(1.15);
+}
+
+.play-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: 420px;
+}
+
+.play-card {
+  aspect-ratio: 1;
+  min-height: 0;
+  border: 0;
+  border-radius: 18px;
+  background: #243044;
+  color: transparent;
+}
+
+.play-card i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.play-card.is-open {
+  color: #1c1c1e;
+}
+
+.play-card.is-sun.is-open { background: #f6d98a; }
+.play-card.is-moon.is-open { background: #d7def2; }
+.play-card.is-house.is-open { background: #f0c7b4; }
+.play-card.is-star.is-open { background: #f3e7a1; }
+.play-card.is-leaf.is-open { background: #cfe8d4; }
+.play-card.is-key.is-open { background: #e7d7c4; }
+.play-card.is-heart.is-open { background: #f3c1c4; }
+.play-card.is-coin.is-open { background: #f6e3b0; }
+
+.play-card.is-matched {
+  opacity: 0.45;
+}
+
+.play-marks {
+  grid-template-columns: repeat(3, minmax(0, 104px));
+}
+
+.play-mark {
+  width: 104px;
+  height: 104px;
+  border: 0;
+  border-radius: 18px;
+  background: #243044;
+  color: #f4efe4;
+  font-size: 42px;
+}
+
+.play-mark.is-o {
+  color: #f0b429;
+}
+
+.play-mark.is-win {
+  background: #e7f0ea;
+  color: #1d1d1f;
 }
 
 .play-echo {
@@ -5566,13 +5766,14 @@ button.vital-week-day {
 
 .play-echo-pad,
 .play-choice {
-  min-height: 72px;
+  min-height: 120px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 22px;
   background: #eceff3;
   color: var(--vital-ink, #1c1c1e);
   font: inherit;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -5582,7 +5783,8 @@ button.vital-week-day {
 .play-echo-pad.is-gold { background: #f6edd4; }
 
 .play-echo-pad.is-lit {
-  filter: brightness(0.82);
+  transform: scale(0.96);
+  filter: brightness(1.12);
 }
 
 .play-sum {
@@ -5601,34 +5803,6 @@ button.vital-week-day {
 
 .play-bar .vital-kicker {
   margin: 0;
-}
-
-.play-lobby {
-  display: grid;
-  gap: 10px;
-  max-width: 520px;
-}
-
-.play-lobby-card {
-  display: grid;
-  gap: 2px;
-  padding: 16px 18px;
-  border: 0;
-  border-radius: 16px;
-  background: #fff;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.play-lobby-card strong {
-  font-size: 18px;
-  letter-spacing: -0.03em;
-}
-
-.play-lobby-card span {
-  color: var(--vital-muted);
-  font-size: 14px;
 }
 
 .play-word,
@@ -5660,7 +5834,11 @@ button.vital-week-day {
 }
 
 .play-letter {
-  width: 64px;
+  width: 76px;
+  height: 76px;
+  background: #1d1d1f;
+  color: #fff;
+  font-size: 32px;
   text-transform: lowercase;
 }
 
