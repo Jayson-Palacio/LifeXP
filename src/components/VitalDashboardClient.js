@@ -939,7 +939,6 @@ export default function VitalDashboardClient({
   const fiberTarget = memberPlan?.fiber_target_g || 0;
   const kcalLeft = calorieTarget ? Math.round(calorieTarget - eaten.calories) : null;
   const proteinLeft = proteinTarget ? Math.round(proteinTarget - eaten.protein) : null;
-  const fiberLeft = fiberTarget ? Math.round(fiberTarget - (eaten.fiber || 0)) : null;
   const tableDay = useMemo(
     () => dayPlates(tableWeek ? [tableWeek] : [], logDate, tableLocal),
     [tableWeek, logDate, tableLocal]
@@ -981,17 +980,6 @@ export default function VitalDashboardClient({
       caption: `${Math.round(eaten.protein)} of ${proteinTarget || 90}g`,
       color: 'var(--vital-protein)',
     });
-    if (fiberTarget) {
-      rings.push({
-        id: 'fiber',
-        label: 'Fiber',
-        value: eaten.fiber,
-        max: fiberTarget,
-        remain: true,
-        caption: `${Math.round(eaten.fiber)} of ${fiberTarget}g`,
-        color: 'var(--vital-fiber)',
-      });
-    }
     rings.push({
       id: 'move',
       label: child ? 'Play' : 'Move',
@@ -1020,17 +1008,6 @@ export default function VitalDashboardClient({
         remain: true,
         caption: `${Math.round(eaten.protein)} of ${proteinTarget}g`,
         color: 'var(--vital-protein)',
-      });
-    }
-    if (fiberTarget) {
-      rings.push({
-        id: 'fiber',
-        label: 'Fiber',
-        value: eaten.fiber || 0,
-        max: fiberTarget,
-        remain: true,
-        caption: `${Math.round(eaten.fiber || 0)} of ${fiberTarget}g`,
-        color: 'var(--vital-fiber)',
       });
     }
     rings.push({
@@ -1197,13 +1174,6 @@ export default function VitalDashboardClient({
                         <span>Protein today</span>
                         <strong>{Math.abs(proteinLeft)}g</strong>
                         <em>{proteinLeft < 0 ? 'over' : 'to go'} · {proteinTarget}g target</em>
-                      </div>
-                    ) : null}
-                    {fiberTarget ? (
-                      <div>
-                        <span>Fiber today</span>
-                        <strong>{Math.abs(fiberLeft)}g</strong>
-                        <em>{fiberLeft < 0 ? 'over' : 'to go'} · {fiberTarget}g target</em>
                       </div>
                     ) : null}
                   </div>
