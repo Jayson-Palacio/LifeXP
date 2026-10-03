@@ -20,7 +20,7 @@ import {
   tileAt,
 } from '../lib/planetWorld';
 
-const SAVE_KEY = 'kaeluma.play.planet.v4';
+const SAVE_KEY = 'kaeluma.play.planet.v5';
 
 function emptyBag() {
   return { wood: 0, stone: 0, gold: 0, leaf: 0 };
@@ -488,6 +488,7 @@ class PlanetGame {
       }
     }
     tiles.sort((a, b) => b.depth - a.depth);
+    const props = [];
     for (let i = 0; i < tiles.length; i += 1) {
       const tile = tiles[i];
       const built = this.world.built[cellKey(tile.x, tile.z)];
@@ -499,8 +500,8 @@ class PlanetGame {
         ? Math.sin(this.time * 1.6 + tile.x * 0.7 + tile.z) * 14
         : 0;
       fillQuad(ctx, tile.corners, shade(base, tint));
-      if (tile.tile.flower) this.drawFlower(tile);
-      const mid = this.project(tile.x + 0.5, tile.height + 0.2, tile.z + 0.5);
+      if (tile.tile.id === 'water') this.drawRipple(tile);
+      const mid = this.project(tile.x + 0.5, tile.height + 0.05, tile.z + 0.5);
       const node = nodeAt(this.world, tile.x, tile.z);
       if (mid) {
         this.hits.push({
@@ -510,8 +511,16 @@ class PlanetGame {
           sy: mid.y,
           node: Boolean(node && node.left > 0),
         });
-        if (node && node.left > 0) this.drawNode(tile, node, mid);
       }
+      if (tile.tile.flower) props.push({ depth: tile.depth, draw: () => this.drawFlower(tile) });
+      if (tile.tile.id === 'grass' && ((tile.x * 5 + tile.z * 3) % 4) !== 0) {
+        props.push({ depth: tile.depth - 0.01, draw: () => this.drawTuft(tile) });
+      }
+      if ((tile.tile.id === 'sand' || tile.tile.id === 'stone') && ((tile.x + tile.z) % 5) === 0) {
+        props.push({ depth: tile.depth - 0.01, draw: () => this.drawPebble(tile) });
+      }
+      if (node && node.left > 0) props.push({ depth: tile.depth - 0.05, draw: () => this.drawNode(tile, node, mid) });
+      else if (node && node.kind === 'tree') props.push({ depth: tile.depth - 0.05, draw: () => this.drawStump(tile) });
     }
 
     const py = this.hop
@@ -520,7 +529,13 @@ class PlanetGame {
       : this.height();
     const bob = this.hop ? Math.sin(Math.min(1, this.hop.t) * Math.PI) * 0.35 : Math.sin(this.time * 3) * 0.05;
     const feet = this.project(this.px, py + 0.15 + bob, this.pz);
-    if (feet) this.drawBuddy(feet);
+    if (feet) props.push({ depth: feet.z + 0.02, draw: () => this.drawBuddy(feet) });
+    if (this.path.length) {
+      const end = this.path[this.path.length - 1];
+      props.push({ depth: 8, draw: () => this.drawMark(end.x, end.z) });
+    }
+    props.sort((a, b) => b.depth - a.depth);
+    for (let i = 0; i < props.length; i += 1) props[i].draw();
 
     for (const bit of this.bits) {
       const at = this.project(bit.x, bit.y, bit.z);
@@ -573,6 +588,84 @@ class PlanetGame {
     }
   }
 
+  drawRipple(tile) {
+    const at = this.project(tile.x + 0.5, tile.height + 0.08, tile.z + 0.5);
+    if (!at) return;
+    const rx = Math.max(3, at.scale * 0.12);
+    this.ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.ellipse(at.x, at.y, rx, rx * 0.45, 0, 0, Math.PI * 2);
+    this.ctx.stroke();
+  }
+
+  drawTuft(tile) {
+    const ctx = this.ctx;
+    ctx.strokeStyle = 'rgba(30, 90, 30, 0.45)';
+    ctx.lineWidth = 1.25;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i += 1) {
+      const ox = 0.25 + ((tile.x + i) % 3) * 0.22;
+      const oz = 0.3 + ((tile.z + i) % 3) * 0.2;
+      const a = this.project(tile.x + ox, tile.height + 0.02, tile.z + oz);
+      const b = this.project(tile.x + ox, tile.height + 0.22, tile.z + oz - 0.04);
+      if (!a || !b) continue;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+
+  drawPebble(tile) {
+    const at = this.project(tile.x + 0.7, tile.height + 0.05, tile.z + 0.35);
+    if (!at) return;
+    const r = Math.max(1.5, at.scale * 0.04);
+    this.ctx.fillStyle = tile.tile.id === 'sand' ? '#c4a15a' : '#6e7582';
+    this.ctx.beginPath();
+    this.ctx.ellipse(at.x, at.y, r * 1.4, r, 0.4, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawMark(x, z) {
+    const h = surfaceHeight(this.world, x, z);
+    if (h == null) return;
+    const at = this.project(x + 0.5, h + 0.08, z + 0.5);
+    if (!at) return;
+    const r = Math.max(6, at.scale * 0.16);
+    this.ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.ellipse(at.x, at.y, r, r * 0.45, 0, 0, Math.PI * 2);
+    this.ctx.stroke();
+  }
+
+  drawStump(tile) {
+    const base = this.project(tile.x + 0.5, tile.height + 0.02, tile.z + 0.5);
+    const top = this.project(tile.x + 0.5, tile.height + 0.28, tile.z + 0.5);
+    const width = this.worldRadius(tile.x + 0.5, tile.height + 0.15, tile.z + 0.5, 0.16);
+    if (!base || !top || !width) return;
+    const r = width.r;
+    this.ctx.fillStyle = '#6b4423';
+    this.ctx.beginPath();
+    this.ctx.moveTo(base.x - r, base.y);
+    this.ctx.lineTo(base.x + r, base.y);
+    this.ctx.lineTo(top.x + r * 0.8, top.y);
+    this.ctx.lineTo(top.x - r * 0.8, top.y);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#c49a6c';
+    this.ctx.beginPath();
+    this.ctx.ellipse(top.x, top.y, r, r * 0.4, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  worldRadius(wx, wy, wz, radius) {
+    const center = this.project(wx, wy, wz);
+    const edge = this.project(wx + radius, wy, wz);
+    if (!center || !edge) return null;
+    return { at: center, r: Math.max(2, Math.hypot(center.x - edge.x, center.y - edge.y)) };
+  }
+
   drawFlower(tile) {
     const at = this.project(tile.x + 0.68, tile.height + 0.15, tile.z + 0.32);
     if (!at) return;
@@ -589,6 +682,7 @@ class PlanetGame {
   }
 
   drawNode(tile, node, mid) {
+    if (!mid) return;
     const scale = node.scale || 1;
     const sway = this.job && this.job.x === tile.x && this.job.z === tile.z ? Math.sin(this.time * 22) * this.wobble * 5 : 0;
     const lift = node.kind === 'tree' ? 1.85 * scale : node.kind === 'crystal' ? 1.35 : 0.7;
@@ -600,30 +694,38 @@ class PlanetGame {
     ctx.translate(sway, 0);
     this.hits.push({ x: tile.x, z: tile.z, sx: top.x + sway, sy: top.y, node: true });
     if (node.kind === 'tree') {
-      const trunkTop = this.project(tile.x + 0.5, tile.height + 0.7, tile.z + 0.5) || mid;
-      ctx.fillStyle = '#5c3a22';
+      const ground = this.project(tile.x + 0.5, tile.height + 0.02, tile.z + 0.5) || mid;
+      const trunkTop = this.project(tile.x + 0.5, tile.height + 0.85 * scale, tile.z + 0.5) || mid;
+      const shadeR = this.worldRadius(tile.x + 0.5, tile.height + 0.02, tile.z + 0.5, 0.42 * scale);
+      if (shadeR) {
+        ctx.fillStyle = 'rgba(20, 50, 20, 0.22)';
+        ctx.beginPath();
+        ctx.ellipse(shadeR.at.x, shadeR.at.y, shadeR.r, shadeR.r * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const width = this.worldRadius(tile.x + 0.5, tile.height + 0.4, tile.z + 0.5, 0.09 * scale);
+      const half = width ? width.r : 3;
+      ctx.fillStyle = '#4e321c';
       ctx.beginPath();
-      ctx.moveTo(mid.x - size * 0.16, mid.y);
-      ctx.lineTo(mid.x + size * 0.16, mid.y);
-      ctx.lineTo(trunkTop.x + size * 0.1, trunkTop.y);
-      ctx.lineTo(trunkTop.x - size * 0.1, trunkTop.y);
+      ctx.moveTo(ground.x - half * 1.15, ground.y);
+      ctx.lineTo(ground.x + half * 1.15, ground.y);
+      ctx.lineTo(trunkTop.x + half * 0.75, trunkTop.y);
+      ctx.lineTo(trunkTop.x - half * 0.75, trunkTop.y);
       ctx.fill();
-      ctx.fillStyle = '#1f7a38';
-      ctx.beginPath();
-      ctx.arc(top.x, top.y + size * 0.15, size * 0.95, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#2f9e4a';
-      ctx.beginPath();
-      ctx.arc(top.x - size * 0.35, top.y, size * 0.62, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#67d36a';
-      ctx.beginPath();
-      ctx.arc(top.x + size * 0.28, top.y - size * 0.28, size * 0.48, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.beginPath();
-      ctx.arc(top.x - size * 0.15, top.y - size * 0.35, size * 0.18, 0, Math.PI * 2);
-      ctx.fill();
+      const blobs = [
+        [0, 1.15, 0.5, '#1c6b32'],
+        [-0.22, 1.35, 0.36, '#2f9a46'],
+        [0.2, 1.5, 0.3, '#6ed36a'],
+      ];
+      for (let i = 0; i < blobs.length; i += 1) {
+        const [ox, hy, rad, color] = blobs[i];
+        const blob = this.worldRadius(tile.x + 0.5 + ox * scale, tile.height + hy * scale, tile.z + 0.5, rad * scale);
+        if (!blob) continue;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(blob.at.x, blob.at.y, blob.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else if (node.kind === 'rock') {
       ctx.fillStyle = '#6d7380';
       ctx.beginPath();
