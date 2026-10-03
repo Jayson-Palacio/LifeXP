@@ -29,14 +29,26 @@ function TablePreviewScreen() {
   );
 }
 
+function PlayPreviewScreen() {
+  return (
+    <div className="device-shot table-preview">
+      <p>Play</p>
+      <strong>Pairs</strong>
+      <span>Find the matches</span>
+    </div>
+  );
+}
+
 export default function ProductPreview({ app = 'quests' }) {
   const src = PREVIEW_SRC[app] || PREVIEW_SRC.quests;
-  const useLiveShot = app !== 'ledger' && app !== 'table';
+  const useLiveShot = app !== 'ledger' && app !== 'table' && app !== 'play';
 
   return (
-    <div className={`device${app === 'vital' || app === 'ledger' || app === 'table' ? ` device-${app}` : ''}`} aria-hidden="true">
+    <div className={`device${app === 'vital' || app === 'ledger' || app === 'table' || app === 'play' ? ` device-${app}` : ''}`} aria-hidden="true">
       {app === 'table' ? (
         <TablePreviewScreen />
+      ) : app === 'play' ? (
+        <PlayPreviewScreen />
       ) : useLiveShot ? (
         <img className="device-shot" src={src} alt="" width="402" height="874" />
       ) : (

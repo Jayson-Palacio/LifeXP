@@ -37,6 +37,15 @@ export const KAELUMA_APPS = [
     accent: '#1d1d1f',
     available: true,
   },
+  {
+    id: 'play',
+    name: 'Play',
+    tagline: 'Games',
+    description: 'Short games for the kitchen table. Nothing is saved.',
+    href: '/play',
+    accent: '#1d1d1f',
+    available: true,
+  },
 ];
 
 export const APP_IDS = KAELUMA_APPS.map((app) => app.id);

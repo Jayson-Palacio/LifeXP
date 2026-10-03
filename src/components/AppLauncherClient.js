@@ -52,6 +52,7 @@ export default function AppLauncherClient({
     if (app.id === 'vital') return vitalReady;
     if (app.id === 'ledger') return ledgerReady;
     if (app.id === 'table') return true;
+    if (app.id === 'play') return true;
     return false;
   };
 

@@ -5492,6 +5492,71 @@ button.vital-week-day {
   background: #eef1ee;
 }
 
+.play-panel {
+  display: grid;
+  gap: 14px;
+  max-width: 420px;
+}
+
+.play-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.play-card,
+.play-mark {
+  border: 1px solid rgba(28, 28, 30, 0.1);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--vital-ink, #1c1c1e);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.play-card {
+  min-height: 72px;
+  background: #1d1d1f;
+  color: transparent;
+}
+
+.play-card.is-open {
+  background: #fff;
+  color: var(--vital-ink, #1c1c1e);
+}
+
+.play-card.is-matched {
+  background: #e7f0ea;
+  color: #2f6b4f;
+}
+
+.play-marks {
+  display: grid;
+  grid-template-columns: repeat(3, 88px);
+  gap: 8px;
+}
+
+.play-mark {
+  width: 88px;
+  height: 88px;
+  font-size: 28px;
+}
+
+.play-mark:disabled {
+  cursor: default;
+}
+
+.play-guess {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.play-guess .vital-input {
+  max-width: 120px;
+}
+
 .ledger-app {
   background:
     radial-gradient(1200px 480px at 12% -10%, rgba(200, 146, 10, 0.12), transparent 55%),
