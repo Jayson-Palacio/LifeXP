@@ -102,6 +102,13 @@ function parseIngs(raw) {
     .slice(0, 16);
 }
 
+function plateMacros(hit) {
+  const energy = Math.round(Number(hit?.kcal) || 0);
+  const grams = Math.round(Number(hit?.protein) || 0);
+  if (!energy && !grams) return '';
+  return `${energy.toLocaleString()} kcal · ${grams}g protein`;
+}
+
 function RecipeLink({ plate, className = 'vital-text-btn' }) {
   const href = safeHttpUrl(plate?.recipeUrl);
   if (!href) return null;
@@ -119,6 +126,7 @@ function RecipeHit({ hit, onPick }) {
         {hit.title}
         {hit.saved ? <i className="table-yours">Yours</i> : null}
       </strong>
+      {plateMacros(hit) ? <em>{plateMacros(hit)} per serving</em> : null}
     </button>
   );
 }
@@ -495,6 +503,7 @@ export default function TableDashboardClient({
                       {hit.title}
                       {hit.saved ? <i className="table-yours">Yours</i> : null}
                     </strong>
+                    {plateMacros(hit) ? <em>{plateMacros(hit)}</em> : null}
                     {href ? <a href={href} target="_blank" rel="noopener noreferrer">Open</a> : null}
                   </div>
                 );

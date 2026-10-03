@@ -6083,12 +6083,27 @@ button.vital-week-day {
 }
 
 .table-recipe {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 2px 12px;
   padding: 11px 4px;
   border-bottom: 1px solid var(--table-line);
+}
+
+.table-recipe em {
+  grid-column: 1;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--vital-muted);
+}
+
+.table-recipe a {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 13px;
+  color: var(--vital-muted);
 }
 
 .table-recipe strong {
@@ -6152,6 +6167,14 @@ button.vital-week-day {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+.table-pick-hit em {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--vital-muted);
 }
 
 .table-pick-add > p {
