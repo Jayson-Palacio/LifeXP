@@ -4795,6 +4795,35 @@ button.vital-week-day {
   font-weight: 700;
 }
 
+.vital-fiber-choice {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.vital-fiber-choice button {
+  justify-self: start;
+  border: 1px solid var(--vital-line, rgba(29, 29, 31, 0.12));
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.vital-fiber-choice button.is-active {
+  border-color: transparent;
+  background: var(--vital-fiber, #2f5d50);
+  color: #fff;
+}
+
+.vital-fiber-choice label {
+  display: grid;
+  gap: 4px;
+  max-width: 160px;
+  font-size: 13px;
+}
+
 .vital-name-gate,
 .vital-undo {
   margin: 24px auto;

@@ -140,10 +140,17 @@ export function defaultMethod(intent) {
   return 'balanced';
 }
 
-export function fiberTargetG({ method, sex, explicit }) {
-  if (explicit != null && explicit !== '') return Number(explicit) || null;
-  if (method === 'simple') return sex === 'male' ? 35 : 28;
-  return null;
+export function suggestedFiberG(sex) {
+  return sex === 'male' ? 35 : 28;
+}
+
+export function fiberTargetG({ sex, explicit, track }) {
+  if (!track) return null;
+  if (explicit != null && explicit !== '') {
+    const grams = Math.round(Number(explicit));
+    return grams > 0 ? grams : null;
+  }
+  return suggestedFiberG(sex);
 }
 
 export function macroTargets({ calories, weightKg, age, intent, method }) {

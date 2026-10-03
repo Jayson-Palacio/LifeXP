@@ -223,9 +223,9 @@ export async function saveVitalPlan(payload) {
   }
   const numbers = applyPlanNumbers({ method: resolvedMethod, computed, overrides });
   const fiber = fiberTargetG({
-    method: resolvedMethod,
     sex,
     explicit: payload.fiber_target_g,
+    track: payload.track_fiber === true || payload.track_fiber === 'true',
   });
 
   const { error: memberError } = await supabase.from('vital_members').update({

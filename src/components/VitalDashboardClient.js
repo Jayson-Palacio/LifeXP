@@ -213,6 +213,7 @@ function planForm(member, plan) {
     protein_override: plan?.protein_override ?? '',
     carbs_override: plan?.carbs_override ?? '',
     fat_override: plan?.fat_override ?? '',
+    track_fiber: plan?.fiber_target_g != null && plan?.fiber_target_g !== '',
     fiber_target_g: plan?.fiber_target_g ?? '',
     step_goal: plan?.step_goal ?? (member?.kind === 'child' ? 6000 : 8000),
   };
@@ -893,6 +894,7 @@ export default function VitalDashboardClient({
   const fiberTarget = memberPlan?.fiber_target_g || 0;
   const kcalLeft = calorieTarget ? Math.round(calorieTarget - eaten.calories) : null;
   const proteinLeft = proteinTarget ? Math.round(proteinTarget - eaten.protein) : null;
+  const fiberLeft = fiberTarget ? Math.round(fiberTarget - (eaten.fiber || 0)) : null;
   const tableDay = useMemo(
     () => dayPlates(tableWeek ? [tableWeek] : [], logDate, tableLocal),
     [tableWeek, logDate, tableLocal]
@@ -973,6 +975,17 @@ export default function VitalDashboardClient({
         remain: true,
         caption: `${Math.round(eaten.protein)} of ${proteinTarget}g`,
         color: 'var(--vital-protein)',
+      });
+    }
+    if (fiberTarget) {
+      rings.push({
+        id: 'fiber',
+        label: 'Fiber',
+        value: eaten.fiber || 0,
+        max: fiberTarget,
+        remain: true,
+        caption: `${Math.round(eaten.fiber || 0)} of ${fiberTarget}g`,
+        color: 'var(--vital-fiber)',
       });
     }
     rings.push({
@@ -1141,6 +1154,13 @@ export default function VitalDashboardClient({
                         <em>{proteinLeft < 0 ? 'over' : 'to go'} · {proteinTarget}g target</em>
                       </div>
                     ) : null}
+                    {fiberTarget ? (
+                      <div>
+                        <span>Fiber today</span>
+                        <strong>{Math.abs(fiberLeft)}g</strong>
+                        <em>{fiberLeft < 0 ? 'over' : 'to go'} · {fiberTarget}g target</em>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 {!simple && insights.loggedDays >= 2 && insights.avgKcal ? (
@@ -1277,6 +1297,7 @@ export default function VitalDashboardClient({
                                   <strong>{row.name}</strong>
                                   <p className="vital-food-pill-meta">
                                     {row.calories} kcal · {Math.round(Number(row.protein_g) || 0)}g
+                                    {fiberTarget && Number(row.fiber_g) ? ` · ${Math.round(Number(row.fiber_g))}g fiber` : ''}
                                     {row.meal === 'drink' ? ' · drink' : ''}
                                   </p>
                                 </div>
@@ -1887,6 +1908,37 @@ export default function VitalDashboardClient({
                       ))}
                     </div>
                     <p className="vital-muted">{PLAN_METHODS.find((item) => item.id === plan.method)?.hint}</p>
+                    <div className="vital-fiber-choice">
+                      <button
+                        type="button"
+                        className={plan.track_fiber ? 'is-active' : ''}
+                        onClick={() => setPlan((prev) => ({
+                          ...prev,
+                          track_fiber: !prev.track_fiber,
+                          fiber_target_g: prev.track_fiber
+                            ? ''
+                            : (prev.fiber_target_g || String(prev.sex === 'male' ? 35 : 28)),
+                        }))}
+                      >
+                        {plan.track_fiber ? 'Tracking fiber' : 'Also track fiber'}
+                      </button>
+                      {plan.track_fiber ? (
+                        <label>
+                          Daily fiber
+                          <input
+                            id="fiber_target_g"
+                            className="vital-input"
+                            type="number"
+                            min="10"
+                            max="80"
+                            value={plan.fiber_target_g}
+                            onChange={(e) => setPlan({ ...plan, fiber_target_g: e.target.value })}
+                          />
+                        </label>
+                      ) : (
+                        <p className="vital-muted">Calories and protein stay the day. Fiber is a separate choice, about 28–35g.</p>
+                      )}
+                    </div>
                     <div className="vital-grid">
                       <div>
                         <label htmlFor="calorie_override">{plan.method === 'custom' ? 'Calories' : 'Calories (optional)'}</label>
@@ -1895,10 +1947,6 @@ export default function VitalDashboardClient({
                       <div>
                         <label htmlFor="protein_override">{plan.method === 'custom' ? 'Protein g' : 'Protein g (optional)'}</label>
                         <input id="protein_override" className="vital-input" type="number" min="20" max="400" value={plan.protein_override} onChange={(e) => setPlan({ ...plan, protein_override: e.target.value })} />
-                      </div>
-                      <div>
-                        <label htmlFor="fiber_target_g">Fiber g (optional)</label>
-                        <input id="fiber_target_g" className="vital-input" type="number" min="0" max="80" value={plan.fiber_target_g} onChange={(e) => setPlan({ ...plan, fiber_target_g: e.target.value })} placeholder={plan.method === 'simple' ? '28–35' : ''} />
                       </div>
                     </div>
                   </div>
@@ -2283,6 +2331,12 @@ export default function VitalDashboardClient({
                       <label htmlFor="custom_p">Protein</label>
                       <input id="custom_p" className="vital-input" type="number" min="0" step="0.1" value={custom.protein_g} onChange={(e) => setCustom({ ...custom, protein_g: e.target.value })} />
                     </div>
+                    {fiberTarget ? (
+                      <div>
+                        <label htmlFor="custom_fiber">Fiber</label>
+                        <input id="custom_fiber" className="vital-input" type="number" min="0" step="0.1" value={custom.fiber_g} onChange={(e) => setCustom({ ...custom, fiber_g: e.target.value })} />
+                      </div>
+                    ) : null}
                   </div>
                 )}
                 {!showCustom && query.trim() && (
@@ -2433,6 +2487,12 @@ export default function VitalDashboardClient({
                     <label htmlFor="once_p">Protein</label>
                     <input id="once_p" className="vital-input" type="number" min="0" step="0.1" value={custom.protein_g} onChange={(e) => setCustom({ ...custom, protein_g: e.target.value })} />
                   </div>
+                  {fiberTarget ? (
+                    <div>
+                      <label htmlFor="once_fiber">Fiber</label>
+                      <input id="once_fiber" className="vital-input" type="number" min="0" step="0.1" value={custom.fiber_g} onChange={(e) => setCustom({ ...custom, fiber_g: e.target.value })} />
+                    </div>
+                  ) : null}
                 </div>
                 {foodError ? <p className="vital-err">{foodError}</p> : null}
                 <div className="vital-composer-actions">
