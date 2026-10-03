@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import {
   BLOCKS,
   GROUND,
+  MAX_HEIGHT,
   NODES,
   blockById,
   canStep,
   cellKey,
   findPath,
+  inBounds,
   gatherNode,
   makeWorld,
   nearestStand,
@@ -99,6 +101,9 @@ class PlanetGame {
     }));
     this.yaw = saved?.yaw ?? 0.7;
     this.yawTarget = this.yaw;
+    this.faceX = 0;
+    this.faceZ = 1;
+    this.audio = null;
     this.held = null;
     this.cam = { x: this.px, y: 8, z: this.pz - 10 };
     this.view = { w: 1, h: 1, dpr: 1 };
@@ -108,11 +113,6 @@ class PlanetGame {
     this.wobble = 0;
     this.time = 0;
     this.stopped = false;
-    this.stars = Array.from({ length: 70 }, (_, i) => ({
-      x: ((i * 97) % 100) / 100,
-      y: ((i * 53) % 80) / 100,
-      r: (i % 3) * 0.5 + 0.6,
-    }));
     this.ui.onBag({ ...this.bag });
     this.ui.onStats({ ...this.stats });
     this.reportNearby();
@@ -156,11 +156,34 @@ class PlanetGame {
     if (best) this.goGather(best.x, best.z);
   }
 
+  buildSpots() {
+    const front = this.frontTile();
+    return [
+      front,
+      { x: this.ix + 1, z: this.iz },
+      { x: this.ix - 1, z: this.iz },
+      { x: this.ix, z: this.iz + 1 },
+      { x: this.ix, z: this.iz - 1 },
+    ];
+  }
+
+  canBuild(x, z) {
+    if (!inBounds(x, z)) return false;
+    if (nodeAt(this.world, x, z)?.left > 0) return false;
+    const h = surfaceHeight(this.world, x, z);
+    return h != null && h < MAX_HEIGHT;
+  }
+
+  buildSpot() {
+    return this.buildSpots().find((spot) => this.canBuild(spot.x, spot.z)) || null;
+  }
+
   act() {
+    this.unlock();
     const id = this.ui.blockId();
     if (id && (this.bag[id] || 0) > 0) {
-      const spot = this.frontTile();
-      this.tryPlace(spot.x, spot.z);
+      const spot = this.buildSpot();
+      if (spot) this.tryPlace(spot.x, spot.z);
       return;
     }
     if (this.near) {
@@ -168,6 +191,33 @@ class PlanetGame {
       return;
     }
     this.findWork();
+  }
+
+  unlock() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!this.audio) this.audio = new Ctx();
+    if (this.audio.state === 'suspended') this.audio.resume();
+  }
+
+  tone(freq, dur, type, vol, slide) {
+    if (!this.audio || this.audio.state === 'closed') return;
+    try {
+      const t = this.audio.currentTime;
+      const osc = this.audio.createOscillator();
+      const gain = this.audio.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(Math.max(40, freq), t);
+      if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(40, slide), t + dur);
+      gain.gain.setValueAtTime(Math.max(0.0001, vol), t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.connect(gain);
+      gain.connect(this.audio.destination);
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+    } catch {
+      /* a missed note should not stop the walk */
+    }
   }
 
   height() {
@@ -261,6 +311,7 @@ class PlanetGame {
   };
 
   onDown = (event) => {
+    this.unlock();
     if (event.button != null && event.button !== 0) return;
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -306,6 +357,7 @@ class PlanetGame {
   }
 
   stepScreen(sx, sy) {
+    this.unlock();
     const { fx, fz, rx, rz } = this.screenAxes();
     const wx = rx * sx + fx * -sy;
     const wz = rz * sx + fz * -sy;
@@ -321,6 +373,9 @@ class PlanetGame {
     if (!dx && !dz) return;
     if (this.hop) return;
     if (!canStep(this.world, this.ix, this.iz, dx, dz)) return;
+    this.faceX = dx;
+    this.faceZ = dz;
+    this.tone(220, 0.045, 'triangle', 0.03, 320);
     this.hop = {
       x0: this.ix,
       z0: this.iz,
@@ -359,7 +414,10 @@ class PlanetGame {
       this.ui.onStats({ ...this.stats });
       this.persist();
       this.float('+ built', x + 0.5, z + 0.5);
+      this.tone(520, 0.08, 'triangle', 0.05, 740);
+      return true;
     }
+    return false;
   }
 
   takeHere() {
@@ -455,6 +513,7 @@ class PlanetGame {
             this.ui.onStats({ ...this.stats });
             this.float(`+ ${blockById(item).name}`, this.job.x + 0.5, this.job.z + 0.5);
             this.burst(this.job.x + 0.5, this.job.z + 0.5, surfaceHeight(this.world, this.job.x, this.job.z) + 1.2, blockById(item).top);
+            this.tone(item === 'gold' ? 880 : 360, 0.07, 'triangle', 0.05, item === 'gold' ? 1320 : 540);
             this.persist();
           }
           const left = nodeAt(this.world, this.job.x, this.job.z);
@@ -502,44 +561,52 @@ class PlanetGame {
     const { w, h, dpr } = this.view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#07101c');
-    sky.addColorStop(0.38, '#1d3358');
-    sky.addColorStop(0.62, '#7ea0c4');
-    sky.addColorStop(0.78, '#f0c27a');
-    sky.addColorStop(1, '#f7e7c3');
+    sky.addColorStop(0, '#16345c');
+    sky.addColorStop(0.22, '#3f86d2');
+    sky.addColorStop(0.46, '#9fd4fb');
+    sky.addColorStop(0.62, '#fff1cc');
+    sky.addColorStop(1, '#6fbf45');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
-    const sun = ctx.createRadialGradient(w * 0.78, h * 0.2, 8, w * 0.78, h * 0.2, 140);
-    sun.addColorStop(0, 'rgba(255, 244, 210, 0.95)');
-    sun.addColorStop(0.35, 'rgba(255, 196, 120, 0.35)');
-    sun.addColorStop(1, 'rgba(255, 196, 120, 0)');
+    const sunX = w * 0.78;
+    const sunY = h * 0.22;
+    const sun = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 160);
+    sun.addColorStop(0, 'rgba(255, 248, 220, 0.98)');
+    sun.addColorStop(0.18, 'rgba(255, 214, 120, 0.55)');
+    sun.addColorStop(1, 'rgba(255, 214, 120, 0)');
     ctx.fillStyle = sun;
     ctx.beginPath();
-    ctx.arc(w * 0.78, h * 0.2, 140, 0, Math.PI * 2);
+    ctx.arc(sunX, sunY, 160, 0, Math.PI * 2);
     ctx.fill();
-    for (const star of this.stars) {
-      const sy = star.y * h * 0.5;
-      ctx.globalAlpha = 0.35 + (star.r % 1) * 0.5;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(star.x * w, sy, star.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#fff8df';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 22, 0, Math.PI * 2);
+    ctx.fill();
     for (let i = 0; i < 4; i += 1) {
-      const cx = ((i * 0.28 + this.time * 0.008) % 1.3 - 0.15) * w;
-      const cy = h * (0.18 + i * 0.05);
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      const cx = ((i * 0.27 + this.time * 0.006) % 1.35 - 0.15) * w;
+      const cy = h * (0.16 + i * 0.045);
+      ctx.fillStyle = 'rgba(255,255,255,0.82)';
       ctx.beginPath();
-      ctx.ellipse(cx, cy, 70 + i * 16, 18, 0, 0, Math.PI * 2);
-      ctx.ellipse(cx + 36, cy + 4, 46, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, 54 + i * 12, 16, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 28, cy + 3, 36, 13, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx - 24, cy + 4, 28, 11, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#8fce62';
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (let i = 0; i <= 18; i += 1) {
+      const x = (i / 18) * w;
+      const y = h * (0.325 + Math.sin(i * 0.85 + 0.6) * 0.018 + Math.cos(i * 0.37) * 0.01);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
     ctx.fillStyle = '#6fbf45';
-    ctx.fillRect(0, h * 0.3, w, h);
+    ctx.fillRect(0, h * 0.4, w, h);
 
-    const reach = 15;
+    const reach = 18;
     const tiles = [];
     this.hits = [];
     for (let z = this.iz - reach; z <= this.iz + reach; z += 1) {
@@ -555,7 +622,7 @@ class PlanetGame {
         ].map(([wx, wy, wz]) => this.project(wx, wy, wz));
         if (corners.some((point) => !point)) continue;
         const depth = (corners[0].z + corners[2].z) * 0.5;
-        if (depth < 2.4 || depth > 22) continue;
+        if (depth < 2.4 || depth > 26) continue;
         tiles.push({ x, z, height, tile, corners, depth });
       }
     }
@@ -609,6 +676,12 @@ class PlanetGame {
       props.push({ depth: 8, draw: () => this.drawMark(end.x, end.z) });
     }
     if (this.world.camp) props.push({ depth: 6, draw: () => this.drawCamp() });
+    const ghost = this.buildSpot();
+    if (ghost) {
+      const ghostHeight = surfaceHeight(this.world, ghost.x, ghost.z);
+      const ghostAt = ghostHeight == null ? null : this.project(ghost.x + 0.5, ghostHeight + 0.4, ghost.z + 0.5);
+      if (ghostAt) props.push({ depth: ghostAt.z, draw: () => this.drawGhost() });
+    }
     for (const critter of this.critters) {
       const at = this.project(critter.x, (surfaceHeight(this.world, Math.round(critter.x), Math.round(critter.z)) || 1) + 0.2, critter.z);
       if (at) props.push({ depth: at.z, draw: () => this.drawCritter(critter, at) });
@@ -685,6 +758,42 @@ class PlanetGame {
     critter.wait = 0.8 + Math.random() * 1.6;
   }
 
+  drawGhost() {
+    const spot = this.buildSpot();
+    const id = this.ui.blockId();
+    if (!spot || !id) return;
+    const h = surfaceHeight(this.world, spot.x, spot.z);
+    if (h == null) return;
+    const color = blockById(id).top;
+    const top = [
+      [spot.x, h + 0.78, spot.z],
+      [spot.x + 1, h + 0.78, spot.z],
+      [spot.x + 1, h + 0.78, spot.z + 1],
+      [spot.x, h + 0.78, spot.z + 1],
+    ].map(([x, y, z]) => this.project(x, y, z));
+    const face = [
+      this.project(spot.x, h, spot.z + 1),
+      this.project(spot.x + 1, h, spot.z + 1),
+      this.project(spot.x + 1, h + 0.78, spot.z + 1),
+      this.project(spot.x, h + 0.78, spot.z + 1),
+    ];
+    if (top.some((point) => !point)) return;
+    const ctx = this.ctx;
+    const paint = (points, paintColor) => {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+      ctx.fillStyle = paintColor;
+      ctx.fill();
+    };
+    ctx.save();
+    ctx.globalAlpha = 0.42 + Math.sin(this.time * 5) * 0.08;
+    if (face.every(Boolean)) paint(face, shade(color, -36));
+    paint(top, color);
+    ctx.restore();
+  }
+
   drawPath(tile) {
     const at = this.project(tile.x + 0.5, tile.height + 0.04, tile.z + 0.5);
     if (!at) return;
@@ -704,6 +813,13 @@ class PlanetGame {
     const base = this.project(camp.x + 0.5, h + 0.05, camp.z + 0.5);
     const flame = this.project(camp.x + 0.5, h + 0.55 + Math.sin(this.time * 9) * 0.06, camp.z + 0.5);
     if (!base || !flame) return;
+    const glow = ctx.createRadialGradient(flame.x, flame.y, 2, flame.x, flame.y, 28);
+    glow.addColorStop(0, 'rgba(255, 170, 40, 0.55)');
+    glow.addColorStop(1, 'rgba(255, 170, 40, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(flame.x, flame.y, 28, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#6b4423';
     ctx.fillRect(base.x - 10, base.y - 4, 20, 6);
     ctx.fillStyle = '#ff9f0a';
@@ -735,6 +851,10 @@ class PlanetGame {
     const ctx = this.ctx;
     const s = Math.max(7, at.scale * 0.12);
     const lift = critter.hop > 0 ? 6 : 0;
+    ctx.fillStyle = 'rgba(20, 40, 20, 0.22)';
+    ctx.beginPath();
+    ctx.ellipse(at.x, at.y + 2, s * 0.9, s * 0.28, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.save();
     ctx.translate(at.x, at.y - lift);
     ctx.scale(critter.face < 0 ? -1 : 1, 1);
@@ -813,7 +933,7 @@ class PlanetGame {
     const at = this.project(x + 0.5, h + 0.08, z + 0.5);
     if (!at) return;
     const r = Math.max(6, at.scale * 0.16);
-    this.ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    this.ctx.strokeStyle = 'rgba(255, 214, 10, 0.95)';
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.ellipse(at.x, at.y, r, r * 0.45, 0, 0, Math.PI * 2);
@@ -847,17 +967,22 @@ class PlanetGame {
   }
 
   drawFlower(tile) {
-    const at = this.project(tile.x + 0.68, tile.height + 0.15, tile.z + 0.32);
-    if (!at) return;
-    const s = Math.max(2, at.scale * 0.05);
+    const at = this.project(tile.x + 0.68, tile.height + 0.16, tile.z + 0.32);
+    if (!at || at.scale < 8) return;
+    const s = Math.max(2.2, at.scale * 0.045);
+    const colors = ['#ff6b8a', '#ffd60a', '#ffffff', '#d7b4ff'];
+    const color = colors[(tile.x * 3 + tile.z * 5) % colors.length];
     const ctx = this.ctx;
-    ctx.fillStyle = '#ff6b8a';
-    ctx.beginPath();
-    ctx.arc(at.x, at.y, s, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = color;
+    for (let i = 0; i < 5; i += 1) {
+      const angle = (i / 5) * Math.PI * 2 - 0.4;
+      ctx.beginPath();
+      ctx.ellipse(at.x + Math.cos(angle) * s, at.y + Math.sin(angle) * s * 0.62, s * 0.55, s * 0.38, angle, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = '#ffe14a';
     ctx.beginPath();
-    ctx.arc(at.x + s * 1.6, at.y + s * 0.4, s * 0.8, 0, Math.PI * 2);
+    ctx.arc(at.x, at.y, s * 0.42, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -868,7 +993,8 @@ class PlanetGame {
     const lift = node.kind === 'tree' ? 1.85 * scale : node.kind === 'crystal' ? 1.35 : 0.7;
     const top = this.project(tile.x + 0.5, tile.height + lift, tile.z + 0.5);
     if (!top) return;
-    const size = Math.max(12, mid.scale * 0.42) * scale;
+    const footprint = this.worldRadius(tile.x + 0.5, tile.height + 0.3, tile.z + 0.5, 0.34 * scale);
+    const size = footprint ? footprint.r * 2.4 : mid.scale * 0.35 * scale;
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(sway, 0);
@@ -908,9 +1034,10 @@ class PlanetGame {
       ctx.lineTo(trunkTop.x - half * 0.75, trunkTop.y);
       ctx.fill();
       const blobs = [
-        [0, 1.15, 0.5, '#1c6b32'],
-        [-0.22, 1.35, 0.36, '#2f9a46'],
-        [0.2, 1.5, 0.3, '#6ed36a'],
+        [0.04, 1.02, 0.46, '#145328'],
+        [0, 1.2, 0.5, '#1f7a38'],
+        [-0.22, 1.38, 0.34, '#34a84c'],
+        [0.18, 1.52, 0.28, '#7adf72'],
       ];
       for (let i = 0; i < blobs.length; i += 1) {
         const [ox, hy, rad, color] = blobs[i];
@@ -971,40 +1098,58 @@ class PlanetGame {
 
   drawBuddy(feet) {
     const ctx = this.ctx;
-    const s = Math.max(34, feet.scale * 0.72);
-    ctx.fillStyle = 'rgba(20, 30, 20, 0.3)';
+    const s = Math.max(30, feet.scale * 0.64);
+    const hop = this.hop ? Math.sin(Math.min(1, this.hop.t) * Math.PI) : 0;
+    const stride = this.hop ? Math.sin(this.hop.t * Math.PI * 2) : 0;
+    const ahead = this.project(this.px + this.faceX, this.height() + 0.4, this.pz + this.faceZ);
+    const flip = ahead && ahead.x < feet.x ? -1 : 1;
+    ctx.fillStyle = 'rgba(20, 40, 20, 0.28)';
     ctx.beginPath();
-    ctx.ellipse(feet.x, feet.y + 2, s * 0.36, s * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(feet.x, feet.y + 3, s * 0.34, s * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#f0a030';
+    ctx.save();
+    ctx.translate(feet.x, feet.y - hop * s * 0.18);
+    ctx.scale(flip, 1);
+    ctx.strokeStyle = '#3a2a22';
     ctx.lineWidth = Math.max(3, s * 0.08);
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(feet.x - s * 0.16, feet.y - s * 0.15);
-    ctx.lineTo(feet.x - s * 0.16, feet.y);
-    ctx.moveTo(feet.x + s * 0.16, feet.y - s * 0.15);
-    ctx.lineTo(feet.x + s * 0.16, feet.y);
+    ctx.moveTo(-s * 0.12, -s * 0.22);
+    ctx.lineTo(-s * 0.16 - stride * s * 0.1, s * 0.02);
+    ctx.moveTo(s * 0.12, -s * 0.22);
+    ctx.lineTo(s * 0.16 + stride * s * 0.1, s * 0.02);
     ctx.stroke();
-    ctx.fillStyle = '#2a3348';
+    ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
-    ctx.roundRect(feet.x - s * 0.28, feet.y - s * 0.72, s * 0.56, s * 0.58, 6);
+    ctx.roundRect(-s * 0.26, -s * 0.7, s * 0.52, s * 0.5, s * 0.16);
     ctx.fill();
-    ctx.fillStyle = '#ff7a45';
+    ctx.fillStyle = '#ffb020';
     ctx.beginPath();
-    ctx.ellipse(feet.x - s * 0.34, feet.y - s * 0.42, s * 0.14, s * 0.22, -0.5, 0, Math.PI * 2);
+    ctx.ellipse(-s * 0.32, -s * 0.48, s * 0.1, s * 0.16, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1f4fa3';
+    ctx.beginPath();
+    ctx.ellipse(s * 0.22, -s * 0.42, s * 0.12, s * 0.16, 0.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#ffe0c2';
     ctx.beginPath();
-    ctx.arc(feet.x, feet.y - s * 0.95, s * 0.28, 0, Math.PI * 2);
+    ctx.arc(0, -s * 0.92, s * 0.26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3a2a22';
+    ctx.beginPath();
+    ctx.arc(0, -s * 1.02, s * 0.26, Math.PI, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#1c1c1e';
     ctx.beginPath();
-    ctx.arc(feet.x + s * 0.08, feet.y - s * 0.98, s * 0.06, 0, Math.PI * 2);
+    ctx.arc(s * 0.08, -s * 0.96, s * 0.045, 0, Math.PI * 2);
+    ctx.arc(-s * 0.06, -s * 0.96, s * 0.045, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#c47a62';
+    ctx.lineWidth = Math.max(1.5, s * 0.035);
     ctx.beginPath();
-    ctx.arc(feet.x + s * 0.1, feet.y - s * 1.0, s * 0.02, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(s * 0.02, -s * 0.86, s * 0.06, 0.15, Math.PI - 0.15);
+    ctx.stroke();
+    ctx.restore();
   }
 
   reset() {
@@ -1045,11 +1190,12 @@ export default function PlanetBuilder() {
   ];
   const done = tasks.every((task) => task.have >= task.need);
   const verbs = { tree: 'Chop tree', rock: 'Mine rock', crystal: 'Gather crystal', bush: 'Pick bush' };
+  const busy = { tree: 'Chopping', rock: 'Mining', crystal: 'Gathering', bush: 'Picking' };
   const actLabel = blockId
     ? `Build ${blockById(blockId).name}`
     : near
       ? verbs[near.kind]
-      : 'Find something';
+      : 'Gather';
 
   useEffect(() => {
     blockRef.current = blockId;
@@ -1058,7 +1204,10 @@ export default function PlanetBuilder() {
   useEffect(() => {
     const game = new PlanetGame(canvasRef.current, {
       blockId: () => blockRef.current,
-      onBag: setBag,
+      onBag: (next) => {
+        setBag(next);
+        setBlockId((current) => (current && !(next[current] > 0) ? null : current));
+      },
       onHideHint: () => {},
       onGather: (name, amount) => setGather(name ? { name, amount } : null),
       onNearby: setNear,
@@ -1111,27 +1260,27 @@ export default function PlanetBuilder() {
         {tasks.map((task) => (
           <li key={task.label} className={task.have >= task.need ? 'is-done' : ''}>
             {task.label}
-            <b>{Math.min(task.have, task.need)}/{task.need}</b>
+            <b>{task.have >= task.need ? '✓' : `${Math.min(task.have, task.need)}/${task.need}`}</b>
           </li>
         ))}
         {done ? <li className="is-done">Camp is set</li> : null}
       </ul>
-      <button type="button" className="planet-act" onClick={() => gameRef.current?.act()}>{actLabel}</button>
-      {gather ? (
-        <p className="planet-gather">
-          Gathering {gather.name}
-          <i style={{ transform: `scaleX(${gather.amount})` }} />
-        </p>
-      ) : null}
+      <button type="button" className="planet-act" onClick={() => gameRef.current?.act()}>
+        {gather ? <i style={{ width: `${Math.round(gather.amount * 100)}%` }} /> : null}
+        <span>{gather ? `${busy[gather.name] || 'Gathering'}…` : actLabel}</span>
+      </button>
       <div className="planet-dock">
         <div className="planet-palette" role="listbox" aria-label="Pack">
           {BLOCKS.map((block) => (
             <button
               key={block.id}
               type="button"
-              className={blockId === block.id ? 'is-on' : ''}
+              className={`${blockId === block.id ? 'is-on' : ''} ${(bag[block.id] || 0) > 0 ? '' : 'is-empty'}`}
               aria-label={`${block.name}, ${bag[block.id] || 0}`}
-              onClick={() => setBlockId(blockId === block.id ? null : block.id)}
+              onClick={() => {
+                if (!(bag[block.id] > 0)) return;
+                setBlockId(blockId === block.id ? null : block.id);
+              }}
             >
               <i style={{ background: block.top }} />
               <b>{bag[block.id] || 0}</b>

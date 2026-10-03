@@ -17,10 +17,10 @@ export const GROUND = {
 };
 
 export const NODES = {
-  tree: { item: 'wood', name: 'tree', time: 0.85 },
-  rock: { item: 'stone', name: 'rock', time: 1.05 },
-  crystal: { item: 'gold', name: 'crystal', time: 1.2 },
-  bush: { item: 'leaf', name: 'bush', time: 0.7 },
+  tree: { item: 'wood', name: 'tree', time: 0.48 },
+  rock: { item: 'stone', name: 'rock', time: 0.58 },
+  crystal: { item: 'gold', name: 'crystal', time: 0.72 },
+  bush: { item: 'leaf', name: 'bush', time: 0.4 },
 };
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -90,7 +90,7 @@ export function makeWorld(seed = 7) {
         h = 1;
       }
       const rollDecor = rand(x * 19 + z * 23 + seed);
-      const flower = groundId === 'grass' && dist > 1.6 && rollDecor > 0.55;
+      const flower = groundId === 'grass' && dist > 1.6 && rollDecor > 0.74;
       const mushroom = groundId === 'grass' && dist > 3 && rollDecor > 0.9 && rollDecor < 0.96;
       ground[z * SIZE + x] = { h, id: groundId, flower, mushroom };
       if (groundId === 'water' || dist < 5) continue;
