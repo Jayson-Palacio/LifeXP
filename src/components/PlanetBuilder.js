@@ -23,6 +23,22 @@ import {
 } from '../lib/planetWorld';
 
 const SAVE_KEY = 'kaeluma.play.planet.v5';
+const PITCH = -0.3;
+const ORIGIN = 0.56;
+const FOV = 1.1;
+
+function hash(n) {
+  const s = Math.sin(n * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+const SIDE = {
+  grass: '#8a5a34',
+  sand: '#c49a52',
+  stone: '#666d7c',
+  snow: '#a9b8cc',
+  water: '#2c6fb0',
+};
 
 function emptyBag() {
   return { wood: 0, stone: 0, gold: 0, leaf: 0 };
@@ -300,16 +316,15 @@ class PlanetGame {
     const sin = Math.sin(aim);
     const rx = dx * cos - dz * sin;
     const rz = dx * sin + dz * cos;
-    const pitch = -0.42;
-    const cp = Math.cos(pitch);
-    const sp = Math.sin(pitch);
+    const cp = Math.cos(PITCH);
+    const sp = Math.sin(PITCH);
     const y2 = dy * cp - rz * sp;
     const z2 = dy * sp + rz * cp;
     if (z2 < 0.8) return null;
-    const fov = this.view.h * 1.15;
+    const fov = this.view.h * FOV;
     return {
       x: this.view.w * 0.5 + (rx / z2) * fov,
-      y: this.view.h * 0.58 - (y2 / z2) * fov,
+      y: this.view.h * ORIGIN - (y2 / z2) * fov,
       z: z2,
       scale: fov / z2,
     };
@@ -596,9 +611,9 @@ class PlanetGame {
     this.bits = this.bits.filter((bit) => bit.life > 0);
 
     const aim = this.lookYaw();
-    const back = this.viewMode === 'side' ? 7.4 : this.viewMode === 'front' ? 6.4 : 5.8;
+    const back = this.viewMode === 'side' ? 7.4 : this.viewMode === 'front' ? 6.4 : 6;
     const shoulder = this.viewMode === 'behind' ? 0.35 : 0;
-    const lift = this.height() + (this.viewMode === 'side' ? 3.6 : this.viewMode === 'front' ? 2.7 : 3.1);
+    const lift = this.height() + (this.viewMode === 'side' ? 3.3 : this.viewMode === 'front' ? 2.6 : 2.8);
     const gx = this.px - Math.sin(aim) * back + Math.cos(aim) * shoulder;
     const gz = this.pz - Math.cos(aim) * back - Math.sin(aim) * shoulder;
     this.cam.x += (gx - this.cam.x) * Math.min(1, dt * 7);
@@ -612,16 +627,17 @@ class PlanetGame {
     const ctx = this.ctx;
     const { w, h, dpr } = this.view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    const horizon = h * ORIGIN - Math.tan(-PITCH) * h * FOV;
+    const pan = this.lookYaw();
+    const sky = ctx.createLinearGradient(0, 0, 0, horizon);
     sky.addColorStop(0, '#140e2e');
-    sky.addColorStop(0.26, '#3d2b78');
-    sky.addColorStop(0.48, '#c56b8c');
-    sky.addColorStop(0.64, '#f3c48a');
-    sky.addColorStop(1, '#6fbf45');
+    sky.addColorStop(0.4, '#3d2b78');
+    sky.addColorStop(0.75, '#c56b8c');
+    sky.addColorStop(1, '#f3c48a');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
-    const sunX = w * 0.78;
-    const sunY = h * 0.22;
+    const sunX = (((0.78 - pan * 0.3) % 1.6) + 1.6) % 1.6 * w - w * 0.3;
+    const sunY = horizon * 0.72;
     const sun = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 160);
     sun.addColorStop(0, 'rgba(255, 248, 220, 0.98)');
     sun.addColorStop(0.18, 'rgba(255, 214, 120, 0.55)');
@@ -644,30 +660,38 @@ class PlanetGame {
     ctx.beginPath();
     ctx.arc(moonX + 6, moonY - 3, this.wideFrame() ? 11 : 16, 0, Math.PI * 2);
     ctx.fill();
+    for (let i = 0; i < 60; i += 1) {
+      const sx = ((hash(i * 3.1) * w * 2 - pan * w * 0.25) % w + w) % w;
+      const sy = hash(i * 7.7) * horizon * 0.7;
+      const tw = 0.35 + Math.sin(this.time * (1.5 + hash(i) * 2) + i) * 0.35;
+      ctx.globalAlpha = Math.max(0.05, tw);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(sx, sy, hash(i * 1.3) > 0.8 ? 2 : 1.2, hash(i * 1.3) > 0.8 ? 2 : 1.2);
+    }
+    ctx.globalAlpha = 1;
     for (let i = 0; i < 4; i += 1) {
-      const cx = ((i * 0.27 + this.time * 0.006) % 1.35 - 0.15) * w;
-      const cy = h * (0.16 + i * 0.045);
-      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      const cx = ((i * 0.27 + this.time * 0.006 - pan * 0.12) % 1.35 + 1.35) % 1.35 * w - w * 0.15;
+      const cy = horizon * (0.25 + i * 0.13);
+      const lit = ctx.createLinearGradient(0, cy - 16, 0, cy + 14);
+      lit.addColorStop(0, 'rgba(255, 236, 240, 0.9)');
+      lit.addColorStop(1, 'rgba(214, 160, 200, 0.75)');
+      ctx.fillStyle = lit;
       ctx.beginPath();
-      ctx.ellipse(cx, cy, 54 + i * 12, 16, 0, 0, Math.PI * 2);
-      ctx.ellipse(cx + 28, cy + 3, 36, 13, 0, 0, Math.PI * 2);
-      ctx.ellipse(cx - 24, cy + 4, 28, 11, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, 54 + i * 12, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 28, cy - 4, 32, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx - 24, cy - 2, 26, 11, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = '#8fce62';
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    for (let i = 0; i <= 18; i += 1) {
-      const x = (i / 18) * w;
-      const y = h * (0.325 + Math.sin(i * 0.85 + 0.6) * 0.018 + Math.cos(i * 0.37) * 0.01);
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(w, h);
-    ctx.closePath();
-    ctx.fill();
-    this.drawSkyline();
-    ctx.fillStyle = '#6fbf45';
-    ctx.fillRect(0, h * 0.42, w, h);
+    this.drawIslands(horizon, pan);
+    this.drawRidge('#6c5aa6', horizon, h * 0.11, 2.2, pan * w * 0.35, 1.3, true);
+    this.drawSkyline(horizon, pan);
+    this.drawRidge('#45387e', horizon, h * 0.06, 3.4, pan * w * 0.55, 4.1, false);
+    const field = ctx.createLinearGradient(0, horizon, 0, h);
+    field.addColorStop(0, '#7f9c6a');
+    field.addColorStop(0.18, '#66b046');
+    field.addColorStop(1, '#5aa83c');
+    ctx.fillStyle = field;
+    ctx.fillRect(0, horizon, w, h - horizon);
 
     const reach = 18;
     const tiles = [];
@@ -699,15 +723,19 @@ class PlanetGame {
       const topBlock = built?.length ? blockById(built[built.length - 1]) : null;
       const base = topBlock ? topBlock.top : GROUND[tile.tile.id];
       ctx.globalAlpha = 1;
-      this.drawSides(tile, base);
+      this.drawSides(tile, topBlock);
       const tint = tile.tile.id === 'water'
         ? Math.sin(this.time * 1.6 + tile.x * 0.7 + tile.z) * 10
-        : tile.tile.id === 'grass'
-          ? Math.round(Math.sin(tile.x * 0.08) * 7 + Math.cos(tile.z * 0.06) * 5)
-          : 0;
+        : topBlock
+          ? 0
+          : Math.round(Math.sin(tile.x * 0.08) * 7 + Math.cos(tile.z * 0.06) * 5 + (hash(tile.x * 31 + tile.z * 57) - 0.5) * 10);
       fillQuad(ctx, tile.corners, shade(base, tint));
+      if (tile.depth < 15) this.drawSurface(tile, topBlock);
       if (tile.tile.path) this.drawPath(tile);
       if (tile.tile.id === 'water') this.drawRipple(tile);
+      if (tile.tile.lily) props.push({ depth: tile.depth + 0.01, draw: () => this.drawLily(tile) });
+      if (tile.tile.reed && !topBlock) props.push({ depth: tile.depth - 0.02, draw: () => this.drawReeds(tile) });
+      if (tile.tile.lamp && !topBlock) props.push({ depth: tile.depth - 0.03, draw: () => this.drawLamp(tile) });
       const mid = this.project(tile.x + 0.5, tile.height + 0.05, tile.z + 0.5);
       const node = nodeAt(this.world, tile.x, tile.z);
       if (mid) {
@@ -743,7 +771,12 @@ class PlanetGame {
       const end = this.path[this.path.length - 1];
       props.push({ depth: 8, draw: () => this.drawMark(end.x, end.z) });
     }
-    if (this.world.camp) props.push({ depth: 6, draw: () => this.drawCamp() });
+    if (this.world.camp) {
+      const campAt = this.project(this.world.camp.x + 0.5, 1, this.world.camp.z + 0.5);
+      if (campAt) props.push({ depth: campAt.z, draw: () => this.drawCamp() });
+      const tentAt = this.project(this.world.camp.x - 2.4, 1, this.world.camp.z - 1.1);
+      if (tentAt) props.push({ depth: tentAt.z, draw: () => this.drawTent() });
+    }
     const ghost = this.buildSpot();
     if (ghost) {
       const ghostHeight = surfaceHeight(this.world, ghost.x, ghost.z);
@@ -793,42 +826,280 @@ class PlanetGame {
       ctx.fillText(floater.text, at.x, at.y - (1 - floater.life) * 24);
     }
     ctx.globalAlpha = 1;
-    const fog = ctx.createLinearGradient(0, 0, 0, h * 0.28);
-    fog.addColorStop(0, 'rgba(48, 32, 84, 0.55)');
-    fog.addColorStop(1, 'rgba(48, 32, 84, 0)');
+    const fog = ctx.createLinearGradient(0, 0, 0, h * 0.14);
+    fog.addColorStop(0, 'rgba(20, 14, 46, 0.5)');
+    fog.addColorStop(1, 'rgba(20, 14, 46, 0)');
     ctx.fillStyle = fog;
-    ctx.fillRect(0, 0, w, h * 0.3);
+    ctx.fillRect(0, 0, w, h * 0.14);
+    const vignette = ctx.createRadialGradient(w * 0.5, h * 0.55, h * 0.45, w * 0.5, h * 0.55, w * 0.62);
+    vignette.addColorStop(0, 'rgba(10, 6, 30, 0)');
+    vignette.addColorStop(1, 'rgba(10, 6, 30, 0.38)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
     this.drawFocus();
   }
 
-  drawSides(tile, color) {
+  drawSides(tile, topBlock) {
+    const ctx = this.ctx;
     const edges = [
-      [0, -1, [0, 1]],
-      [1, 0, [1, 2]],
-      [0, 1, [3, 2]],
-      [-1, 0, [0, 3]],
+      [0, -1, [0, 1], -14],
+      [1, 0, [1, 2], -30],
+      [0, 1, [3, 2], -6],
+      [-1, 0, [0, 3], -22],
     ];
+    const ground = SIDE[tile.tile.id] || SIDE.stone;
+    const color = topBlock ? topBlock.side : ground;
+    const corner = (c, y) => this.project(
+      tile.x + (c === 1 || c === 2 ? 1 : 0),
+      y,
+      tile.z + (c >= 2 ? 1 : 0),
+    );
     for (let i = 0; i < edges.length; i += 1) {
-      const [dx, dz, pair] = edges[i];
+      const [dx, dz, pair, light] = edges[i];
       const neighbor = surfaceHeight(this.world, tile.x + dx, tile.z + dz);
       const low = neighbor == null ? 0 : neighbor;
       if (low >= tile.height) continue;
       const [a, b] = pair;
       const highA = tile.corners[a];
       const highB = tile.corners[b];
-      const footA = this.project(
-        tile.x + (a === 1 || a === 2 ? 1 : 0),
-        low,
-        tile.z + (a >= 2 ? 1 : 0),
-      );
-      const footB = this.project(
-        tile.x + (b === 1 || b === 2 ? 1 : 0),
-        low,
-        tile.z + (b >= 2 ? 1 : 0),
-      );
+      const footA = corner(a, low);
+      const footB = corner(b, low);
       if (!footA || !footB) continue;
-      fillQuad(this.ctx, [highA, highB, footB, footA], shade(color, -28));
+      fillQuad(ctx, [highA, highB, footB, footA], shade(color, light));
+      if (tile.depth > 16) continue;
+      if (topBlock) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
+        ctx.lineWidth = 1;
+        for (let y = Math.ceil(low); y < tile.height; y += 1) {
+          if (y <= low) continue;
+          const sa = corner(a, y);
+          const sb = corner(b, y);
+          if (!sa || !sb) continue;
+          ctx.beginPath();
+          ctx.moveTo(sa.x, sa.y);
+          ctx.lineTo(sb.x, sb.y);
+          ctx.stroke();
+        }
+      } else if (tile.tile.id === 'grass') {
+        const lipA = corner(a, tile.height - Math.min(0.22, tile.height - low));
+        const lipB = corner(b, tile.height - Math.min(0.22, tile.height - low));
+        if (lipA && lipB) {
+          fillQuad(ctx, [highA, highB, lipB, lipA], shade('#5ea83c', light * 0.6));
+          ctx.fillStyle = shade('#5ea83c', light * 0.6);
+          for (let k = 1; k < 6; k += 1) {
+            const t = k / 6;
+            const dripX = lipA.x + (lipB.x - lipA.x) * t;
+            const dripY = lipA.y + (lipB.y - lipA.y) * t;
+            const len = (2 + hash(tile.x * 7 + tile.z * 3 + k + i * 11) * 5) * Math.min(1.6, tile.corners[0].scale / 40);
+            ctx.fillRect(dripX - 1.5, dripY - 1, 3, len);
+          }
+        }
+      }
+      if (!topBlock) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+        for (let k = 0; k < 4; k += 1) {
+          const t = hash(tile.x * 13 + tile.z * 29 + k * 5 + i);
+          const s = 0.3 + hash(tile.x * 3 + tile.z * 17 + k + i * 7) * 0.6;
+          const top = corner(a, low + (tile.height - low) * s);
+          const top2 = corner(b, low + (tile.height - low) * s);
+          if (!top || !top2) continue;
+          const px = top.x + (top2.x - top.x) * t;
+          const py = top.y + (top2.y - top.y) * t;
+          const r = Math.max(1.2, tile.corners[0].scale * 0.035);
+          ctx.fillRect(px - r, py - r * 0.6, r * 2, r * 1.2);
+        }
+      }
     }
+  }
+
+  surfacePoint(tile, u, v, lift = 0.01) {
+    return this.project(tile.x + u, tile.height + lift, tile.z + v);
+  }
+
+  surfaceLine(tile, u0, v0, u1, v1, color, width) {
+    const a = this.surfacePoint(tile, u0, v0);
+    const b = this.surfacePoint(tile, u1, v1);
+    if (!a || !b) return;
+    const ctx = this.ctx;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  drawSurface(tile, topBlock) {
+    const ctx = this.ctx;
+    const id = topBlock ? `block:${topBlock.id}` : tile.tile.id;
+    const seed = tile.x * 73 + tile.z * 151;
+    const near = tile.depth < 8;
+    const unit = Math.max(1, tile.corners[0].scale * 0.03);
+    const speck = (count, colors, size = 1) => {
+      for (let i = 0; i < count; i += 1) {
+        const p = this.surfacePoint(tile, 0.1 + hash(seed + i * 7) * 0.8, 0.1 + hash(seed + i * 13) * 0.8);
+        if (!p) continue;
+        const r = unit * size * (0.7 + hash(seed + i) * 0.6);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fillRect(p.x - r, p.y - r * 0.5, r * 2, r);
+      }
+    };
+    if (id === 'grass') {
+      if (tile.tile.path) return;
+      speck(near ? 8 : 4, ['rgba(36, 104, 40, 0.38)', 'rgba(184, 236, 120, 0.4)', 'rgba(70, 140, 50, 0.3)']);
+      if (!near) return;
+      ctx.lineWidth = Math.max(1, unit * 0.7);
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 6; i += 1) {
+        const p = this.surfacePoint(tile, 0.1 + hash(seed + i * 19) * 0.8, 0.1 + hash(seed + i * 23) * 0.8);
+        if (!p) continue;
+        const sway = Math.sin(this.time * 2.2 + tile.x * 0.6 + i) * unit * 1.4;
+        const tall = unit * (3 + hash(seed + i * 5) * 3);
+        ctx.strokeStyle = i % 2 ? '#7fd055' : '#4f9a36';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.quadraticCurveTo(p.x + sway * 0.3, p.y - tall * 0.6, p.x + sway, p.y - tall);
+        ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+    } else if (id === 'sand') {
+      speck(near ? 9 : 5, ['rgba(160, 120, 60, 0.4)', 'rgba(255, 246, 210, 0.55)'], 0.7);
+      if (near && hash(seed) > 0.6) {
+        this.surfaceLine(tile, 0.15, 0.4, 0.55, 0.32, 'rgba(160, 120, 60, 0.35)', unit * 0.6);
+        this.surfaceLine(tile, 0.35, 0.7, 0.85, 0.6, 'rgba(160, 120, 60, 0.35)', unit * 0.6);
+      }
+    } else if (id === 'stone') {
+      speck(near ? 6 : 3, ['rgba(40, 44, 56, 0.35)', 'rgba(220, 226, 236, 0.35)']);
+      const crack = 'rgba(40, 44, 56, 0.45)';
+      const u = 0.2 + hash(seed + 3) * 0.3;
+      this.surfaceLine(tile, u, 0.15, u + 0.15, 0.45, crack, unit * 0.6);
+      this.surfaceLine(tile, u + 0.15, 0.45, u + 0.05, 0.75, crack, unit * 0.6);
+      this.surfaceLine(tile, u + 0.15, 0.45, u + 0.4, 0.55, crack, unit * 0.6);
+    } else if (id === 'snow') {
+      for (let i = 0; i < 5; i += 1) {
+        const p = this.surfacePoint(tile, 0.1 + hash(seed + i * 7) * 0.8, 0.1 + hash(seed + i * 11) * 0.8);
+        if (!p) continue;
+        ctx.globalAlpha = 0.3 + Math.max(0, Math.sin(this.time * 3 + i * 2 + tile.x)) * 0.7;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(p.x - unit, p.y - 0.5, unit * 2, 1);
+        ctx.fillRect(p.x - 0.5, p.y - unit, 1, unit * 2);
+      }
+      ctx.globalAlpha = 1;
+    } else if (id === 'water') {
+      const t = (this.time * 0.25 + hash(seed)) % 1;
+      this.surfaceLine(tile, 0.15 + t * 0.4, 0.3, 0.4 + t * 0.4, 0.3, 'rgba(255, 255, 255, 0.35)', unit * 0.7);
+      if (hash(seed + 9) > 0.5) this.surfaceLine(tile, 0.5, 0.72, 0.75, 0.72, 'rgba(255, 255, 255, 0.25)', unit * 0.6);
+    } else if (id === 'block:wood') {
+      const seam = 'rgba(70, 40, 18, 0.55)';
+      for (const v of [0.25, 0.5, 0.75]) this.surfaceLine(tile, 0.02, v, 0.98, v, seam, unit * 0.6);
+      for (const [u, v] of [[0.3, 0.125], [0.7, 0.375], [0.45, 0.625], [0.2, 0.875]]) {
+        this.surfaceLine(tile, u, v - 0.12, u, v + 0.12, seam, unit * 0.6);
+      }
+      speck(4, ['rgba(255, 220, 160, 0.35)'], 0.6);
+    } else if (id === 'block:stone') {
+      const seam = 'rgba(40, 44, 56, 0.5)';
+      this.surfaceLine(tile, 0.02, 0.5, 0.98, 0.5, seam, unit * 0.7);
+      this.surfaceLine(tile, 0.5, 0.02, 0.5, 0.5, seam, unit * 0.7);
+      this.surfaceLine(tile, 0.25, 0.5, 0.25, 0.98, seam, unit * 0.7);
+      this.surfaceLine(tile, 0.75, 0.5, 0.75, 0.98, seam, unit * 0.7);
+      speck(4, ['rgba(255, 255, 255, 0.25)'], 0.7);
+    } else if (id === 'block:leaf') {
+      speck(10, ['rgba(20, 80, 30, 0.45)', 'rgba(170, 240, 120, 0.4)'], 1.2);
+    } else if (id.startsWith('block:')) {
+      this.surfaceLine(tile, 0.15, 0.2, 0.75, 0.85, 'rgba(255, 255, 255, 0.45)', unit * 0.8);
+      this.surfaceLine(tile, 0.35, 0.12, 0.88, 0.62, 'rgba(255, 255, 255, 0.25)', unit * 0.6);
+      speck(3, ['rgba(255, 255, 255, 0.7)'], 0.6);
+    }
+  }
+
+  drawLily(tile) {
+    const ctx = this.ctx;
+    const seed = tile.x * 17 + tile.z * 29;
+    const drift = Math.sin(this.time * 0.8 + seed) * 0.05;
+    const p = this.surfacePoint(tile, 0.35 + hash(seed) * 0.3 + drift, 0.35 + hash(seed + 1) * 0.3, 0.02);
+    if (!p) return;
+    const r = Math.max(4, p.scale * 0.22);
+    ctx.fillStyle = '#2f8f45';
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.ellipse(p.x, p.y, r, r * 0.42, 0, 0.35, Math.PI * 2 - 0.1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(160, 230, 140, 0.5)';
+    ctx.beginPath();
+    ctx.ellipse(p.x - r * 0.3, p.y - r * 0.1, r * 0.4, r * 0.14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (hash(seed + 5) > 0.45) {
+      ctx.fillStyle = '#ffb3d1';
+      for (let i = 0; i < 5; i += 1) {
+        const a = (i / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.ellipse(p.x + Math.cos(a) * r * 0.22, p.y - r * 0.2 + Math.sin(a) * r * 0.1, r * 0.2, r * 0.12, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#ffe66d';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - r * 0.22, r * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  drawReeds(tile) {
+    const ctx = this.ctx;
+    const seed = tile.x * 19 + tile.z * 7;
+    for (let i = 0; i < 4; i += 1) {
+      const p = this.surfacePoint(tile, 0.15 + hash(seed + i * 3) * 0.7, 0.15 + hash(seed + i * 5) * 0.7);
+      if (!p) continue;
+      const tall = p.scale * (0.5 + hash(seed + i) * 0.35);
+      const sway = Math.sin(this.time * 1.6 + seed + i) * tall * 0.08;
+      ctx.strokeStyle = '#5f8f3a';
+      ctx.lineWidth = Math.max(1, p.scale * 0.025);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.quadraticCurveTo(p.x, p.y - tall * 0.6, p.x + sway, p.y - tall);
+      ctx.stroke();
+      if (i % 2 === 0) {
+        ctx.fillStyle = '#7a4a26';
+        ctx.beginPath();
+        ctx.ellipse(p.x + sway * 0.9, p.y - tall * 0.88, Math.max(1.5, p.scale * 0.03), Math.max(3, p.scale * 0.09), 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  drawLamp(tile) {
+    const ctx = this.ctx;
+    const foot = this.surfacePoint(tile, 0.08, 0.5);
+    const top = this.surfacePoint(tile, 0.08, 0.5, 1.15);
+    if (!foot || !top) return;
+    const s = foot.scale;
+    ctx.strokeStyle = '#2d2a3a';
+    ctx.lineWidth = Math.max(2, s * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(foot.x, foot.y);
+    ctx.lineTo(top.x, top.y);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(1, s * 0.03);
+    ctx.beginPath();
+    ctx.moveTo(top.x, top.y + s * 0.05);
+    ctx.quadraticCurveTo(top.x + s * 0.12, top.y - s * 0.04, top.x + s * 0.16, top.y + s * 0.06);
+    ctx.stroke();
+    const lx = top.x + s * 0.16;
+    const ly = top.y + s * 0.16;
+    const flicker = 0.75 + Math.sin(this.time * 7 + tile.z) * 0.08;
+    const glow = ctx.createRadialGradient(lx, ly, 1, lx, ly, s * 0.7);
+    glow.addColorStop(0, `rgba(255, 214, 120, ${0.55 * flicker})`);
+    glow.addColorStop(1, 'rgba(255, 214, 120, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(lx, ly, s * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2d2a3a';
+    ctx.fillRect(lx - s * 0.07, ly - s * 0.11, s * 0.14, s * 0.03);
+    ctx.fillStyle = '#ffe08a';
+    ctx.fillRect(lx - s * 0.055, ly - s * 0.08, s * 0.11, s * 0.13);
+    ctx.fillStyle = '#2d2a3a';
+    ctx.fillRect(lx - s * 0.07, ly + s * 0.05, s * 0.14, s * 0.025);
   }
 
   stepCritter(critter, dt) {
@@ -849,26 +1120,120 @@ class PlanetGame {
     critter.wait = 0.8 + Math.random() * 1.6;
   }
 
-  drawSkyline() {
+  drawRidge(color, base, amp, freq, offset, seed, caps) {
     const { w, h } = this.view;
     const ctx = this.ctx;
-    const base = h * (this.wideFrame() ? 0.36 : 0.4);
-    const x = w * 0.58;
-    ctx.fillStyle = '#2c3568';
+    const points = [];
+    for (let i = 0; i <= 48; i += 1) {
+      const x = (i / 48) * w;
+      const t = ((x + offset) / w) * freq;
+      const y = base - Math.abs(Math.sin(t * 1.7 + seed)) * amp - Math.sin(t * 4.3 + seed * 2) * amp * 0.22;
+      points.push([x, y]);
+    }
+    const fill = ctx.createLinearGradient(0, base - amp * 1.2, 0, base);
+    fill.addColorStop(0, shade(color, 24));
+    fill.addColorStop(1, color);
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (const [x, y] of points) ctx.lineTo(x, y);
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+    if (!caps) return;
+    ctx.fillStyle = 'rgba(248, 240, 255, 0.85)';
+    for (let i = 1; i < points.length - 1; i += 1) {
+      const [x, y] = points[i];
+      if (y < points[i - 1][1] && y < points[i + 1][1] && base - y > amp * 0.7) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 9, y + 8);
+        ctx.lineTo(x + 3, y + 6);
+        ctx.lineTo(x - 2, y + 9);
+        ctx.lineTo(x - 9, y + 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  drawIslands(horizon, pan) {
+    const { w } = this.view;
+    const ctx = this.ctx;
+    const islands = [
+      { at: 0.22, y: 0.42, r: 44 },
+      { at: 0.7, y: 0.28, r: 30 },
+      { at: 1.25, y: 0.5, r: 36 },
+    ];
+    for (let i = 0; i < islands.length; i += 1) {
+      const isle = islands[i];
+      const x = (((isle.at - pan * 0.2) % 1.6) + 1.6) % 1.6 * w - w * 0.3;
+      const y = horizon * isle.y + Math.sin(this.time * 0.6 + i * 2) * 4;
+      const r = isle.r;
+      ctx.fillStyle = '#5b4a7e';
+      ctx.beginPath();
+      ctx.moveTo(x - r, y);
+      ctx.lineTo(x + r, y);
+      ctx.lineTo(x + r * 0.35, y + r * 0.8);
+      ctx.lineTo(x, y + r * 1.25);
+      ctx.lineTo(x - r * 0.45, y + r * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#7d68a8';
+      ctx.beginPath();
+      ctx.moveTo(x - r, y);
+      ctx.lineTo(x - r * 0.1, y);
+      ctx.lineTo(x - r * 0.3, y + r * 0.6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#5fbf62';
+      ctx.beginPath();
+      ctx.ellipse(x, y, r * 1.02, r * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2f8a4a';
+      ctx.beginPath();
+      ctx.arc(x - r * 0.4, y - r * 0.2, r * 0.22, 0, Math.PI * 2);
+      ctx.arc(x - r * 0.15, y - r * 0.3, r * 0.26, 0, Math.PI * 2);
+      ctx.fill();
+      const fall = ctx.createLinearGradient(0, y, 0, y + r * 1.8);
+      fall.addColorStop(0, 'rgba(190, 230, 255, 0.85)');
+      fall.addColorStop(1, 'rgba(190, 230, 255, 0)');
+      ctx.fillStyle = fall;
+      ctx.fillRect(x + r * 0.55, y, 3, r * 1.8);
+    }
+  }
+
+  drawSkyline(horizon, pan) {
+    const { w } = this.view;
+    const ctx = this.ctx;
+    const base = horizon - 6;
+    const x = (((0.62 - pan * 0.32) % 1.6) + 1.6) % 1.6 * w - w * 0.3;
+    ctx.fillStyle = '#2f2768';
     ctx.fillRect(x - 26, base - 16, 92, 18);
     ctx.fillRect(x, base - 34, 16, 34);
-    ctx.fillRect(x + 22, base - 52, 12, 52);
+    ctx.fillRect(x + 22, base - 56, 12, 56);
+    ctx.fillRect(x + 48, base - 28, 14, 28);
+    for (const [cx, cy] of [[x + 8, base - 34], [x + 28, base - 56], [x + 55, base - 28]]) {
+      ctx.beginPath();
+      ctx.moveTo(cx - 9, cy);
+      ctx.lineTo(cx, cy - 18);
+      ctx.lineTo(cx + 9, cy);
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#2f2768';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x + 16, base - 52);
-    ctx.lineTo(x + 28, base - 74);
-    ctx.lineTo(x + 40, base - 52);
-    ctx.fill();
-    ctx.fillRect(x + 48, base - 26, 14, 26);
+    ctx.moveTo(x + 28, base - 74);
+    ctx.lineTo(x + 28, base - 86);
+    ctx.stroke();
+    ctx.fillStyle = '#ff7aa8';
+    ctx.fillRect(x + 28, base - 86, 7, 4);
     ctx.fillStyle = '#ffe7a3';
-    ctx.globalAlpha = 0.85;
-    ctx.fillRect(x + 26, base - 40, 3, 5);
-    ctx.fillRect(x + 5, base - 22, 3, 4);
-    ctx.fillRect(x + 53, base - 16, 3, 4);
+    ctx.globalAlpha = 0.6 + Math.sin(this.time * 2) * 0.2;
+    ctx.fillRect(x + 26, base - 44, 3, 5);
+    ctx.fillRect(x + 5, base - 24, 3, 4);
+    ctx.fillRect(x + 53, base - 18, 3, 4);
+    ctx.fillRect(x + 36, base - 10, 3, 4);
     ctx.globalAlpha = 1;
   }
 
@@ -958,11 +1323,26 @@ class PlanetGame {
   drawPath(tile) {
     const at = this.project(tile.x + 0.5, tile.height + 0.04, tile.z + 0.5);
     if (!at) return;
-    const r = Math.max(4, at.scale * 0.18);
-    this.ctx.fillStyle = 'rgba(196, 154, 90, 0.85)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(at.x, at.y, r, r * 0.42, 0.4, 0, Math.PI * 2);
-    this.ctx.fill();
+    const ctx = this.ctx;
+    const inset = [[0.12, 0.02], [0.88, 0.02], [0.88, 0.98], [0.12, 0.98]]
+      .map(([u, v]) => this.surfacePoint(tile, u, v, 0.02));
+    if (inset.every(Boolean)) fillQuad(ctx, inset, '#b8925e');
+    const seed = tile.x * 11 + tile.z * 23;
+    const stones = [[0.3, 0.2], [0.68, 0.3], [0.38, 0.55], [0.7, 0.72], [0.28, 0.85]];
+    for (let i = 0; i < stones.length; i += 1) {
+      const [u, v] = stones[i];
+      const p = this.surfacePoint(tile, u + (hash(seed + i) - 0.5) * 0.08, v, 0.03);
+      if (!p) continue;
+      const r = Math.max(2, p.scale * (0.11 + hash(seed + i * 3) * 0.05));
+      ctx.fillStyle = 'rgba(70, 50, 30, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y + r * 0.12, r, r * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = i % 2 ? '#c9c1b2' : '#ddd5c4';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, r * 0.9, r * 0.38, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   drawCamp() {
@@ -974,12 +1354,114 @@ class PlanetGame {
     const base = this.project(camp.x + 0.5, h + 0.05, camp.z + 0.5);
     const flame = this.project(camp.x + 0.5, h + 0.55 + Math.sin(this.time * 9) * 0.06, camp.z + 0.5);
     if (!base || !flame) return;
-    const glow = ctx.createRadialGradient(flame.x, flame.y, 2, flame.x, flame.y, 28);
+    const s = base.scale;
+    this.drawCampProps(camp, h, ctx, base, flame, s);
+  }
+
+  drawTent() {
+    const camp = this.world.camp;
+    if (!camp) return;
+    const h = surfaceHeight(this.world, camp.x, camp.z);
+    if (h == null) return;
+    const ctx = this.ctx;
+    const tentL = this.project(camp.x - 3.2, h + 0.02, camp.z - 0.6);
+    const tentR = this.project(camp.x - 1.6, h + 0.02, camp.z - 0.6);
+    const tentBack = this.project(camp.x - 2.4, h + 0.02, camp.z - 1.6);
+    const tentTop = this.project(camp.x - 2.4, h + 1.15, camp.z - 1.1);
+    if (tentL && tentR && tentBack && tentTop) {
+      const s = tentTop.scale;
+      ctx.fillStyle = '#7a2f3f';
+      ctx.beginPath();
+      ctx.moveTo(tentBack.x, tentBack.y);
+      ctx.lineTo(tentTop.x, tentTop.y);
+      ctx.lineTo(tentR.x, tentR.y);
+      ctx.fill();
+      ctx.fillStyle = '#d9485f';
+      ctx.beginPath();
+      ctx.moveTo(tentL.x, tentL.y);
+      ctx.lineTo(tentTop.x, tentTop.y);
+      ctx.lineTo(tentR.x, tentR.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#f6e3c8';
+      for (const t of [0.25, 0.75]) {
+        const lx = tentL.x + (tentR.x - tentL.x) * t;
+        const ly = tentL.y + (tentR.y - tentL.y) * t;
+        ctx.beginPath();
+        ctx.moveTo(tentTop.x, tentTop.y);
+        ctx.lineTo(lx - (tentR.x - tentL.x) * 0.06, ly);
+        ctx.lineTo(lx + (tentR.x - tentL.x) * 0.06, ly);
+        ctx.fill();
+      }
+      const doorL = tentL.x + (tentR.x - tentL.x) * 0.4;
+      const doorR = tentL.x + (tentR.x - tentL.x) * 0.6;
+      const doorY = tentL.y + (tentR.y - tentL.y) * 0.5;
+      ctx.fillStyle = '#2a1420';
+      ctx.beginPath();
+      ctx.moveTo(doorL, doorY);
+      ctx.lineTo((doorL + doorR) * 0.5, tentTop.y + (doorY - tentTop.y) * 0.45);
+      ctx.lineTo(doorR, doorY);
+      ctx.fill();
+      ctx.strokeStyle = '#4a2a18';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(tentTop.x, tentTop.y);
+      ctx.lineTo(tentTop.x, tentTop.y - s * 0.25);
+      ctx.stroke();
+      ctx.fillStyle = '#ffd60a';
+      const wave = Math.sin(this.time * 4) * s * 0.03;
+      ctx.beginPath();
+      ctx.moveTo(tentTop.x, tentTop.y - s * 0.25);
+      ctx.lineTo(tentTop.x + s * 0.18, tentTop.y - s * 0.2 + wave);
+      ctx.lineTo(tentTop.x, tentTop.y - s * 0.14);
+      ctx.fill();
+    }
+  }
+
+  drawCampProps(camp, h, ctx, base, flame, s) {
+    for (let i = 0; i < 8; i += 1) {
+      const a = (i / 8) * Math.PI * 2;
+      const stone = this.project(camp.x + 0.5 + Math.cos(a) * 0.32, h + 0.05, camp.z + 0.5 + Math.sin(a) * 0.32);
+      if (!stone) continue;
+      const r = Math.max(2, stone.scale * 0.06);
+      ctx.fillStyle = i % 2 ? '#7d8494' : '#9aa1b0';
+      ctx.beginPath();
+      ctx.ellipse(stone.x, stone.y, r * 1.3, r, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const [ox, oz] of [[1.2, 0.5], [-0.3, 0.6]]) {
+      const a = this.project(camp.x + 0.5 + ox - 0.3, h + 0.12, camp.z + oz);
+      const b = this.project(camp.x + 0.5 + ox + 0.3, h + 0.12, camp.z + oz + 0.5);
+      if (!a || !b) continue;
+      const r = Math.max(3, a.scale * 0.1);
+      ctx.strokeStyle = '#6b4423';
+      ctx.lineWidth = r * 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = '#d9aa72';
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y, r * 0.8, r, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let i = 0; i < 5; i += 1) {
+      const t = (this.time * 0.35 + i / 5) % 1;
+      const puff = this.project(camp.x + 0.5 + Math.sin(t * 5 + i) * 0.15, h + 0.8 + t * 2.2, camp.z + 0.5);
+      if (!puff) continue;
+      ctx.fillStyle = `rgba(220, 210, 235, ${0.35 * (1 - t)})`;
+      ctx.beginPath();
+      ctx.arc(puff.x, puff.y, puff.scale * (0.08 + t * 0.22), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const glow = ctx.createRadialGradient(flame.x, flame.y, 2, flame.x, flame.y, s * 1.2);
     glow.addColorStop(0, 'rgba(255, 170, 40, 0.55)');
     glow.addColorStop(1, 'rgba(255, 170, 40, 0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(flame.x, flame.y, 28, 0, Math.PI * 2);
+    ctx.arc(flame.x, flame.y, s * 1.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#6b4423';
     ctx.fillRect(base.x - 10, base.y - 4, 20, 6);
@@ -1261,109 +1743,361 @@ class PlanetGame {
         ctx.stroke();
       }
     }
-    if (node.kind === 'tree') {
-      const ground = this.project(tile.x + 0.5, tile.height + 0.02, tile.z + 0.5) || mid;
-      const trunkTop = this.project(tile.x + 0.5, tile.height + 0.85 * scale, tile.z + 0.5) || mid;
-      const shadeR = this.worldRadius(tile.x + 0.5, tile.height + 0.02, tile.z + 0.5, 0.42 * scale);
-      if (shadeR) {
-        ctx.fillStyle = 'rgba(20, 50, 20, 0.22)';
-        ctx.beginPath();
-        ctx.ellipse(shadeR.at.x, shadeR.at.y, shadeR.r, shadeR.r * 0.42, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      const width = this.worldRadius(tile.x + 0.5, tile.height + 0.4, tile.z + 0.5, 0.09 * scale);
-      const half = width ? width.r : 3;
-      ctx.fillStyle = '#4e321c';
+    if (node.kind === 'tree') this.drawTree(tile, node, scale, mid);
+    else if (node.kind === 'rock') this.drawRock(tile, mid, size);
+    else if (node.kind === 'crystal') this.drawCrystal(tile, mid, size);
+    else this.drawBush(tile, mid, size);
+    ctx.restore();
+  }
+
+  drawTree(tile, node, scale, mid) {
+    const ctx = this.ctx;
+    const variant = node.variant || 'oak';
+    const cx = tile.x + 0.5;
+    const cz = tile.z + 0.5;
+    const y0 = tile.height;
+    const ground = this.project(cx, y0 + 0.02, cz) || mid;
+    const trunkHeight = variant === 'pine' ? 0.6 : variant === 'birch' ? 1.05 : 0.85;
+    const trunkTop = this.project(cx, y0 + trunkHeight * scale, cz) || mid;
+    const shadeR = this.worldRadius(cx, y0 + 0.02, cz, 0.48 * scale);
+    if (shadeR) {
+      ctx.fillStyle = 'rgba(20, 40, 30, 0.26)';
       ctx.beginPath();
-      ctx.moveTo(ground.x - half * 1.15, ground.y);
-      ctx.lineTo(ground.x + half * 1.15, ground.y);
-      ctx.lineTo(trunkTop.x + half * 0.75, trunkTop.y);
-      ctx.lineTo(trunkTop.x - half * 0.75, trunkTop.y);
+      ctx.ellipse(shadeR.at.x, shadeR.at.y, shadeR.r, shadeR.r * 0.42, 0, 0, Math.PI * 2);
       ctx.fill();
-      const blobs = [
-        [0.04, 1.02, 0.46, '#145328'],
-        [0, 1.2, 0.5, '#1f7a38'],
-        [-0.22, 1.38, 0.34, '#34a84c'],
-        [0.18, 1.52, 0.28, '#7adf72'],
+    }
+    const width = this.worldRadius(cx, y0 + 0.4, cz, (variant === 'birch' ? 0.07 : 0.09) * scale);
+    const half = width ? width.r : 3;
+    const bark = { oak: '#4e321c', pine: '#3d2616', birch: '#ece7dc', glow: '#3a2552' }[variant];
+    ctx.fillStyle = bark;
+    ctx.beginPath();
+    ctx.moveTo(ground.x - half * 1.25, ground.y);
+    ctx.lineTo(ground.x + half * 1.25, ground.y);
+    ctx.lineTo(trunkTop.x + half * 0.7, trunkTop.y);
+    ctx.lineTo(trunkTop.x - half * 0.7, trunkTop.y);
+    ctx.fill();
+    ctx.fillStyle = variant === 'birch' ? 'rgba(40, 36, 40, 0.75)' : 'rgba(0, 0, 0, 0.25)';
+    for (let i = 0; i < 4; i += 1) {
+      const t = 0.15 + i * 0.2;
+      const bx = ground.x + (trunkTop.x - ground.x) * t;
+      const by = ground.y + (trunkTop.y - ground.y) * t;
+      const off = (hash(tile.x * 5 + tile.z + i) - 0.5) * half;
+      ctx.fillRect(bx + off - half * 0.4, by, half * 0.8, Math.max(1, half * 0.22));
+    }
+    ctx.fillStyle = 'rgba(255, 214, 170, 0.3)';
+    ctx.beginPath();
+    ctx.moveTo(ground.x - half * 0.9, ground.y - 1);
+    ctx.lineTo(trunkTop.x - half * 0.55, trunkTop.y);
+    ctx.lineTo(trunkTop.x - half * 0.2, trunkTop.y);
+    ctx.lineTo(ground.x - half * 0.4, ground.y - 1);
+    ctx.fill();
+    for (const side of [-1, 1]) {
+      const root = this.project(cx + side * 0.22 * scale, y0 + 0.02, cz + 0.05);
+      if (!root) continue;
+      ctx.fillStyle = bark;
+      ctx.beginPath();
+      ctx.moveTo(ground.x + side * half * 0.6, ground.y - half * 1.2);
+      ctx.lineTo(root.x, root.y);
+      ctx.lineTo(ground.x + side * half * 0.2, ground.y);
+      ctx.fill();
+    }
+
+    if (variant === 'pine') {
+      const tiers = [
+        [0.55, 0.52, '#123f2e'],
+        [0.95, 0.42, '#1a5a3c'],
+        [1.32, 0.32, '#23704a'],
+        [1.66, 0.22, '#2f8a58'],
       ];
-      for (let i = 0; i < blobs.length; i += 1) {
-        const [ox, hy, rad, color] = blobs[i];
-        const blob = this.worldRadius(tile.x + 0.5 + ox * scale, tile.height + hy * scale, tile.z + 0.5, rad * scale);
-        if (!blob) continue;
+      for (let i = 0; i < tiers.length; i += 1) {
+        const [hy, rad, color] = tiers[i];
+        const base = this.worldRadius(cx, y0 + hy * scale, cz, rad * scale);
+        const tip = this.project(cx, y0 + (hy + 0.55) * scale, cz);
+        if (!base || !tip) continue;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(blob.at.x, blob.at.y, blob.r, 0, Math.PI * 2);
+        ctx.moveTo(base.at.x - base.r, base.at.y);
+        ctx.quadraticCurveTo(base.at.x, base.at.y + base.r * 0.32, base.at.x + base.r, base.at.y);
+        ctx.lineTo(tip.x, tip.y);
+        ctx.closePath();
         ctx.fill();
-      }
-      ctx.fillStyle = 'rgba(255, 214, 170, 0.35)';
-      ctx.beginPath();
-      ctx.moveTo(ground.x - half * 0.15, ground.y - 1);
-      ctx.lineTo(trunkTop.x - half * 0.05, trunkTop.y);
-      ctx.lineTo(trunkTop.x + half * 0.12, trunkTop.y);
-      ctx.lineTo(ground.x + half * 0.2, ground.y - 1);
-      ctx.fill();
-      const shine = this.worldRadius(tile.x + 0.32, tile.height + 1.58 * scale, tile.z + 0.5, 0.14 * scale);
-      if (shine) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+        ctx.fillStyle = 'rgba(170, 240, 190, 0.28)';
         ctx.beginPath();
-        ctx.ellipse(shine.at.x, shine.at.y, shine.r, shine.r * 0.55, -0.5, 0, Math.PI * 2);
+        ctx.moveTo(base.at.x - base.r, base.at.y);
+        ctx.lineTo(tip.x, tip.y);
+        ctx.lineTo(base.at.x - base.r * 0.35, base.at.y + base.r * 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(240, 248, 255, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(tip.x, tip.y);
+        ctx.lineTo(tip.x + base.r * 0.22, tip.y + base.r * 0.3);
+        ctx.lineTo(tip.x - base.r * 0.22, tip.y + base.r * 0.3);
         ctx.fill();
       }
-      if ((tile.x + tile.z) % 4 === 0) {
-        const lamp = this.project(tile.x + 0.62, tile.height + 0.95 * scale, tile.z + 0.38);
-        if (lamp) {
-          ctx.fillStyle = 'rgba(255, 214, 90, 0.95)';
-          ctx.beginPath();
-          ctx.arc(lamp.x, lamp.y, Math.max(2, (width ? width.r : 4) * 0.35), 0, Math.PI * 2);
-          ctx.fill();
-        }
+      return;
+    }
+
+    const palettes = {
+      oak: ['#0f4322', '#1f7a38', '#34a84c', '#7adf72', 'rgba(8, 36, 16, 0.55)'],
+      birch: ['#5d8f22', '#8cc63f', '#b4e05a', '#e6f79a', 'rgba(40, 70, 10, 0.5)'],
+      glow: ['#2c1f6b', '#5a3fb8', '#8a63e8', '#7ff0e0', 'rgba(16, 8, 46, 0.6)'],
+    };
+    const [deep, body, light, rim, outline] = palettes[variant] || palettes.oak;
+    const blobs = [
+      [0.04, 1.02, 0.46, deep],
+      [-0.28, 1.12, 0.32, deep],
+      [0.3, 1.1, 0.3, deep],
+      [0, 1.24, 0.5, body],
+      [-0.22, 1.4, 0.34, light],
+      [0.2, 1.46, 0.3, body],
+      [0.02, 1.62, 0.26, light],
+    ];
+    const placed = [];
+    for (const [ox, hy, rad, color] of blobs) {
+      const blob = this.worldRadius(cx + ox * scale, y0 + hy * scale, cz, rad * scale);
+      if (blob) placed.push([blob, color]);
+    }
+    ctx.fillStyle = outline;
+    ctx.beginPath();
+    for (const [blob] of placed) {
+      ctx.moveTo(blob.at.x + blob.r + 2, blob.at.y);
+      ctx.arc(blob.at.x, blob.at.y, blob.r + 2, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    for (const [blob, color] of placed) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(blob.at.x, blob.at.y, blob.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const crown = placed.length ? placed[3]?.[0] || placed[0][0] : null;
+    if (!crown) return;
+    const seed = tile.x * 37 + tile.z * 11;
+    for (let i = 0; i < 14; i += 1) {
+      const a = hash(seed + i * 3) * Math.PI * 2;
+      const d = Math.sqrt(hash(seed + i * 7)) * crown.r * 1.15;
+      const lx = crown.at.x + Math.cos(a) * d;
+      const ly = crown.at.y - crown.r * 0.2 + Math.sin(a) * d * 0.8;
+      ctx.fillStyle = i % 3 === 0 ? rim : i % 3 === 1 ? 'rgba(0, 0, 0, 0.18)' : light;
+      ctx.beginPath();
+      ctx.ellipse(lx, ly, crown.r * 0.12, crown.r * 0.07, a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.24)';
+    ctx.beginPath();
+    ctx.ellipse(crown.at.x - crown.r * 0.4, crown.at.y - crown.r * 0.75, crown.r * 0.38, crown.r * 0.18, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (variant === 'glow') {
+      for (let i = 0; i < 5; i += 1) {
+        const a = hash(seed + i * 13) * Math.PI * 2;
+        const d = crown.r * (0.4 + hash(seed + i * 17) * 0.6);
+        const fx = crown.at.x + Math.cos(a) * d;
+        const fy = crown.at.y + Math.sin(a) * d * 0.7;
+        const pulse = 0.6 + Math.sin(this.time * 3 + i * 1.7) * 0.3;
+        const glow = ctx.createRadialGradient(fx, fy, 0, fx, fy, crown.r * 0.35);
+        glow.addColorStop(0, `rgba(127, 240, 224, ${pulse})`);
+        glow.addColorStop(1, 'rgba(127, 240, 224, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(fx, fy, crown.r * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#eafffb';
+        ctx.beginPath();
+        ctx.arc(fx, fy, Math.max(1.5, crown.r * 0.07), 0, Math.PI * 2);
+        ctx.fill();
       }
-    } else if (node.kind === 'rock') {
-      ctx.fillStyle = '#6d7380';
+    } else if (variant === 'oak' && hash(seed + 99) > 0.5) {
+      ctx.fillStyle = '#e8473c';
+      for (let i = 0; i < 4; i += 1) {
+        const a = hash(seed + i * 29) * Math.PI * 2;
+        const d = crown.r * (0.3 + hash(seed + i * 31) * 0.6);
+        ctx.beginPath();
+        ctx.arc(crown.at.x + Math.cos(a) * d, crown.at.y + Math.sin(a) * d * 0.7, Math.max(1.5, crown.r * 0.08), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    if ((tile.x + tile.z) % 4 === 0 && variant !== 'glow') {
+      const lamp = this.project(cx + 0.12, y0 + 0.95 * scale, cz - 0.12);
+      if (lamp) {
+        const r = Math.max(2, half * 0.45);
+        const glow = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, r * 5);
+        glow.addColorStop(0, 'rgba(255, 214, 90, 0.5)');
+        glow.addColorStop(1, 'rgba(255, 214, 90, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(lamp.x, lamp.y, r * 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd65a';
+        ctx.beginPath();
+        ctx.arc(lamp.x, lamp.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  drawRock(tile, mid, size) {
+    const ctx = this.ctx;
+    const seed = tile.x * 29 + tile.z * 41;
+    const base = { x: mid.x, y: mid.y };
+    ctx.fillStyle = 'rgba(20, 24, 40, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(base.x, base.y + size * 0.02, size * 0.8, size * 0.24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const outline = [];
+    for (let i = 0; i < 9; i += 1) {
+      const a = Math.PI + (i / 8) * Math.PI;
+      const r = size * (0.62 + hash(seed + i) * 0.18);
+      outline.push([base.x + Math.cos(a) * r, base.y + Math.sin(a) * r * 0.95 - size * 0.05]);
+    }
+    ctx.fillStyle = '#5b6170';
+    ctx.beginPath();
+    ctx.moveTo(base.x - size * 0.72, base.y);
+    for (const [x, y] of outline) ctx.lineTo(x, y);
+    ctx.lineTo(base.x + size * 0.72, base.y);
+    ctx.closePath();
+    ctx.fill();
+    const peak = outline[4];
+    ctx.fillStyle = '#8e95a4';
+    ctx.beginPath();
+    ctx.moveTo(base.x - size * 0.72, base.y);
+    for (let i = 0; i <= 4; i += 1) ctx.lineTo(outline[i][0], outline[i][1]);
+    ctx.lineTo(base.x - size * 0.05, base.y - size * 0.15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#b9c0cc';
+    ctx.beginPath();
+    ctx.moveTo(outline[2][0], outline[2][1]);
+    ctx.lineTo(outline[3][0], outline[3][1]);
+    ctx.lineTo(peak[0], peak[1]);
+    ctx.lineTo(base.x - size * 0.12, base.y - size * 0.32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(80, 160, 70, 0.9)';
+    ctx.beginPath();
+    ctx.moveTo(outline[3][0], outline[3][1]);
+    ctx.lineTo(outline[4][0], outline[4][1]);
+    ctx.lineTo(outline[5][0], outline[5][1]);
+    ctx.quadraticCurveTo(peak[0] + size * 0.1, peak[1] + size * 0.18, outline[3][0] + size * 0.05, outline[3][1] + size * 0.08);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(30, 34, 46, 0.5)';
+    ctx.lineWidth = Math.max(1, size * 0.03);
+    ctx.beginPath();
+    ctx.moveTo(peak[0] + size * 0.05, peak[1] + size * 0.2);
+    ctx.lineTo(base.x + size * 0.18, base.y - size * 0.3);
+    ctx.lineTo(base.x + size * 0.1, base.y - size * 0.1);
+    ctx.stroke();
+    const ore = hash(seed + 7) > 0.55 ? '#ffd65a' : '#9fe3ff';
+    for (let i = 0; i < 3; i += 1) {
+      const ox = base.x + (hash(seed + i * 3) - 0.3) * size * 0.8;
+      const oy = base.y - size * (0.15 + hash(seed + i * 5) * 0.3);
+      ctx.fillStyle = ore;
       ctx.beginPath();
-      ctx.ellipse(mid.x, mid.y - size * 0.22, size * 0.72, size * 0.32, 0, 0, Math.PI * 2);
+      ctx.moveTo(ox, oy - size * 0.05);
+      ctx.lineTo(ox + size * 0.04, oy);
+      ctx.lineTo(ox, oy + size * 0.05);
+      ctx.lineTo(ox - size * 0.04, oy);
       ctx.fill();
-      ctx.fillStyle = '#b7bec8';
+    }
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(outline[3][0] + size * 0.08, outline[3][1] + size * 0.08, size * 0.1, size * 0.05, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawCrystal(tile, mid, size) {
+    const ctx = this.ctx;
+    const pulse = 0.7 + Math.sin(this.time * 2.4 + tile.x) * 0.15;
+    const glow = ctx.createRadialGradient(mid.x, mid.y - size * 0.7, size * 0.1, mid.x, mid.y - size * 0.5, size * 1.5);
+    glow.addColorStop(0, `rgba(160, 220, 255, ${pulse})`);
+    glow.addColorStop(1, 'rgba(160, 220, 255, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(mid.x, mid.y - size * 0.6, size * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#4a5068';
+    ctx.beginPath();
+    ctx.ellipse(mid.x, mid.y - size * 0.05, size * 0.55, size * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const shards = [
+      [-0.32, 0.9, 0.16, -0.35],
+      [0.34, 0.8, 0.15, 0.3],
+      [0, 1.75, 0.24, 0],
+      [-0.14, 1.15, 0.14, -0.15],
+      [0.18, 1.25, 0.14, 0.12],
+    ];
+    for (const [ox, tall, wide, lean] of shards) {
+      const bx = mid.x + ox * size;
+      const by = mid.y - size * 0.1;
+      const tx = bx + lean * size * 0.6;
+      const ty = by - tall * size;
+      ctx.fillStyle = '#6fb6ff';
       ctx.beginPath();
-      ctx.ellipse(mid.x - size * 0.08, mid.y - size * 0.48, size * 0.48, size * 0.28, -0.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(mid.x - size * 0.18, mid.y - size * 0.58, size * 0.12, size * 0.07, 0, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (node.kind === 'crystal') {
-      const glow = ctx.createRadialGradient(mid.x, mid.y - size, size * 0.2, mid.x, mid.y - size * 0.4, size * 1.4);
-      glow.addColorStop(0, 'rgba(160, 220, 255, 0.85)');
-      glow.addColorStop(1, 'rgba(160, 220, 255, 0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(mid.x, mid.y - size * 0.6, size * 1.3, 0, Math.PI * 2);
+      ctx.moveTo(bx - wide * size, by);
+      ctx.lineTo(tx - wide * size * 0.8, ty + wide * size);
+      ctx.lineTo(tx, ty);
+      ctx.lineTo(bx, by + size * 0.04);
       ctx.fill();
       ctx.fillStyle = '#d7f4ff';
       ctx.beginPath();
-      ctx.moveTo(mid.x, mid.y - size * 1.7);
-      ctx.lineTo(mid.x + size * 0.28, mid.y - size * 0.35);
-      ctx.lineTo(mid.x, mid.y - size * 0.1);
-      ctx.lineTo(mid.x - size * 0.22, mid.y - size * 0.45);
+      ctx.moveTo(bx, by + size * 0.04);
+      ctx.lineTo(tx, ty);
+      ctx.lineTo(tx + wide * size * 0.8, ty + wide * size);
+      ctx.lineTo(bx + wide * size, by);
       ctx.fill();
-      ctx.fillStyle = '#7ec8ff';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillRect(tx - 1, ty + wide * size * 0.6, 2, tall * size * 0.35);
+    }
+    const sparkle = (this.time * 0.8 + tile.z * 0.3) % 1;
+    if (sparkle < 0.3) {
+      const sx = mid.x + size * 0.05;
+      const sy = mid.y - size * 1.5;
+      const r = size * 0.18 * Math.sin((sparkle / 0.3) * Math.PI);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(sx - r, sy - 0.75, r * 2, 1.5);
+      ctx.fillRect(sx - 0.75, sy - r, 1.5, r * 2);
+    }
+  }
+
+  drawBush(tile, mid, size) {
+    const ctx = this.ctx;
+    const seed = tile.x * 13 + tile.z * 7;
+    ctx.fillStyle = 'rgba(20, 50, 20, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(mid.x, mid.y, size * 0.6, size * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const lobes = [
+      [-0.26, 0.26, 0.3, '#1f6e36'],
+      [0.24, 0.28, 0.28, '#1f6e36'],
+      [0, 0.4, 0.34, '#2f8f48'],
+      [-0.14, 0.5, 0.22, '#45b25a'],
+      [0.16, 0.52, 0.18, '#5cc66c'],
+    ];
+    ctx.fillStyle = 'rgba(8, 40, 16, 0.5)';
+    ctx.beginPath();
+    for (const [ox, oy, r] of lobes) {
+      ctx.moveTo(mid.x + ox * size + r * size + 1.5, mid.y - oy * size);
+      ctx.arc(mid.x + ox * size, mid.y - oy * size, r * size + 1.5, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    for (const [ox, oy, r, color] of lobes) {
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(mid.x + size * 0.05, mid.y - size * 1.45);
-      ctx.lineTo(mid.x + size * 0.42, mid.y - size * 0.3);
-      ctx.lineTo(mid.x + size * 0.08, mid.y - size * 0.15);
-      ctx.fill();
-    } else {
-      ctx.fillStyle = '#2f8f48';
-      ctx.beginPath();
-      ctx.arc(mid.x - size * 0.2, mid.y - size * 0.28, size * 0.32, 0, Math.PI * 2);
-      ctx.arc(mid.x + size * 0.18, mid.y - size * 0.36, size * 0.28, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ff6b8a';
-      ctx.beginPath();
-      ctx.arc(mid.x - size * 0.05, mid.y - size * 0.42, size * 0.1, 0, Math.PI * 2);
+      ctx.arc(mid.x + ox * size, mid.y - oy * size, r * size, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.restore();
+    for (let i = 0; i < 7; i += 1) {
+      const bx = mid.x + (hash(seed + i * 3) - 0.5) * size * 0.8;
+      const by = mid.y - size * (0.22 + hash(seed + i * 5) * 0.4);
+      const r = Math.max(1.6, size * 0.06);
+      ctx.fillStyle = i % 3 === 0 ? '#8a5cff' : '#ff4f7a';
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillRect(bx - r * 0.5, by - r * 0.6, r * 0.5, r * 0.5);
+    }
   }
 
   drawHeld(ctx, s, x, y) {

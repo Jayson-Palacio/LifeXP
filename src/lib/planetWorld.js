@@ -105,10 +105,14 @@ export function makeWorld(seed = 7) {
       else if ((groundId === 'stone' || groundId === 'snow') && roll > 0.9) kind = roll > 0.97 ? 'crystal' : 'rock';
       else if (groundId === 'grass' && roll > 0.93 && roll <= 0.955) kind = 'bush';
       if (kind) {
+        const pick = rand(x * 41 + z * 17 + seed);
         nodes[cellKey(x, z)] = {
           kind,
           left: 4 + Math.floor(rand(x * 3 + z) * 3),
           scale: 0.85 + rand(x * 11 + z * 7) * 0.5,
+          variant: kind === 'tree'
+            ? (pick > 0.86 ? 'glow' : pick > 0.62 ? 'pine' : pick > 0.44 ? 'birch' : 'oak')
+            : null,
         };
       }
     }
@@ -118,7 +122,19 @@ export function makeWorld(seed = 7) {
       const tile = ground[z * SIZE + x];
       if (tile.id !== 'grass') continue;
       const shore = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => ground[(z + dz) * SIZE + (x + dx)].id === 'water');
-      if (shore) tile.id = 'sand';
+      if (shore) {
+        tile.id = 'sand';
+        tile.flower = false;
+        tile.mushroom = false;
+        tile.bloom = false;
+        tile.reed = rand(x * 7 + z * 13 + seed) > 0.45;
+      }
+    }
+  }
+  for (let z = 1; z < SIZE - 1; z += 1) {
+    for (let x = 1; x < SIZE - 1; x += 1) {
+      const tile = ground[z * SIZE + x];
+      if (tile.id === 'water' && rand(x * 23 + z * 31 + seed) > 0.82) tile.lily = true;
     }
   }
   const bx = cx + 22;
@@ -138,7 +154,13 @@ export function makeWorld(seed = 7) {
   }
   for (let i = 2; i <= 8; i += 1) {
     const tile = ground[(cz + i) * SIZE + cx];
-    if (tile && tile.id !== 'water') tile.path = true;
+    if (tile && tile.id !== 'water') {
+      tile.path = true;
+      tile.flower = false;
+      tile.mushroom = false;
+      tile.bloom = false;
+      if (i % 3 === 0) tile.lamp = true;
+    }
   }
   for (let i = 0; i < 7; i += 1) {
     const angle = (i / 7) * Math.PI * 2 + 0.4;
