@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Play — Kaeluma',
-  description: 'Hop a chicken across the road.',
+  description: 'Build a planet, or hop a chicken across the road.',
 };
 
 export default async function PlayPage() {

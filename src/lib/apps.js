@@ -41,7 +41,7 @@ export const KAELUMA_APPS = [
     id: 'play',
     name: 'Play',
     tagline: 'Games',
-    description: 'Hop a chicken across the road.',
+    description: 'Build a planet, or hop a chicken across the road.',
     href: '/play',
     accent: '#1d1d1f',
     available: true,
