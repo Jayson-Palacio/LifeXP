@@ -26,7 +26,6 @@ import {
   suggestDinners,
   weekDays,
   weekLabel,
-  weekProtein,
   weekdayShort,
 } from '../lib/table';
 import { encodeKitchenRecipe, safeHttpUrl } from '../lib/vitalSuggest';
@@ -72,13 +71,6 @@ function planForWeek(plans, weekStart, local) {
   return { meals: emptyMeals(weekStart), grocery: [] };
 }
 
-function macrosLabel(kcal, protein) {
-  const energy = Math.round(Number(kcal) || 0);
-  const grams = Math.round(Number(protein) || 0);
-  if (!energy && !grams) return '';
-  return `${energy} kcal · ${grams}g protein`;
-}
-
 function shopParts(row) {
   const need = String(row.need || row.name || '');
   const name = String(row.name || '');
@@ -86,17 +78,6 @@ function shopParts(row) {
     return { amount: need.slice(0, need.length - name.length).trim() || '1', item: name };
   }
   return { amount: need, item: name };
-}
-
-function RecipeLabels({ labels, className = 'table-labels' }) {
-  if (!labels?.length) return null;
-  return (
-    <span className={className}>
-      {labels.map((label) => (
-        <i key={label}>{label}</i>
-      ))}
-    </span>
-  );
 }
 
 function emptyRecipe(name = '') {
@@ -131,23 +112,13 @@ function RecipeLink({ plate, className = 'vital-text-btn' }) {
 }
 
 function RecipeHit({ hit, onPick }) {
-  const href = safeHttpUrl(hit.recipeUrl);
   return (
-    <div className={`table-pick-hit${hit.saved ? ' is-yours' : ''}`}>
-      <button type="button" onClick={onPick}>
-        <strong>
-          {hit.title}
-          {hit.saved ? <i className="table-yours">Yours</i> : null}
-        </strong>
-        <RecipeLabels labels={hit.labels} />
-        {macrosLabel(hit.kcal, hit.protein) ? <em>{macrosLabel(hit.kcal, hit.protein)}</em> : null}
-      </button>
-      {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer">Open</a>
-      ) : (
-        <span>{hit.saved ? 'Yours' : 'Recipe'}</span>
-      )}
-    </div>
+    <button type="button" className={`table-pick-hit${hit.saved ? ' is-yours' : ''}`} onClick={onPick}>
+      <strong>
+        {hit.title}
+        {hit.saved ? <i className="table-yours">Yours</i> : null}
+      </strong>
+    </button>
   );
 }
 
@@ -199,7 +170,6 @@ export default function TableDashboardClient({
   const plates = countPlates(meals);
   const dinners = countSlot(meals, 'dinner');
   const left = groceryLeft(grocery);
-  const protein = weekProtein(meals);
   const lastWeek = shiftYmd(weekStart, -7);
   const hits = useMemo(
     () => (picker ? searchPlates(query, { slot: picker.slot, kitchen: ownKitchen, label }) : []),
@@ -383,8 +353,7 @@ export default function TableDashboardClient({
             </button>
           </div>
           <p className="table-meta">
-            {plates ? `${plates} plates` : 'No meals yet'}
-            {protein ? ` · ${protein}g protein` : ''}
+            {plates ? `${plates} plates` : 'Empty week'}
             {grocery.length ? ` · ${left} to buy` : ''}
           </p>
           <div className="table-bar-actions">
@@ -450,13 +419,7 @@ export default function TableDashboardClient({
                       onClick={() => openSlot(ymd, slot)}
                     >
                       <span className="table-cell-slot">{slot.label}</span>
-                      {plate ? (
-                        <>
-                          <strong>{plate.title}</strong>
-                          <RecipeLabels labels={(plate.labels || []).filter((name) => name !== 'Easy').slice(0, 2)} />
-                          {macrosLabel(plate.kcal, plate.protein) ? <em>{macrosLabel(plate.kcal, plate.protein)}</em> : null}
-                        </>
-                      ) : null}
+                      {plate ? <strong>{plate.title}</strong> : null}
                     </button>
                   );
                 })}
@@ -640,10 +603,6 @@ export default function TableDashboardClient({
                 {current ? (
                   <div className="table-pick-now">
                     <strong>{current.title}</strong>
-                    {macrosLabel(current.kcal, current.protein) ? <p>{macrosLabel(current.kcal, current.protein)}</p> : null}
-                    {current.ingredients?.length ? <p>{current.ingredients.join(' · ')}</p> : null}
-                    <RecipeLabels labels={current.labels} />
-                    {current.notes ? <p>{current.notes}</p> : null}
                     <RecipeLink plate={current} />
                   </div>
                 ) : null}
@@ -653,7 +612,7 @@ export default function TableDashboardClient({
                   className="vital-input"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search"
+                  placeholder="Search recipes"
                   autoComplete="off"
                 />
                 <div className="table-label-picks" role="group" aria-label="Filter recipes">

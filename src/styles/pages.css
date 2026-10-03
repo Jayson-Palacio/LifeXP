@@ -5909,54 +5909,31 @@ button.vital-week-day {
   vertical-align: 2px;
 }
 
-.table-pick-hit.is-yours button {
-  background: #f4f8f5;
-}
-
 .table-pick-hit {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 4px 8px;
-}
-
-.table-pick-hit button {
-  display: grid;
-  gap: 1px;
+  display: block;
+  width: 100%;
   border: 0;
   border-radius: 8px;
-  padding: 10px 8px 10px 12px;
+  padding: 11px 8px;
   background: transparent;
   color: var(--table-ink);
   text-align: left;
   cursor: pointer;
 }
 
-.table-pick-hit button:hover {
+.table-pick-hit:hover {
   background: #f4f6f8;
 }
 
-.table-pick-hit a,
-.table-pick-hit > span {
-  font-size: 12px;
-  color: var(--vital-muted);
-  padding: 10px 12px 0 0;
-  white-space: nowrap;
-}
-
-.table-pick-hit a:hover {
-  color: var(--table-ink);
+.table-pick-hit.is-yours {
+  background: #f4f8f5;
 }
 
 .table-pick-hit strong {
+  display: block;
   font-size: 15px;
+  font-weight: 600;
   letter-spacing: -0.02em;
-}
-
-.table-pick-hit em {
-  font-size: 12px;
-  font-style: normal;
-  color: var(--vital-muted);
 }
 
 .table-pick-add > p {
