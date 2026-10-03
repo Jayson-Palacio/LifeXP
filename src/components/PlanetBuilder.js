@@ -111,6 +111,7 @@ class PlanetGame {
     }));
     this.yaw = saved?.yaw ?? 0.7;
     this.yawTarget = this.yaw;
+    this.viewMode = ['behind', 'side', 'front'].includes(saved?.viewMode) ? saved.viewMode : 'behind';
     this.faceX = 0;
     this.faceZ = 1;
     this.audio = null;
@@ -129,6 +130,7 @@ class PlanetGame {
     this.stopped = false;
     this.ui.onBag({ ...this.bag });
     this.ui.onStats({ ...this.stats });
+    this.ui.onView(this.viewMode);
     this.reportNearby();
   }
 
@@ -253,6 +255,7 @@ class PlanetGame {
         ix: this.ix,
         iz: this.iz,
         yaw: this.yawTarget,
+        viewMode: this.viewMode,
         built: this.world.built,
         nodes,
         bag: this.bag,
@@ -292,8 +295,9 @@ class PlanetGame {
     const dx = wx - this.cam.x;
     const dy = wy - this.cam.y;
     const dz = wz - this.cam.z;
-    const cos = Math.cos(this.yaw);
-    const sin = Math.sin(this.yaw);
+    const aim = this.lookYaw();
+    const cos = Math.cos(aim);
+    const sin = Math.sin(aim);
     const rx = dx * cos - dz * sin;
     const rz = dx * sin + dz * cos;
     const pitch = -0.42;
@@ -326,6 +330,7 @@ class PlanetGame {
     }
     if (key === 'q') this.turn(-1);
     if (key === 'e') this.turn(1);
+    if (key === 'v') this.cycleView();
   };
 
   onDown = (event) => {
@@ -366,11 +371,38 @@ class PlanetGame {
     this.walkTo(best.x, best.z);
   };
 
+  lookYaw() {
+    if (this.viewMode === 'side') return this.yaw + Math.PI / 2;
+    if (this.viewMode === 'front') return this.yaw + Math.PI;
+    return this.yaw;
+  }
+
+  cycleView() {
+    const order = ['behind', 'side', 'front'];
+    const next = order[(order.indexOf(this.viewMode) + 1) % order.length];
+    this.viewMode = next;
+    this.ui.onView(next);
+    this.persist();
+    return next;
+  }
+
+  pose() {
+    let rel = this.lookYaw() - this.yaw;
+    while (rel > Math.PI) rel -= Math.PI * 2;
+    while (rel < -Math.PI) rel += Math.PI * 2;
+    const abs = Math.abs(rel);
+    let pose = 'side';
+    if (abs < 0.85) pose = 'back';
+    else if (abs > 2.3) pose = 'front';
+    return { pose, flip: rel > 0 ? -1 : 1 };
+  }
+
   screenAxes() {
-    const fx = Math.sin(this.yaw);
-    const fz = Math.cos(this.yaw);
-    const rx = Math.cos(this.yaw);
-    const rz = -Math.sin(this.yaw);
+    const aim = this.lookYaw();
+    const fx = Math.sin(aim);
+    const fz = Math.cos(aim);
+    const rx = Math.cos(aim);
+    const rz = -Math.sin(aim);
     return { fx, fz, rx, rz };
   }
 
@@ -563,11 +595,12 @@ class PlanetGame {
     }
     this.bits = this.bits.filter((bit) => bit.life > 0);
 
-    const back = 5.8;
-    const shoulder = 0.45;
-    const lift = this.height() + 3;
-    const gx = this.px - Math.sin(this.yaw) * back + Math.cos(this.yaw) * shoulder;
-    const gz = this.pz - Math.cos(this.yaw) * back - Math.sin(this.yaw) * shoulder;
+    const aim = this.lookYaw();
+    const back = this.viewMode === 'side' ? 7.4 : this.viewMode === 'front' ? 6.4 : 5.8;
+    const shoulder = this.viewMode === 'behind' ? 0.35 : 0;
+    const lift = this.height() + (this.viewMode === 'side' ? 3.6 : this.viewMode === 'front' ? 2.7 : 3.1);
+    const gx = this.px - Math.sin(aim) * back + Math.cos(aim) * shoulder;
+    const gz = this.pz - Math.cos(aim) * back - Math.sin(aim) * shoulder;
     this.cam.x += (gx - this.cam.x) * Math.min(1, dt * 7);
     this.cam.z += (gz - this.cam.z) * Math.min(1, dt * 7);
     this.cam.y += (lift - this.cam.y) * Math.min(1, dt * 7);
@@ -1262,6 +1295,20 @@ class PlanetGame {
         ctx.arc(blob.at.x, blob.at.y, blob.r, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.fillStyle = 'rgba(255, 214, 170, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(ground.x - half * 0.15, ground.y - 1);
+      ctx.lineTo(trunkTop.x - half * 0.05, trunkTop.y);
+      ctx.lineTo(trunkTop.x + half * 0.12, trunkTop.y);
+      ctx.lineTo(ground.x + half * 0.2, ground.y - 1);
+      ctx.fill();
+      const shine = this.worldRadius(tile.x + 0.32, tile.height + 1.58 * scale, tile.z + 0.5, 0.14 * scale);
+      if (shine) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(shine.at.x, shine.at.y, shine.r, shine.r * 0.55, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
       if ((tile.x + tile.z) % 4 === 0) {
         const lamp = this.project(tile.x + 0.62, tile.height + 0.95 * scale, tile.z + 0.38);
         if (lamp) {
@@ -1319,78 +1366,190 @@ class PlanetGame {
     ctx.restore();
   }
 
+  drawHeld(ctx, s, x, y) {
+    const heldId = this.ui.blockId();
+    if (!heldId || !(this.bag[heldId] > 0)) return;
+    const color = blockById(heldId).top;
+    const edge = shade(color, -36);
+    ctx.fillStyle = edge;
+    ctx.beginPath();
+    ctx.roundRect(x, y, s * 0.22, s * 0.22, s * 0.04);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x + s * 0.02, y - s * 0.06, s * 0.18, s * 0.14, s * 0.03);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(x + s * 0.05, y - s * 0.03, s * 0.06, s * 0.04);
+  }
+
   drawBuddy(feet) {
     const ctx = this.ctx;
-    const s = Math.max(72, feet.scale * 1.45);
+    const s = Math.max(78, feet.scale * 1.25);
     const hop = this.hop ? Math.sin(Math.min(1, this.hop.t) * Math.PI) : 0;
-    const stride = this.hop ? Math.sin(this.hop.t * Math.PI * 2) : 0;
-    const ahead = this.project(this.px + this.faceX, this.height() + 0.4, this.pz + this.faceZ);
-    const flip = ahead && ahead.x < feet.x ? -1 : 1;
-    ctx.fillStyle = 'rgba(20, 40, 20, 0.28)';
+    const stride = this.hop ? Math.sin(this.hop.t * Math.PI * 2) : Math.sin(this.time * 1.6) * 0.12;
+    const { pose, flip } = this.pose();
+    ctx.fillStyle = 'rgba(12, 24, 16, 0.32)';
     ctx.beginPath();
-    ctx.ellipse(feet.x, feet.y + 3, s * 0.34, s * 0.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(feet.x + 2, feet.y + 5, s * 0.46, s * 0.13, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.save();
-    ctx.translate(feet.x, feet.y - hop * s * 0.18);
+    ctx.translate(feet.x, feet.y - hop * s * 0.14);
     ctx.scale(flip, 1);
-    ctx.fillStyle = '#6d4ad4';
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.16, -s * 0.66);
-    ctx.quadraticCurveTo(-s * 0.58, -s * 0.2, -s * 0.3, s * 0.04);
-    ctx.lineTo(-s * 0.02, -s * 0.32);
-    ctx.fill();
+    if (pose === 'back') this.drawBack(ctx, s, stride);
+    else if (pose === 'front') this.drawFront(ctx, s, stride);
+    else this.drawSide(ctx, s, stride);
+    ctx.restore();
+  }
+
+  drawLegs(ctx, s, stride, spread) {
     ctx.strokeStyle = '#3a2a22';
-    ctx.lineWidth = Math.max(3, s * 0.08);
+    ctx.lineWidth = Math.max(3.5, s * 0.09);
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-s * 0.12, -s * 0.22);
-    ctx.lineTo(-s * 0.16 - stride * s * 0.1, s * 0.02);
-    ctx.moveTo(s * 0.12, -s * 0.22);
-    ctx.lineTo(s * 0.16 + stride * s * 0.1, s * 0.02);
+    ctx.moveTo(-spread, -s * 0.18);
+    ctx.lineTo(-spread - stride * s * 0.12, s * 0.02);
+    ctx.moveTo(spread, -s * 0.18);
+    ctx.lineTo(spread + stride * s * 0.12, s * 0.02);
     ctx.stroke();
-    ctx.fillStyle = '#3b82f6';
+    ctx.fillStyle = '#2c241c';
     ctx.beginPath();
-    ctx.roundRect(-s * 0.26, -s * 0.7, s * 0.52, s * 0.5, s * 0.16);
+    ctx.ellipse(-spread - stride * s * 0.12, s * 0.04, s * 0.09, s * 0.045, 0, 0, Math.PI * 2);
+    ctx.ellipse(spread + stride * s * 0.12, s * 0.04, s * 0.09, s * 0.045, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawBack(ctx, s, stride) {
+    this.drawLegs(ctx, s, stride, s * 0.12);
+    const cape = ctx.createLinearGradient(0, -s * 0.7, 0, s * 0.05);
+    cape.addColorStop(0, '#8d68ee');
+    cape.addColorStop(1, '#4c2f9e');
+    ctx.fillStyle = cape;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.22, -s * 0.62);
+    ctx.quadraticCurveTo(-s * 0.46, -s * 0.15, -s * 0.28, s * 0.06);
+    ctx.lineTo(s * 0.28, s * 0.06);
+    ctx.quadraticCurveTo(s * 0.46, -s * 0.15, s * 0.22, -s * 0.62);
+    ctx.fill();
+    const shirt = ctx.createLinearGradient(-s * 0.2, -s * 0.7, s * 0.2, -s * 0.2);
+    shirt.addColorStop(0, '#5b9bff');
+    shirt.addColorStop(1, '#2458c9');
+    ctx.fillStyle = shirt;
+    ctx.beginPath();
+    ctx.roundRect(-s * 0.24, -s * 0.68, s * 0.48, s * 0.5, s * 0.14);
     ctx.fill();
     ctx.fillStyle = '#ffe14a';
     ctx.beginPath();
-    ctx.arc(0, -s * 0.48, s * 0.045, 0, Math.PI * 2);
+    ctx.arc(0, -s * 0.46, s * 0.045, 0, Math.PI * 2);
     ctx.fill();
-    const heldId = this.ui.blockId();
-    if (heldId && (this.bag[heldId] || 0) > 0) {
-      const color = blockById(heldId).top;
-      ctx.fillStyle = shade(color, -28);
-      ctx.fillRect(s * 0.2, -s * 0.34, s * 0.2, s * 0.2);
-      ctx.fillStyle = color;
-      ctx.fillRect(s * 0.22, -s * 0.42, s * 0.18, s * 0.14);
-    }
+    this.drawHeld(ctx, s, s * 0.18, -s * 0.42);
+    const hair = ctx.createLinearGradient(0, -s * 1.2, 0, -s * 0.7);
+    hair.addColorStop(0, '#6b4630');
+    hair.addColorStop(1, '#2a1810');
+    ctx.fillStyle = hair;
+    ctx.beginPath();
+    ctx.arc(0, -s * 0.9, s * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.06, -s * 1.02, s * 0.08, s * 0.04, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawFront(ctx, s, stride) {
+    this.drawLegs(ctx, s, stride, s * 0.13);
     ctx.fillStyle = '#ffb020';
     ctx.beginPath();
-    ctx.ellipse(-s * 0.32, -s * 0.48, s * 0.1, s * 0.16, -0.6, 0, Math.PI * 2);
+    ctx.ellipse(-s * 0.34, -s * 0.46, s * 0.1, s * 0.16, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    const shirt = ctx.createLinearGradient(0, -s * 0.72, 0, -s * 0.2);
+    shirt.addColorStop(0, '#6aa6ff');
+    shirt.addColorStop(1, '#2d62d6');
+    ctx.fillStyle = shirt;
+    ctx.beginPath();
+    ctx.roundRect(-s * 0.26, -s * 0.7, s * 0.52, s * 0.52, s * 0.16);
+    ctx.fill();
+    ctx.fillStyle = '#ffe14a';
+    ctx.beginPath();
+    ctx.arc(0, -s * 0.48, s * 0.04, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#1f4fa3';
     ctx.beginPath();
-    ctx.ellipse(s * 0.22, -s * 0.42, s * 0.12, s * 0.16, 0.2, 0, Math.PI * 2);
+    ctx.ellipse(s * 0.24, -s * 0.4, s * 0.11, s * 0.15, 0.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#ffe0c2';
+    this.drawHeld(ctx, s, s * 0.16, -s * 0.4);
+    const skin = ctx.createRadialGradient(-s * 0.04, -s * 0.98, s * 0.04, 0, -s * 0.9, s * 0.28);
+    skin.addColorStop(0, '#ffe4cc');
+    skin.addColorStop(1, '#f0b48a');
+    ctx.fillStyle = skin;
     ctx.beginPath();
     ctx.arc(0, -s * 0.92, s * 0.26, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#3a2a22';
+    ctx.fillStyle = '#3a2418';
     ctx.beginPath();
-    ctx.arc(0, -s * 1.02, s * 0.26, Math.PI, Math.PI * 2);
+    ctx.arc(0, -s * 1.02, s * 0.26, Math.PI * 1.05, Math.PI * 1.95);
     ctx.fill();
     ctx.fillStyle = '#1c1c1e';
     ctx.beginPath();
-    ctx.arc(s * 0.08, -s * 0.96, s * 0.045, 0, Math.PI * 2);
-    ctx.arc(-s * 0.06, -s * 0.96, s * 0.045, 0, Math.PI * 2);
+    ctx.arc(-s * 0.08, -s * 0.94, s * 0.035, 0, Math.PI * 2);
+    ctx.arc(s * 0.08, -s * 0.94, s * 0.035, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-s * 0.07, -s * 0.95, s * 0.012, 0, Math.PI * 2);
+    ctx.arc(s * 0.09, -s * 0.95, s * 0.012, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 140, 150, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.12, -s * 0.86, s * 0.04, s * 0.025, 0, 0, Math.PI * 2);
+    ctx.ellipse(s * 0.12, -s * 0.86, s * 0.04, s * 0.025, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#c47a62';
-    ctx.lineWidth = Math.max(1.5, s * 0.035);
+    ctx.lineWidth = Math.max(1.5, s * 0.03);
     ctx.beginPath();
-    ctx.arc(s * 0.02, -s * 0.86, s * 0.06, 0.15, Math.PI - 0.15);
+    ctx.arc(0, -s * 0.84, s * 0.05, 0.2, Math.PI - 0.2);
     ctx.stroke();
-    ctx.restore();
+  }
+
+  drawSide(ctx, s, stride) {
+    this.drawLegs(ctx, s, stride, s * 0.04);
+    const cape = ctx.createLinearGradient(-s * 0.3, -s * 0.6, s * 0.1, 0);
+    cape.addColorStop(0, '#4c2f9e');
+    cape.addColorStop(1, '#8d68ee');
+    ctx.fillStyle = cape;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.08, -s * 0.62);
+    ctx.quadraticCurveTo(-s * 0.42, -s * 0.2, -s * 0.22, s * 0.04);
+    ctx.lineTo(-s * 0.02, -s * 0.28);
+    ctx.fill();
+    const shirt = ctx.createLinearGradient(0, -s * 0.7, 0, -s * 0.2);
+    shirt.addColorStop(0, '#6aa6ff');
+    shirt.addColorStop(1, '#2458c9');
+    ctx.fillStyle = shirt;
+    ctx.beginPath();
+    ctx.ellipse(0, -s * 0.46, s * 0.2, s * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffb020';
+    ctx.beginPath();
+    ctx.ellipse(s * 0.16, -s * 0.42, s * 0.07, s * 0.14, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    this.drawHeld(ctx, s, s * 0.12, -s * 0.55);
+    ctx.fillStyle = '#f0b48a';
+    ctx.beginPath();
+    ctx.arc(s * 0.04, -s * 0.9, s * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3a2418';
+    ctx.beginPath();
+    ctx.arc(-s * 0.02, -s * 0.98, s * 0.22, Math.PI * 0.85, Math.PI * 1.7);
+    ctx.fill();
+    ctx.fillStyle = '#1c1c1e';
+    ctx.beginPath();
+    ctx.arc(s * 0.1, -s * 0.92, s * 0.03, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e7a07a';
+    ctx.beginPath();
+    ctx.ellipse(s * 0.2, -s * 0.86, s * 0.05, s * 0.03, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   reset() {
@@ -1424,6 +1583,8 @@ export default function PlanetBuilder() {
   const [near, setNear] = useState(null);
   const [stats, setStats] = useState({ wood: 0, stone: 0, built: 0 });
   const [confirm, setConfirm] = useState(false);
+  const [viewMode, setViewMode] = useState('behind');
+  const viewName = { behind: 'Behind', side: 'Side', front: 'Front' }[viewMode];
   const tasks = [
     { label: 'Chop trees', have: stats.wood, need: 3 },
     { label: 'Mine rocks', have: stats.stone, need: 2 },
@@ -1453,6 +1614,7 @@ export default function PlanetBuilder() {
       onGather: (name, amount) => setGather(name ? { name, amount } : null),
       onNearby: setNear,
       onStats: setStats,
+      onView: setViewMode,
     });
     gameRef.current = game;
     game.start();
@@ -1540,6 +1702,7 @@ export default function PlanetBuilder() {
           <button type="button" className="planet-take" onClick={() => gameRef.current?.takeHere()}>Take</button>
         </div>
       </div>
+      <button type="button" className="planet-view" onClick={() => setViewMode(gameRef.current?.cycleView() || 'behind')}>{viewName}</button>
       <div className="planet-turns">
         <button type="button" data-turn="-1" aria-label="Turn view left">↺</button>
         <button type="button" data-turn="1" aria-label="Turn view right">↻</button>

@@ -8717,6 +8717,23 @@ body:has(.play-app.is-planet) {
   transform-origin: left center;
 }
 
+.planet-view {
+  position: absolute;
+  z-index: 4;
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(224px + env(safe-area-inset-bottom));
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
 .planet-turns {
   position: absolute;
   z-index: 4;
@@ -8929,6 +8946,12 @@ body:has(.play-app.is-planet) {
 
   .planet-act:active {
     transform: translateY(-50%) scale(0.98);
+  }
+
+  .planet-view {
+    top: calc(48% - 118px);
+    right: calc(140px + env(safe-area-inset-right));
+    bottom: auto;
   }
 
   .planet-turns {
