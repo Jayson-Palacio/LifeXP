@@ -4820,8 +4820,15 @@ button.vital-week-day {
 .vital-fiber-picks {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
-  margin-top: 6px;
+  margin-top: 8px;
+}
+
+.vital-fiber-picks > span {
+  align-self: center;
+  font-size: 12px;
+  color: var(--vital-muted);
 }
 
 .vital-fiber-picks button {

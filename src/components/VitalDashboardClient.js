@@ -58,7 +58,37 @@ import {
   updateVitalKitchenItem,
 } from '../app/actions/vital';
 
-const MEALS = FOOD_MEALS;
+const FIBER_PICKS = [0, 2, 5, 8];
+
+function FiberGrams({ value, onChange, label = 'Fiber' }) {
+  const current = value === '' || value == null ? null : Math.round(Number(value) || 0);
+  return (
+    <div className="vital-fiber-picks">
+      <span>{label}</span>
+      {FIBER_PICKS.map((grams) => (
+        <button
+          key={grams}
+          type="button"
+          className={current === grams ? 'is-active' : ''}
+          onClick={() => onChange(grams)}
+        >
+          {grams}g
+        </button>
+      ))}
+      <input
+        className="vital-input vital-fiber-type"
+        type="number"
+        min="0"
+        max="80"
+        step="1"
+        aria-label="Fiber grams"
+        placeholder="g"
+        value={current != null && !FIBER_PICKS.includes(current) ? current : ''}
+        onChange={(event) => onChange(event.target.value === '' ? '' : Number(event.target.value))}
+      />
+    </div>
+  );
+}
 const DRINK_FOODS = FOODS.filter((item) => item.meal === 'drink');
 
 const TABS = [
@@ -253,6 +283,7 @@ export default function VitalDashboardClient({
   const [query, setQuery] = useState('');
   const [meal, setMeal] = useState(defaultMeal);
   const [servings, setServings] = useState(1);
+  const [logFiber, setLogFiber] = useState('');
   const [foodError, setFoodError] = useState('');
   const [weightInput, setWeightInput] = useState('');
   const [weightError, setWeightError] = useState('');
@@ -487,6 +518,7 @@ export default function VitalDashboardClient({
     setShowCustom(false);
     setShowRecipeAdd(false);
     setCustom(emptyCustom());
+    setLogFiber('');
     setFoodError('');
     window.setTimeout(() => foodRef.current?.focus(), 30);
   };
@@ -525,6 +557,12 @@ export default function VitalDashboardClient({
     const hasMacros = item.calories != null && item.calories !== '';
     const scaled = hasMacros ? scaleServing(item, portion) : item;
     const knownFiber = Number(hasMacros ? scaled.fiber_g : item.fiber_g);
+    const pickedFiber = Object.prototype.hasOwnProperty.call(extras, 'fiber_g')
+      ? extras.fiber_g
+      : (logFiber === '' ? null : Number(logFiber));
+    const fiberToSend = pickedFiber != null && pickedFiber !== '' && Number(pickedFiber) > 0
+      ? Number(pickedFiber)
+      : (knownFiber > 0 ? knownFiber : undefined);
     const result = await logVitalFood({
       member_id: member.id,
       name: item.name,
@@ -532,7 +570,7 @@ export default function VitalDashboardClient({
       protein_g: hasMacros ? scaled.protein_g : item.protein_g,
       carbs_g: hasMacros ? scaled.carbs_g : item.carbs_g,
       fat_g: hasMacros ? scaled.fat_g : item.fat_g,
-      fiber_g: knownFiber > 0 ? knownFiber : undefined,
+      fiber_g: fiberToSend,
       servings: hasMacros ? 1 : portion,
       meal: extras.meal || mealForLog(item, meal),
       logged_on: logDate,
@@ -546,6 +584,7 @@ export default function VitalDashboardClient({
     setQuery('');
     setShowCustom(false);
     setCustom(emptyCustom());
+    setLogFiber('');
     if (extras.close) {
       setLogOpen(false);
       setShowRecipeAdd(false);
@@ -605,7 +644,10 @@ export default function VitalDashboardClient({
       setFoodError('Add calories.');
       return;
     }
-    await addFood(item, { once: true });
+    await addFood(item, {
+      once: true,
+      fiber_g: item.fiber_g === '' || item.fiber_g == null ? null : Number(item.fiber_g),
+    });
   };
 
   const handleScanFound = async (item) => {
@@ -1306,6 +1348,7 @@ export default function VitalDashboardClient({
                                   <strong>{row.name}</strong>
                                   <p className="vital-food-pill-meta">
                                     {row.calories} kcal · {Math.round(Number(row.protein_g) || 0)}g
+                                    {Number(row.fiber_g) > 0 ? ` · ${Math.round(Number(row.fiber_g))}g fiber` : ''}
                                     {row.meal === 'drink' ? ' · drink' : ''}
                                   </p>
                                   {fiberTarget ? (
@@ -2360,6 +2403,7 @@ export default function VitalDashboardClient({
                     </button>
                   ))}
                 </div>
+                <FiberGrams value={logFiber} onChange={setLogFiber} />
                 {showCustom && (
                   <div className="vital-grid">
                     <div>
@@ -2370,12 +2414,6 @@ export default function VitalDashboardClient({
                       <label htmlFor="custom_p">Protein</label>
                       <input id="custom_p" className="vital-input" type="number" min="0" step="0.1" value={custom.protein_g} onChange={(e) => setCustom({ ...custom, protein_g: e.target.value })} />
                     </div>
-                    {fiberTarget ? (
-                      <div>
-                        <label htmlFor="custom_fiber">Fiber</label>
-                        <input id="custom_fiber" className="vital-input" type="number" min="0" step="0.1" value={custom.fiber_g} onChange={(e) => setCustom({ ...custom, fiber_g: e.target.value })} />
-                      </div>
-                    ) : null}
                   </div>
                 )}
                 {!showCustom && query.trim() && (
@@ -2526,13 +2564,11 @@ export default function VitalDashboardClient({
                     <label htmlFor="once_p">Protein</label>
                     <input id="once_p" className="vital-input" type="number" min="0" step="0.1" value={custom.protein_g} onChange={(e) => setCustom({ ...custom, protein_g: e.target.value })} />
                   </div>
-                  {fiberTarget ? (
-                    <div>
-                      <label htmlFor="once_fiber">Fiber</label>
-                      <input id="once_fiber" className="vital-input" type="number" min="0" step="0.1" value={custom.fiber_g} onChange={(e) => setCustom({ ...custom, fiber_g: e.target.value })} />
-                    </div>
-                  ) : null}
                 </div>
+                <FiberGrams
+                  value={custom.fiber_g}
+                  onChange={(grams) => setCustom((prev) => ({ ...prev, fiber_g: grams }))}
+                />
                 {foodError ? <p className="vital-err">{foodError}</p> : null}
                 <div className="vital-composer-actions">
                   <button className="vital-btn" type="submit">Log once</button>
