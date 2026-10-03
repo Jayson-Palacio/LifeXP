@@ -115,7 +115,11 @@ class PlanetGame {
     this.faceZ = 1;
     this.audio = null;
     this.held = null;
-    this.cam = { x: this.px, y: 8, z: this.pz - 10 };
+    this.cam = {
+      x: this.px - Math.sin(this.yaw) * 5.8,
+      y: this.height() + 3,
+      z: this.pz - Math.cos(this.yaw) * 5.8,
+    };
     this.view = { w: 1, h: 1, dpr: 1 };
     this.hits = [];
     this.floats = [];
@@ -292,17 +296,16 @@ class PlanetGame {
     const sin = Math.sin(this.yaw);
     const rx = dx * cos - dz * sin;
     const rz = dx * sin + dz * cos;
-    const pitch = this.wideFrame() ? -0.56 : -0.62;
+    const pitch = -0.42;
     const cp = Math.cos(pitch);
     const sp = Math.sin(pitch);
     const y2 = dy * cp - rz * sp;
     const z2 = dy * sp + rz * cp;
-    if (z2 < 0.45) return null;
-    const wide = this.wideFrame();
-    const fov = this.view.h * (wide ? 0.9 : 0.92);
+    if (z2 < 0.8) return null;
+    const fov = this.view.h * 1.15;
     return {
       x: this.view.w * 0.5 + (rx / z2) * fov,
-      y: this.view.h * (wide ? 0.46 : 0.48) - (y2 / z2) * fov,
+      y: this.view.h * 0.58 - (y2 / z2) * fov,
       z: z2,
       scale: fov / z2,
     };
@@ -560,14 +563,14 @@ class PlanetGame {
     }
     this.bits = this.bits.filter((bit) => bit.life > 0);
 
-    const wide = this.wideFrame();
-    const back = 16;
-    const lift = this.height() + (wide ? 8.4 : 9.5);
-    const gx = this.px - Math.sin(this.yaw) * back;
-    const gz = this.pz - Math.cos(this.yaw) * back;
-    this.cam.x += (gx - this.cam.x) * Math.min(1, dt * 4);
-    this.cam.z += (gz - this.cam.z) * Math.min(1, dt * 4);
-    this.cam.y += (lift - this.cam.y) * Math.min(1, dt * 4);
+    const back = 5.8;
+    const shoulder = 0.45;
+    const lift = this.height() + 3;
+    const gx = this.px - Math.sin(this.yaw) * back + Math.cos(this.yaw) * shoulder;
+    const gz = this.pz - Math.cos(this.yaw) * back - Math.sin(this.yaw) * shoulder;
+    this.cam.x += (gx - this.cam.x) * Math.min(1, dt * 7);
+    this.cam.z += (gz - this.cam.z) * Math.min(1, dt * 7);
+    this.cam.y += (lift - this.cam.y) * Math.min(1, dt * 7);
     this.draw();
     this.raf = requestAnimationFrame(this.frame);
   };
@@ -647,9 +650,11 @@ class PlanetGame {
           [x + 1, height, z + 1],
           [x, height, z + 1],
         ].map(([wx, wy, wz]) => this.project(wx, wy, wz));
-        if (corners.some((point) => !point)) continue;
+        const known = corners.filter(Boolean);
+        if (known.length < 3) continue;
+        for (let i = 0; i < corners.length; i += 1) if (!corners[i]) corners[i] = known[0];
         const depth = (corners[0].z + corners[2].z) * 0.5;
-        if (depth < 2.4 || depth > 26) continue;
+        if (depth < 0.55 || depth > 34) continue;
         tiles.push({ x, z, height, tile, corners, depth });
       }
     }
@@ -701,7 +706,6 @@ class PlanetGame {
       : this.height();
     const bob = this.hop ? Math.sin(Math.min(1, this.hop.t) * Math.PI) * 0.35 : Math.sin(this.time * 3) * 0.05;
     const feet = this.project(this.px, py + 0.15 + bob, this.pz);
-    if (feet) props.push({ depth: feet.z + 0.02, draw: () => this.drawBuddy(feet) });
     if (this.path.length) {
       const end = this.path[this.path.length - 1];
       props.push({ depth: 8, draw: () => this.drawMark(end.x, end.z) });
@@ -735,6 +739,7 @@ class PlanetGame {
     }
     props.sort((a, b) => b.depth - a.depth);
     for (let i = 0; i < props.length; i += 1) props[i].draw();
+    if (feet) this.drawBuddy(feet);
 
     for (const bit of this.bits) {
       const at = this.project(bit.x, bit.y, bit.z);
@@ -755,6 +760,12 @@ class PlanetGame {
       ctx.fillText(floater.text, at.x, at.y - (1 - floater.life) * 24);
     }
     ctx.globalAlpha = 1;
+    const fog = ctx.createLinearGradient(0, 0, 0, h * 0.28);
+    fog.addColorStop(0, 'rgba(48, 32, 84, 0.55)');
+    fog.addColorStop(1, 'rgba(48, 32, 84, 0)');
+    ctx.fillStyle = fog;
+    ctx.fillRect(0, 0, w, h * 0.3);
+    this.drawFocus();
   }
 
   drawSides(tile, color) {
@@ -826,6 +837,53 @@ class PlanetGame {
     ctx.fillRect(x + 5, base - 22, 3, 4);
     ctx.fillRect(x + 53, base - 16, 3, 4);
     ctx.globalAlpha = 1;
+  }
+
+  strokeLoop(points) {
+    const ctx = this.ctx;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  drawFocus() {
+    const building = Boolean(this.ui.blockId() && (this.bag[this.ui.blockId()] || 0) > 0);
+    const spot = !building && this.near ? this.near : this.frontTile();
+    const h = surfaceHeight(this.world, spot.x, spot.z);
+    if (h == null) return;
+    const top = h + (building ? 0.82 : 0.06);
+    const corners = [
+      [spot.x, top, spot.z],
+      [spot.x + 1, top, spot.z],
+      [spot.x + 1, top, spot.z + 1],
+      [spot.x, top, spot.z + 1],
+    ].map(([x, y, z]) => this.project(x, y, z));
+    if (corners.some((point) => !point)) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.lineWidth = 2;
+    this.strokeLoop(corners);
+    if (building) {
+      const foot = [
+        this.project(spot.x, h, spot.z + 1),
+        this.project(spot.x + 1, h, spot.z + 1),
+      ];
+      const cap = [corners[3], corners[2]];
+      if (foot.every(Boolean)) {
+        ctx.beginPath();
+        ctx.moveTo(foot[0].x, foot[0].y);
+        ctx.lineTo(cap[0].x, cap[0].y);
+        ctx.moveTo(foot[1].x, foot[1].y);
+        ctx.lineTo(cap[1].x, cap[1].y);
+        ctx.moveTo(foot[0].x, foot[0].y);
+        ctx.lineTo(foot[1].x, foot[1].y);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 
   drawGhost() {
@@ -1106,7 +1164,8 @@ class PlanetGame {
     const center = this.project(wx, wy, wz);
     const edge = this.project(wx + radius, wy, wz);
     if (!center || !edge) return null;
-    return { at: center, r: Math.max(2, Math.hypot(center.x - edge.x, center.y - edge.y)) };
+    const r = Math.hypot(center.x - edge.x, center.y - edge.y);
+    return { at: center, r: Math.max(2, Math.min(r, this.view.h * 0.34)) };
   }
 
   drawFlower(tile) {
@@ -1155,6 +1214,18 @@ class PlanetGame {
         ctx.font = '700 14px ui-sans-serif, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(NODES[node.kind].name, top.x, top.y - size - 8);
+      }
+    }
+    if (this.job && !this.job.wait && this.job.x === tile.x && this.job.z === tile.z) {
+      const cracks = 1 + Math.floor(Math.min(0.99, this.job.t / (NODES[node.kind].time || 1)) * 4);
+      ctx.strokeStyle = 'rgba(24, 16, 16, 0.85)';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < cracks; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(mid.x - size * 0.35 + i * size * 0.16, mid.y - size * 0.45);
+        ctx.lineTo(mid.x - size * 0.1 + i * size * 0.12, mid.y - size * 0.05);
+        ctx.stroke();
       }
     }
     if (node.kind === 'tree') {
@@ -1250,7 +1321,7 @@ class PlanetGame {
 
   drawBuddy(feet) {
     const ctx = this.ctx;
-    const s = Math.max(30, feet.scale * 0.64);
+    const s = Math.max(72, feet.scale * 1.45);
     const hop = this.hop ? Math.sin(Math.min(1, this.hop.t) * Math.PI) : 0;
     const stride = this.hop ? Math.sin(this.hop.t * Math.PI * 2) : 0;
     const ahead = this.project(this.px + this.faceX, this.height() + 0.4, this.pz + this.faceZ);
@@ -1285,6 +1356,14 @@ class PlanetGame {
     ctx.beginPath();
     ctx.arc(0, -s * 0.48, s * 0.045, 0, Math.PI * 2);
     ctx.fill();
+    const heldId = this.ui.blockId();
+    if (heldId && (this.bag[heldId] || 0) > 0) {
+      const color = blockById(heldId).top;
+      ctx.fillStyle = shade(color, -28);
+      ctx.fillRect(s * 0.2, -s * 0.34, s * 0.2, s * 0.2);
+      ctx.fillStyle = color;
+      ctx.fillRect(s * 0.22, -s * 0.42, s * 0.18, s * 0.14);
+    }
     ctx.fillStyle = '#ffb020';
     ctx.beginPath();
     ctx.ellipse(-s * 0.32, -s * 0.48, s * 0.1, s * 0.16, -0.6, 0, Math.PI * 2);
