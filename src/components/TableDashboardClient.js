@@ -149,6 +149,7 @@ export default function TableDashboardClient({
   const [recipeQuery, setRecipeQuery] = useState('');
   const [recipeLabel, setRecipeLabel] = useState('');
   const [recipeSlot, setRecipeSlot] = useState('dinner');
+  const [recipeShown, setRecipeShown] = useState(40);
 
   const seeded = useMemo(() => planForWeek(plans, weekStart, {}), [plans, weekStart]);
   const [meals, setMeals] = useState(seeded.meals);
@@ -180,8 +181,10 @@ export default function TableDashboardClient({
     [picker, query, ownKitchen, label]
   );
   const catalog = useMemo(
-    () => searchPlates(recipeQuery, { slot: recipeSlot, kitchen: ownKitchen, label: recipeLabel }),
-    [recipeQuery, recipeSlot, ownKitchen, recipeLabel]
+    () => (tab === 'recipes'
+      ? searchPlates(recipeQuery, { slot: recipeSlot, kitchen: ownKitchen, label: recipeLabel })
+      : []),
+    [tab, recipeQuery, recipeSlot, ownKitchen, recipeLabel]
   );
 
   const openSlot = (ymd, slot) => {
@@ -445,7 +448,7 @@ export default function TableDashboardClient({
               id="table-browse-search"
               className="vital-input"
               value={recipeQuery}
-              onChange={(e) => setRecipeQuery(e.target.value)}
+              onChange={(e) => { setRecipeQuery(e.target.value); setRecipeShown(40); }}
               placeholder="Search recipes"
               autoComplete="off"
             />
@@ -455,7 +458,7 @@ export default function TableDashboardClient({
                   key={slot.id}
                   type="button"
                   className={`table-label-btn${recipeSlot === slot.id ? ' is-on' : ''}`}
-                  onClick={() => setRecipeSlot(slot.id)}
+                  onClick={() => { setRecipeSlot(slot.id); setRecipeShown(40); }}
                 >
                   {slot.label}
                 </button>
@@ -465,7 +468,7 @@ export default function TableDashboardClient({
               <button
                 type="button"
                 className={`table-label-btn${recipeLabel === 'yours' ? ' is-on' : ''}`}
-                onClick={() => setRecipeLabel((prev) => (prev === 'yours' ? '' : 'yours'))}
+                onClick={() => { setRecipeLabel((prev) => (prev === 'yours' ? '' : 'yours')); setRecipeShown(40); }}
               >
                 Yours
               </button>
@@ -474,7 +477,7 @@ export default function TableDashboardClient({
                   key={row.id}
                   type="button"
                   className={`table-label-btn${recipeLabel === row.id ? ' is-on' : ''}`}
-                  onClick={() => setRecipeLabel((prev) => (prev === row.id ? '' : row.id))}
+                  onClick={() => { setRecipeLabel((prev) => (prev === row.id ? '' : row.id)); setRecipeShown(40); }}
                 >
                   {row.label}
                 </button>
@@ -484,10 +487,10 @@ export default function TableDashboardClient({
               {catalog.length === 0 ? (
                 <p className="vital-muted">{recipeLabel === 'yours' ? 'No recipes of yours yet.' : 'No recipes for that.'}</p>
               ) : null}
-              {catalog.map((hit) => {
+              {catalog.slice(0, recipeShown).map((hit) => {
                 const href = safeHttpUrl(hit.recipeUrl);
                 return (
-                  <div key={`${hit.saved ? 'yours' : 'lib'}-${hit.id}-${hit.title}`} className={`table-recipe${hit.saved ? ' is-yours' : ''}`}>
+                  <div key={`${hit.saved ? 'yours' : 'lib'}-${hit.id || hit.title}`} className={`table-recipe${hit.saved ? ' is-yours' : ''}`}>
                     <strong>
                       {hit.title}
                       {hit.saved ? <i className="table-yours">Yours</i> : null}
@@ -496,6 +499,11 @@ export default function TableDashboardClient({
                   </div>
                 );
               })}
+              {catalog.length > recipeShown ? (
+                <button type="button" className="vital-text-btn" onClick={() => setRecipeShown((count) => count + 40)}>
+                  Show more
+                </button>
+              ) : null}
             </div>
           </section>
         )}

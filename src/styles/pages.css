@@ -5910,6 +5910,8 @@ button.vital-week-day {
   font-size: 13px;
   color: var(--vital-muted);
 }
+
+.table-pick-section {
   margin: 14px 0 2px;
   font-size: 12px;
   font-weight: 700;
