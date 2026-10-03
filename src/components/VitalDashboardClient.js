@@ -89,6 +89,8 @@ function FiberGrams({ value, onChange, label = 'Fiber' }) {
     </div>
   );
 }
+
+const MEALS = FOOD_MEALS;
 const DRINK_FOODS = FOODS.filter((item) => item.meal === 'drink');
 
 const TABS = [
