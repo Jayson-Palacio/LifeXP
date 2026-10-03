@@ -46,7 +46,7 @@ function growQuad(points) {
   const cx = (points[0].x + points[1].x + points[2].x + points[3].x) / 4;
   const cy = (points[0].y + points[1].y + points[2].y + points[3].y) / 4;
   const span = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y);
-  const pad = Math.max(2, span * 0.14);
+  const pad = Math.max(3, span * 0.32);
   return points.map((point) => {
     const dx = point.x - cx;
     const dy = point.y - cy;
@@ -88,6 +88,15 @@ class PlanetGame {
     this.job = null;
     this.placeOnArrive = null;
     this.bag = { ...emptyBag(), ...(saved?.bag || {}) };
+    this.stats = { wood: 0, stone: 0, built: 0, ...(saved?.stats || {}) };
+    this.near = null;
+    this.critters = [0, 1, 2, 3, 4, 5].map((i) => ({
+      x: home.x - 4 + i * 1.6,
+      z: home.z + 4 + (i % 2),
+      face: 1,
+      hop: 0,
+      wait: 0.4 * i,
+    }));
     this.yaw = saved?.yaw ?? 0.7;
     this.yawTarget = this.yaw;
     this.held = null;
@@ -105,6 +114,60 @@ class PlanetGame {
       r: (i % 3) * 0.5 + 0.6,
     }));
     this.ui.onBag({ ...this.bag });
+    this.ui.onStats({ ...this.stats });
+    this.reportNearby();
+  }
+
+  reportNearby() {
+    let best = null;
+    let bestDist = 3;
+    Object.entries(this.world.nodes).forEach(([key, node]) => {
+      if (!node.left) return;
+      const [x, z] = key.split(',').map(Number);
+      const dist = Math.abs(x - this.ix) + Math.abs(z - this.iz);
+      if (dist > 0 && dist < bestDist) {
+        bestDist = dist;
+        best = { x, z, kind: node.kind, name: NODES[node.kind].name };
+      }
+    });
+    this.near = best;
+    this.ui.onNearby(best);
+  }
+
+  frontTile() {
+    const { fx, fz } = this.screenAxes();
+    const dx = Math.abs(fx) > Math.abs(fz) ? Math.sign(fx) : 0;
+    const dz = Math.abs(fz) >= Math.abs(fx) ? Math.sign(fz) : 0;
+    return { x: this.ix + (dx || 0), z: this.iz + (dz || -1) };
+  }
+
+  findWork() {
+    let best = null;
+    let bestDist = 1e9;
+    Object.entries(this.world.nodes).forEach(([key, node]) => {
+      if (!node.left) return;
+      const [x, z] = key.split(',').map(Number);
+      const dist = Math.abs(x - this.ix) + Math.abs(z - this.iz);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = { x, z };
+      }
+    });
+    if (best) this.goGather(best.x, best.z);
+  }
+
+  act() {
+    const id = this.ui.blockId();
+    if (id && (this.bag[id] || 0) > 0) {
+      const spot = this.frontTile();
+      this.tryPlace(spot.x, spot.z);
+      return;
+    }
+    if (this.near) {
+      this.goGather(this.near.x, this.near.z);
+      return;
+    }
+    this.findWork();
   }
 
   height() {
@@ -125,6 +188,7 @@ class PlanetGame {
         built: this.world.built,
         nodes,
         bag: this.bag,
+        stats: this.stats,
       }));
     } catch { /* private mode */ }
   }
@@ -290,7 +354,9 @@ class PlanetGame {
     const id = this.ui.blockId();
     if (!id) return;
     if (placeBuilt(this.world, x, z, id, this.bag)) {
+      this.stats.built += 1;
       this.ui.onBag({ ...this.bag });
+      this.ui.onStats({ ...this.stats });
       this.persist();
       this.float('+ built', x + 0.5, z + 0.5);
     }
@@ -356,6 +422,7 @@ class PlanetGame {
         this.pz = this.iz + 0.5;
         this.hop = null;
         this.persist();
+        this.reportNearby();
       }
     } else if (this.path.length) {
       const next = this.path[0];
@@ -383,7 +450,9 @@ class PlanetGame {
           const item = gatherNode(this.world, this.job.x, this.job.z);
           if (item) {
             this.bag[item] += 1;
+            if (item === 'wood' || item === 'stone') this.stats[item] += 1;
             this.ui.onBag({ ...this.bag });
+            this.ui.onStats({ ...this.stats });
             this.float(`+ ${blockById(item).name}`, this.job.x + 0.5, this.job.z + 0.5);
             this.burst(this.job.x + 0.5, this.job.z + 0.5, surfaceHeight(this.world, this.job.x, this.job.z) + 1.2, blockById(item).top);
             this.persist();
@@ -404,6 +473,7 @@ class PlanetGame {
       if (Math.abs(spot.x - this.ix) + Math.abs(spot.z - this.iz) <= 1) this.tryPlace(spot.x, spot.z);
     }
 
+    for (const critter of this.critters) this.stepCritter(critter, dt);
     for (const floater of this.floats) floater.life -= dt;
     this.floats = this.floats.filter((floater) => floater.life > 0);
     this.wobble = Math.max(0, this.wobble - dt * 2.4);
@@ -466,6 +536,8 @@ class PlanetGame {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+    ctx.fillStyle = '#6fbf45';
+    ctx.fillRect(0, h * 0.3, w, h);
 
     const reach = 15;
     const tiles = [];
@@ -483,7 +555,7 @@ class PlanetGame {
         ].map(([wx, wy, wz]) => this.project(wx, wy, wz));
         if (corners.some((point) => !point)) continue;
         const depth = (corners[0].z + corners[2].z) * 0.5;
-        if (depth < 2.4 || depth > 28) continue;
+        if (depth < 2.4 || depth > 22) continue;
         tiles.push({ x, z, height, tile, corners, depth });
       }
     }
@@ -494,12 +566,13 @@ class PlanetGame {
       const built = this.world.built[cellKey(tile.x, tile.z)];
       const topBlock = built?.length ? blockById(built[built.length - 1]) : null;
       const base = topBlock ? topBlock.top : GROUND[tile.tile.id];
-      ctx.globalAlpha = tile.depth > 18 ? Math.max(0, 1 - (tile.depth - 18) / 9) : 1;
+      ctx.globalAlpha = 1;
       this.drawSides(tile, base);
       const tint = tile.tile.id === 'water'
-        ? Math.sin(this.time * 1.6 + tile.x * 0.7 + tile.z) * 14
+        ? Math.sin(this.time * 1.6 + tile.x * 0.7 + tile.z) * 10
         : 0;
       fillQuad(ctx, tile.corners, shade(base, tint));
+      if (tile.tile.path) this.drawPath(tile);
       if (tile.tile.id === 'water') this.drawRipple(tile);
       const mid = this.project(tile.x + 0.5, tile.height + 0.05, tile.z + 0.5);
       const node = nodeAt(this.world, tile.x, tile.z);
@@ -513,7 +586,8 @@ class PlanetGame {
         });
       }
       if (tile.tile.flower) props.push({ depth: tile.depth, draw: () => this.drawFlower(tile) });
-      if (tile.tile.id === 'grass' && ((tile.x * 5 + tile.z * 3) % 4) !== 0) {
+      if (tile.tile.mushroom) props.push({ depth: tile.depth, draw: () => this.drawMushroom(tile) });
+      if (tile.tile.id === 'grass' && ((tile.x * 3 + tile.z * 5) % 5) === 0) {
         props.push({ depth: tile.depth - 0.01, draw: () => this.drawTuft(tile) });
       }
       if ((tile.tile.id === 'sand' || tile.tile.id === 'stone') && ((tile.x + tile.z) % 5) === 0) {
@@ -533,6 +607,11 @@ class PlanetGame {
     if (this.path.length) {
       const end = this.path[this.path.length - 1];
       props.push({ depth: 8, draw: () => this.drawMark(end.x, end.z) });
+    }
+    if (this.world.camp) props.push({ depth: 6, draw: () => this.drawCamp() });
+    for (const critter of this.critters) {
+      const at = this.project(critter.x, (surfaceHeight(this.world, Math.round(critter.x), Math.round(critter.z)) || 1) + 0.2, critter.z);
+      if (at) props.push({ depth: at.z, draw: () => this.drawCritter(critter, at) });
     }
     props.sort((a, b) => b.depth - a.depth);
     for (let i = 0; i < props.length; i += 1) props[i].draw();
@@ -588,6 +667,92 @@ class PlanetGame {
     }
   }
 
+  stepCritter(critter, dt) {
+    critter.wait -= dt;
+    if (critter.hop > 0) critter.hop -= dt;
+    if (critter.wait > 0 || critter.hop > 0) return;
+    const options = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    const [dx, dz] = options[Math.floor(Math.random() * options.length)];
+    const x = Math.round(critter.x) + dx;
+    const z = Math.round(critter.z) + dz;
+    const tile = tileAt(this.world, x, z);
+    if (tile && tile.id === 'grass' && !(nodeAt(this.world, x, z)?.left > 0)) {
+      critter.x = x + 0.5;
+      critter.z = z + 0.5;
+      if (dx) critter.face = dx;
+      critter.hop = 0.22;
+    }
+    critter.wait = 0.8 + Math.random() * 1.6;
+  }
+
+  drawPath(tile) {
+    const at = this.project(tile.x + 0.5, tile.height + 0.04, tile.z + 0.5);
+    if (!at) return;
+    const r = Math.max(4, at.scale * 0.18);
+    this.ctx.fillStyle = 'rgba(196, 154, 90, 0.85)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(at.x, at.y, r, r * 0.42, 0.4, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawCamp() {
+    const camp = this.world.camp;
+    if (!camp) return;
+    const h = surfaceHeight(this.world, camp.x, camp.z);
+    if (h == null) return;
+    const ctx = this.ctx;
+    const base = this.project(camp.x + 0.5, h + 0.05, camp.z + 0.5);
+    const flame = this.project(camp.x + 0.5, h + 0.55 + Math.sin(this.time * 9) * 0.06, camp.z + 0.5);
+    if (!base || !flame) return;
+    ctx.fillStyle = '#6b4423';
+    ctx.fillRect(base.x - 10, base.y - 4, 20, 6);
+    ctx.fillStyle = '#ff9f0a';
+    ctx.beginPath();
+    ctx.moveTo(flame.x, flame.y - 16);
+    ctx.lineTo(flame.x + 7, flame.y);
+    ctx.lineTo(flame.x - 7, flame.y);
+    ctx.fill();
+    ctx.fillStyle = '#ffe14a';
+    ctx.beginPath();
+    ctx.moveTo(flame.x, flame.y - 10);
+    ctx.lineTo(flame.x + 3, flame.y);
+    ctx.lineTo(flame.x - 3, flame.y);
+    ctx.fill();
+    const sign = this.project(camp.x - 0.8, h + 0.7, camp.z + 0.2);
+    if (sign) {
+      ctx.fillStyle = '#8d5a2b';
+      ctx.fillRect(sign.x - 2, sign.y, 4, 16);
+      ctx.fillStyle = '#f3d7a6';
+      ctx.fillRect(sign.x - 12, sign.y - 14, 24, 14);
+      ctx.fillStyle = '#1c1c1e';
+      ctx.font = '700 9px ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Home', sign.x, sign.y - 4);
+    }
+  }
+
+  drawCritter(critter, at) {
+    const ctx = this.ctx;
+    const s = Math.max(7, at.scale * 0.12);
+    const lift = critter.hop > 0 ? 6 : 0;
+    ctx.save();
+    ctx.translate(at.x, at.y - lift);
+    ctx.scale(critter.face < 0 ? -1 : 1, 1);
+    ctx.fillStyle = '#d8d2c8';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 1.1, s * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s * 0.7, -s * 0.35, s * 0.38, s * 0.32, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f4a4b0';
+    ctx.beginPath();
+    ctx.ellipse(s * 0.55, -s * 0.7, s * 0.1, s * 0.28, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(s * 0.85, -s * 0.7, s * 0.1, s * 0.28, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   drawRipple(tile) {
     const at = this.project(tile.x + 0.5, tile.height + 0.08, tile.z + 0.5);
     if (!at) return;
@@ -601,20 +766,35 @@ class PlanetGame {
 
   drawTuft(tile) {
     const ctx = this.ctx;
-    ctx.strokeStyle = 'rgba(30, 90, 30, 0.45)';
-    ctx.lineWidth = 1.25;
-    ctx.lineCap = 'round';
-    for (let i = 0; i < 3; i += 1) {
-      const ox = 0.25 + ((tile.x + i) % 3) * 0.22;
-      const oz = 0.3 + ((tile.z + i) % 3) * 0.2;
+    ctx.fillStyle = 'rgba(92, 176, 58, 0.9)';
+    for (let i = 0; i < 4; i += 1) {
+      const ox = 0.2 + ((tile.x * 3 + i) % 4) * 0.18;
+      const oz = 0.22 + ((tile.z * 2 + i) % 4) * 0.16;
       const a = this.project(tile.x + ox, tile.height + 0.02, tile.z + oz);
-      const b = this.project(tile.x + ox, tile.height + 0.22, tile.z + oz - 0.04);
+      const b = this.project(tile.x + ox + 0.04, tile.height + 0.28, tile.z + oz);
       if (!a || !b) continue;
       ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
+      ctx.moveTo(a.x - 1.5, a.y);
       ctx.lineTo(b.x, b.y);
-      ctx.stroke();
+      ctx.lineTo(a.x + 1.5, a.y);
+      ctx.fill();
     }
+  }
+
+  drawMushroom(tile) {
+    const stem = this.project(tile.x + 0.35, tile.height + 0.12, tile.z + 0.62);
+    const cap = this.project(tile.x + 0.35, tile.height + 0.22, tile.z + 0.62);
+    if (!stem || !cap) return;
+    const ctx = this.ctx;
+    ctx.fillStyle = '#f4efe6';
+    ctx.fillRect(stem.x - 1, stem.y, 2, 6);
+    ctx.fillStyle = '#e24b4b';
+    ctx.beginPath();
+    ctx.ellipse(cap.x, cap.y, 5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(cap.x - 2, cap.y - 1, 1.2, 1.2);
+    ctx.fillRect(cap.x + 1, cap.y, 1.2, 1.2);
   }
 
   drawPebble(tile) {
@@ -693,6 +873,21 @@ class PlanetGame {
     ctx.save();
     ctx.translate(sway, 0);
     this.hits.push({ x: tile.x, z: tile.z, sx: top.x + sway, sy: top.y, node: true });
+    if (this.near && this.near.x === tile.x && this.near.z === tile.z) {
+      const ring = this.project(tile.x + 0.5, tile.height + 0.08, tile.z + 0.5);
+      if (ring) {
+        const pulse = 8 + Math.sin(this.time * 6) * 3;
+        ctx.strokeStyle = 'rgba(255, 214, 10, 0.95)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(ring.x, ring.y, pulse + 10, (pulse + 10) * 0.4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = '700 14px ui-sans-serif, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(NODES[node.kind].name, top.x, top.y - size - 8);
+      }
+    }
     if (node.kind === 'tree') {
       const ground = this.project(tile.x + 0.5, tile.height + 0.02, tile.z + 0.5) || mid;
       const trunkTop = this.project(tile.x + 0.5, tile.height + 0.85 * scale, tile.z + 0.5) || mid;
@@ -823,8 +1018,11 @@ class PlanetGame {
     this.path = [];
     this.job = null;
     this.bag = emptyBag();
+    this.stats = { wood: 0, stone: 0, built: 0 };
     this.ui.onBag({ ...this.bag });
+    this.ui.onStats({ ...this.stats });
     this.ui.onGather(null, 0);
+    this.reportNearby();
     this.persist();
   }
 }
@@ -836,9 +1034,22 @@ export default function PlanetBuilder() {
   const blockRef = useRef(null);
   const [bag, setBag] = useState(emptyBag);
   const [blockId, setBlockId] = useState(null);
-  const [hint, setHint] = useState(true);
   const [gather, setGather] = useState(null);
+  const [near, setNear] = useState(null);
+  const [stats, setStats] = useState({ wood: 0, stone: 0, built: 0 });
   const [confirm, setConfirm] = useState(false);
+  const tasks = [
+    { label: 'Chop trees', have: stats.wood, need: 3 },
+    { label: 'Mine rocks', have: stats.stone, need: 2 },
+    { label: 'Build blocks', have: stats.built, need: 4 },
+  ];
+  const done = tasks.every((task) => task.have >= task.need);
+  const verbs = { tree: 'Chop tree', rock: 'Mine rock', crystal: 'Gather crystal', bush: 'Pick bush' };
+  const actLabel = blockId
+    ? `Build ${blockById(blockId).name}`
+    : near
+      ? verbs[near.kind]
+      : 'Find something';
 
   useEffect(() => {
     blockRef.current = blockId;
@@ -848,8 +1059,10 @@ export default function PlanetBuilder() {
     const game = new PlanetGame(canvasRef.current, {
       blockId: () => blockRef.current,
       onBag: setBag,
-      onHideHint: () => setHint(false),
+      onHideHint: () => {},
       onGather: (name, amount) => setGather(name ? { name, amount } : null),
+      onNearby: setNear,
+      onStats: setStats,
     });
     gameRef.current = game;
     game.start();
@@ -894,7 +1107,16 @@ export default function PlanetBuilder() {
         <strong>Planet</strong>
         <button type="button" onClick={() => setConfirm(true)}>New</button>
       </div>
-      {hint ? <p className="planet-hint">Tap the ground to walk. Tap a tree, rock, or crystal to gather it.</p> : null}
+      <ul className="planet-tasks">
+        {tasks.map((task) => (
+          <li key={task.label} className={task.have >= task.need ? 'is-done' : ''}>
+            {task.label}
+            <b>{Math.min(task.have, task.need)}/{task.need}</b>
+          </li>
+        ))}
+        {done ? <li className="is-done">Camp is set</li> : null}
+      </ul>
+      <button type="button" className="planet-act" onClick={() => gameRef.current?.act()}>{actLabel}</button>
       {gather ? (
         <p className="planet-gather">
           Gathering {gather.name}

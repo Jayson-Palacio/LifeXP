@@ -8621,6 +8621,61 @@ body:has(.play-app.is-planet) {
   transform: translateY(-3px);
 }
 
+.planet-tasks {
+  position: absolute;
+  z-index: 3;
+  top: calc(108px + env(safe-area-inset-top));
+  left: 16px;
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  border-radius: 16px;
+  background: rgba(8, 14, 28, 0.62);
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
+
+.planet-tasks li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.7;
+}
+
+.planet-tasks b {
+  font-variant-numeric: tabular-nums;
+}
+
+.planet-tasks li.is-done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.planet-act {
+  position: absolute;
+  z-index: 5;
+  left: 16px;
+  bottom: calc(176px + env(safe-area-inset-bottom));
+  min-width: 190px;
+  height: 56px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffd60a;
+  color: #1c1c1e;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+
+.planet-act:active { transform: scale(0.98); }
+
 .planet-gather {
   position: absolute;
   z-index: 3;
