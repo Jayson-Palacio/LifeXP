@@ -5885,10 +5885,32 @@ button.vital-week-day {
   margin-top: 8px;
 }
 
-.table-pick-hits {
-  display: grid;
-  gap: 2px;
-  margin: 8px 0 0;
+.table-pick-section {
+  margin: 14px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vital-muted);
+}
+
+.table-yours {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e7f0ea;
+  color: #2f6b4f;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+.table-pick-hit.is-yours button {
+  background: #f4f8f5;
 }
 
 .table-pick-hit {

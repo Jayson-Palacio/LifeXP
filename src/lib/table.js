@@ -1,6 +1,6 @@
 import { localYmd } from './time';
 import { addShopItem, formatShopNeed, parseShopLine } from './tableShop';
-import { COOK_RECIPES, cookTonight, isKitchenRecipe, kitchenRecipeMeta, plateForRecipe, searchCookRecipes } from './vitalSuggest';
+import { COOK_RECIPES, isKitchenRecipe, kitchenRecipeMeta, plateForRecipe, searchCookRecipes } from './vitalSuggest';
 
 export const TABLE_SLOTS = [
   { id: 'breakfast', label: 'Breakfast' },
@@ -254,9 +254,74 @@ export function suggestDinners(weekStart, count = 7, usedTitles = [], salt = 0) 
   return picked;
 }
 
+function savedPlates(kitchen, slot) {
+  return (kitchen || [])
+    .filter(isKitchenRecipe)
+    .filter((row) => {
+      const meal = kitchenRecipeMeta(row).meal;
+      return !meal || !slot || meal === slot;
+    })
+    .map((row) => {
+      const meta = kitchenRecipeMeta(row);
+      return plateSnapshot({
+        id: row.id,
+        title: row.name,
+        ingredients: meta.ingredients,
+        recipeUrl: meta.url,
+        recipeSource: 'Yours',
+        notes: meta.notes,
+        tags: meta.tags,
+        kcal: row.calories,
+        protein: row.protein_g,
+        saved: true,
+      });
+    })
+    .filter((row) => row?.title);
+}
+
+function fitsSlot(recipe, slot) {
+  if (!slot) return true;
+  if (recipe.meal === slot) return true;
+  return (recipe.meals || []).includes(slot);
+}
+
+function browsePlates({ slot = 'dinner', kitchen = [], label = '' } = {}) {
+  const tag = String(label || '').trim().toLowerCase();
+  const yoursOnly = tag === 'yours';
+  const wanted = yoursOnly ? null : TABLE_LABELS.find((row) => row.id === tag || row.label.toLowerCase() === tag);
+  const hasLabel = (row) => {
+    if (!wanted) return true;
+    return (row.labels || []).some((name) => String(name).toLowerCase() === wanted.label.toLowerCase());
+  };
+  const yours = savedPlates(kitchen, slot).filter(hasLabel);
+  if (yoursOnly) return yours;
+  const pack = COOK_RECIPES
+    .filter((recipe) => fitsSlot(recipe, slot))
+    .map((recipe) => plateSnapshot(plateForRecipe(recipe, slot)))
+    .filter((row) => row?.title && hasLabel(row));
+  const seen = new Set(yours.map((row) => String(row.title || '').toLowerCase()));
+  const library = [];
+  for (const row of pack) {
+    const key = String(row.title || '').toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    library.push(row);
+  }
+  return [...yours, ...library];
+}
+
 export function searchPlates(query, { slot = 'dinner', kitchen = [], label = '' } = {}) {
   const q = String(query || '').trim();
   const tag = String(label || '').trim().toLowerCase();
+  if (tag === 'yours') {
+    const yours = savedPlates(kitchen, slot);
+    if (q.length < 2) return yours;
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    return yours.filter((row) => {
+      const hay = `${row.title} ${(row.ingredients || []).join(' ')} ${row.notes || ''}`.toLowerCase();
+      return words.every((word) => hay.includes(word));
+    });
+  }
   const wanted = TABLE_LABELS.find((row) => row.id === tag || row.label.toLowerCase() === tag);
   const hasLabel = (row) => {
     if (!wanted) return true;
@@ -267,43 +332,7 @@ export function searchPlates(query, { slot = 'dinner', kitchen = [], label = '' 
     return searchCookRecipes(q, { slot, kitchen, simple: true }).map(plateSnapshot).filter((row) => row?.title && hasLabel(row));
   }
 
-  if (wanted) {
-    const pack = COOK_RECIPES
-      .filter((recipe) => recipeLabels(recipe.tags).includes(wanted.label))
-      .slice(0, 24)
-      .map((recipe) => plateSnapshot(plateForRecipe(recipe, slot)));
-    const saved = (kitchen || [])
-      .filter(isKitchenRecipe)
-      .map((row) => {
-        const meta = kitchenRecipeMeta(row);
-        return plateSnapshot({
-          id: row.id,
-          title: row.name,
-          ingredients: meta.ingredients,
-          recipeUrl: meta.url,
-          recipeSource: meta.url ? 'Your recipe' : null,
-          notes: meta.notes,
-          tags: meta.tags,
-          kcal: row.calories,
-          protein: row.protein_g,
-          saved: true,
-        });
-      })
-      .filter((row) => row?.title && hasLabel(row));
-    const seen = new Set();
-    const out = [];
-    for (const row of [...saved, ...pack]) {
-      const key = String(row.title || '').toLowerCase();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      out.push(row);
-      if (out.length >= 16) break;
-    }
-    return out;
-  }
-
-  const hour = slot === 'breakfast' ? 8 : slot === 'lunch' ? 12 : 18;
-  return cookTonight({ kitchen, slot, hour, simple: true }).ideas.slice(0, 10).map(plateSnapshot);
+  return browsePlates({ slot, kitchen, label });
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

@@ -125,8 +125,29 @@ function RecipeLink({ plate, className = 'vital-text-btn' }) {
   if (!href) return null;
   return (
     <a className={className} href={href} target="_blank" rel="noopener noreferrer">
-      {plate.recipeSource ? `Recipe · ${plate.recipeSource}` : 'Recipe'}
+      {plate.saved ? 'Yours' : (plate.recipeSource ? `Recipe · ${plate.recipeSource}` : 'Recipe')}
     </a>
+  );
+}
+
+function RecipeHit({ hit, onPick }) {
+  const href = safeHttpUrl(hit.recipeUrl);
+  return (
+    <div className={`table-pick-hit${hit.saved ? ' is-yours' : ''}`}>
+      <button type="button" onClick={onPick}>
+        <strong>
+          {hit.title}
+          {hit.saved ? <i className="table-yours">Yours</i> : null}
+        </strong>
+        <RecipeLabels labels={hit.labels} />
+        {macrosLabel(hit.kcal, hit.protein) ? <em>{macrosLabel(hit.kcal, hit.protein)}</em> : null}
+      </button>
+      {href ? (
+        <a href={href} target="_blank" rel="noopener noreferrer">Open</a>
+      ) : (
+        <span>{hit.saved ? 'Yours' : 'Recipe'}</span>
+      )}
+    </div>
   );
 }
 
@@ -636,6 +657,13 @@ export default function TableDashboardClient({
                   autoComplete="off"
                 />
                 <div className="table-label-picks" role="group" aria-label="Filter recipes">
+                  <button
+                    type="button"
+                    className={`table-label-btn${label === 'yours' ? ' is-on' : ''}`}
+                    onClick={() => setLabel((prev) => (prev === 'yours' ? '' : 'yours'))}
+                  >
+                    Yours
+                  </button>
                   {TABLE_LABELS.map((row) => (
                     <button
                       key={row.id}
@@ -673,28 +701,28 @@ export default function TableDashboardClient({
                   ) : null}
                 </div>
                 <div className="table-pick-hits">
-                  {hits.map((hit) => (
-                    <div key={`${hit.id}-${hit.title}`} className="table-pick-hit">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPlate(picker.ymd, picker.slot, plateSnapshot(hit));
-                          setPicker(null);
-                          playPop?.();
-                        }}
-                      >
-                        <strong>{hit.title}</strong>
-                        <RecipeLabels labels={hit.labels} />
-                        {macrosLabel(hit.kcal, hit.protein) ? <em>{macrosLabel(hit.kcal, hit.protein)}</em> : null}
-                      </button>
-                      {safeHttpUrl(hit.recipeUrl) ? (
-                        <a href={safeHttpUrl(hit.recipeUrl)} target="_blank" rel="noopener noreferrer">
-                          {hit.recipeSource || 'Recipe'}
-                        </a>
-                      ) : (
-                        <span>{hit.saved ? 'Yours' : 'Recipe'}</span>
-                      )}
-                    </div>
+                  {hits.length === 0 ? (
+                    <p className="vital-muted">{label === 'yours' ? 'No recipes of yours for this meal yet.' : 'No recipes for that filter.'}</p>
+                  ) : null}
+                  {hits.some((hit) => hit.saved) && hits.some((hit) => !hit.saved) ? (
+                    <p className="table-pick-section">Yours</p>
+                  ) : null}
+                  {hits.filter((hit) => hit.saved).map((hit) => (
+                    <RecipeHit key={`yours-${hit.id}-${hit.title}`} hit={hit} onPick={() => {
+                      setPlate(picker.ymd, picker.slot, plateSnapshot(hit));
+                      setPicker(null);
+                      playPop?.();
+                    }} />
+                  ))}
+                  {hits.some((hit) => hit.saved) && hits.some((hit) => !hit.saved) ? (
+                    <p className="table-pick-section">All recipes</p>
+                  ) : null}
+                  {hits.filter((hit) => !hit.saved).map((hit) => (
+                    <RecipeHit key={`${hit.id}-${hit.title}`} hit={hit} onPick={() => {
+                      setPlate(picker.ymd, picker.slot, plateSnapshot(hit));
+                      setPicker(null);
+                      playPop?.();
+                    }} />
                   ))}
                 </div>
               </>
