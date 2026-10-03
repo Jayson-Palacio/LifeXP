@@ -92,7 +92,8 @@ export function makeWorld(seed = 7) {
       const rollDecor = rand(x * 19 + z * 23 + seed);
       const flower = groundId === 'grass' && dist > 1.6 && rollDecor > 0.74;
       const mushroom = groundId === 'grass' && dist > 3 && rollDecor > 0.9 && rollDecor < 0.96;
-      ground[z * SIZE + x] = { h, id: groundId, flower, mushroom };
+      const bloom = groundId === 'grass' && dist > 4 && rollDecor > 0.965;
+      ground[z * SIZE + x] = { h, id: groundId, flower, mushroom, bloom };
       if (groundId === 'water' || dist < 5) continue;
       const roll = rand(seed * 17 + x * 13 + z * 29);
       const grove = Math.hypot(x - (cx + 6), z - (cz + 8));
@@ -138,6 +139,13 @@ export function makeWorld(seed = 7) {
   for (let i = 2; i <= 8; i += 1) {
     const tile = ground[(cz + i) * SIZE + cx];
     if (tile && tile.id !== 'water') tile.path = true;
+  }
+  for (let i = 0; i < 7; i += 1) {
+    const angle = (i / 7) * Math.PI * 2 + 0.4;
+    const x = cx + Math.round(Math.cos(angle) * 9);
+    const z = cz + 1 + Math.round(Math.sin(angle) * 9);
+    const tile = inBounds(x, z) ? ground[z * SIZE + x] : null;
+    if (tile && tile.id === 'grass' && !nodes[cellKey(x, z)]) tile.pillar = true;
   }
   return { seed, ground, nodes, built: {}, camp: { x: cx, z: cz + 1 } };
 }

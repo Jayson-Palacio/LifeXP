@@ -8843,3 +8843,129 @@ body:has(.play-app.is-planet) {
   color: #1c1c1e;
 }
 
+.planet-sideways {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  .planet-sideways {
+    position: absolute;
+    z-index: 8;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(16, 12, 36, 0.78);
+    color: #fff;
+    text-align: center;
+  }
+
+  .planet-sideways i {
+    display: block;
+    width: 78px;
+    height: 46px;
+    margin: 0 auto 16px;
+    border: 3px solid #fff;
+    border-radius: 10px;
+    transform: rotate(90deg);
+    animation: planet-turn 2.2s ease-in-out infinite;
+  }
+
+  .planet-sideways strong {
+    display: block;
+    font-size: 28px;
+    letter-spacing: -0.04em;
+  }
+
+  .planet-sideways span {
+    display: block;
+    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 16px;
+  }
+}
+
+@keyframes planet-turn {
+  40%, 70% { transform: rotate(0deg); }
+}
+
+@media (orientation: landscape) {
+  .play-app.is-planet .vital-top {
+    padding-top: calc(4px + env(safe-area-inset-top));
+    padding-bottom: 4px;
+  }
+
+  .planet-hud {
+    top: calc(40px + env(safe-area-inset-top));
+  }
+
+  .planet-hud strong {
+    font-size: 22px;
+  }
+
+  .planet-tasks {
+    top: calc(42px + env(safe-area-inset-top));
+    left: 50%;
+    display: flex;
+    gap: 14px;
+    padding: 6px 12px;
+    transform: translateX(-50%);
+  }
+
+  .planet-tasks li {
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .planet-act {
+    top: 48%;
+    bottom: auto;
+    left: calc(16px + env(safe-area-inset-left));
+    transform: translateY(-50%);
+  }
+
+  .planet-act:active {
+    transform: translateY(-50%) scale(0.98);
+  }
+
+  .planet-turns {
+    top: calc(48% - 118px);
+    right: calc(22px + env(safe-area-inset-right));
+    bottom: auto;
+  }
+
+  .planet-pad {
+    top: 54%;
+    right: calc(14px + env(safe-area-inset-right));
+    bottom: auto;
+    transform: translateY(-50%);
+    grid-template-columns: 52px 52px 52px;
+  }
+
+  .planet-pad button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .planet-dock {
+    left: 50%;
+    right: auto;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    flex-direction: row;
+    align-items: center;
+    width: max-content;
+    max-width: 48vw;
+    transform: translateX(-50%);
+  }
+
+  .planet-palette button {
+    width: 52px;
+    height: 54px;
+  }
+
+  .planet-take {
+    height: 40px;
+  }
+}
+

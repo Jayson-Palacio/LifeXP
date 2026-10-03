@@ -99,6 +99,16 @@ class PlanetGame {
       hop: 0,
       wait: 0.4 * i,
     }));
+    this.motes = Array.from({ length: 18 }, (_, i) => ({
+      x: home.x - 7 + (i % 6) * 2.3,
+      z: home.z - 3 + (i % 5) * 2.1,
+      phase: i * 0.65,
+    }));
+    this.wings = [0, 1, 2, 3].map((i) => ({
+      x: home.x + 2 + i * 2.2,
+      z: home.z + 3 + (i % 2) * 1.4,
+      phase: i * 1.3,
+    }));
     this.yaw = saved?.yaw ?? 0.7;
     this.yawTarget = this.yaw;
     this.faceX = 0;
@@ -224,6 +234,10 @@ class PlanetGame {
     return surfaceHeight(this.world, this.ix, this.iz) || 1;
   }
 
+  wideFrame() {
+    return this.view.w > this.view.h * 1.05;
+  }
+
   persist() {
     const nodes = {};
     Object.entries(this.world.nodes).forEach(([key, node]) => {
@@ -278,16 +292,17 @@ class PlanetGame {
     const sin = Math.sin(this.yaw);
     const rx = dx * cos - dz * sin;
     const rz = dx * sin + dz * cos;
-    const pitch = -0.62;
+    const pitch = this.wideFrame() ? -0.56 : -0.62;
     const cp = Math.cos(pitch);
     const sp = Math.sin(pitch);
     const y2 = dy * cp - rz * sp;
     const z2 = dy * sp + rz * cp;
     if (z2 < 0.45) return null;
-    const fov = this.view.h * 0.92;
+    const wide = this.wideFrame();
+    const fov = this.view.h * (wide ? 0.9 : 0.92);
     return {
       x: this.view.w * 0.5 + (rx / z2) * fov,
-      y: this.view.h * 0.48 - (y2 / z2) * fov,
+      y: this.view.h * (wide ? 0.46 : 0.48) - (y2 / z2) * fov,
       z: z2,
       scale: fov / z2,
     };
@@ -545,8 +560,9 @@ class PlanetGame {
     }
     this.bits = this.bits.filter((bit) => bit.life > 0);
 
+    const wide = this.wideFrame();
     const back = 16;
-    const lift = this.height() + 9.5;
+    const lift = this.height() + (wide ? 8.4 : 9.5);
     const gx = this.px - Math.sin(this.yaw) * back;
     const gz = this.pz - Math.cos(this.yaw) * back;
     this.cam.x += (gx - this.cam.x) * Math.min(1, dt * 4);
@@ -561,10 +577,10 @@ class PlanetGame {
     const { w, h, dpr } = this.view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#16345c');
-    sky.addColorStop(0.22, '#3f86d2');
-    sky.addColorStop(0.46, '#9fd4fb');
-    sky.addColorStop(0.62, '#fff1cc');
+    sky.addColorStop(0, '#140e2e');
+    sky.addColorStop(0.26, '#3d2b78');
+    sky.addColorStop(0.48, '#c56b8c');
+    sky.addColorStop(0.64, '#f3c48a');
     sky.addColorStop(1, '#6fbf45');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
@@ -580,7 +596,17 @@ class PlanetGame {
     ctx.fill();
     ctx.fillStyle = '#fff8df';
     ctx.beginPath();
-    ctx.arc(sunX, sunY, 22, 0, Math.PI * 2);
+    ctx.arc(sunX, sunY, 18, 0, Math.PI * 2);
+    ctx.fill();
+    const moonX = w * 0.16;
+    const moonY = h * (this.wideFrame() ? 0.14 : 0.11);
+    ctx.fillStyle = 'rgba(244, 239, 228, 0.95)';
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, this.wideFrame() ? 14 : 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#241a4e';
+    ctx.beginPath();
+    ctx.arc(moonX + 6, moonY - 3, this.wideFrame() ? 11 : 16, 0, Math.PI * 2);
     ctx.fill();
     for (let i = 0; i < 4; i += 1) {
       const cx = ((i * 0.27 + this.time * 0.006) % 1.35 - 0.15) * w;
@@ -603,8 +629,9 @@ class PlanetGame {
     ctx.lineTo(w, h);
     ctx.closePath();
     ctx.fill();
+    this.drawSkyline();
     ctx.fillStyle = '#6fbf45';
-    ctx.fillRect(0, h * 0.4, w, h);
+    ctx.fillRect(0, h * 0.42, w, h);
 
     const reach = 18;
     const tiles = [];
@@ -637,7 +664,9 @@ class PlanetGame {
       this.drawSides(tile, base);
       const tint = tile.tile.id === 'water'
         ? Math.sin(this.time * 1.6 + tile.x * 0.7 + tile.z) * 10
-        : 0;
+        : tile.tile.id === 'grass'
+          ? Math.round(Math.sin(tile.x * 0.08) * 7 + Math.cos(tile.z * 0.06) * 5)
+          : 0;
       fillQuad(ctx, tile.corners, shade(base, tint));
       if (tile.tile.path) this.drawPath(tile);
       if (tile.tile.id === 'water') this.drawRipple(tile);
@@ -653,7 +682,9 @@ class PlanetGame {
         });
       }
       if (tile.tile.flower) props.push({ depth: tile.depth, draw: () => this.drawFlower(tile) });
+      if (tile.tile.bloom) props.push({ depth: tile.depth, draw: () => this.drawBloom(tile) });
       if (tile.tile.mushroom) props.push({ depth: tile.depth, draw: () => this.drawMushroom(tile) });
+      if (tile.tile.pillar) props.push({ depth: tile.depth - 0.04, draw: () => this.drawPillar(tile) });
       if (tile.tile.id === 'grass' && ((tile.x * 3 + tile.z * 5) % 5) === 0) {
         props.push({ depth: tile.depth - 0.01, draw: () => this.drawTuft(tile) });
       }
@@ -685,6 +716,22 @@ class PlanetGame {
     for (const critter of this.critters) {
       const at = this.project(critter.x, (surfaceHeight(this.world, Math.round(critter.x), Math.round(critter.z)) || 1) + 0.2, critter.z);
       if (at) props.push({ depth: at.z, draw: () => this.drawCritter(critter, at) });
+    }
+    for (const mote of this.motes) {
+      const bob = 0.9 + Math.sin(this.time * 1.5 + mote.phase) * 0.4;
+      const x = mote.x + Math.sin(this.time * 0.55 + mote.phase) * 0.4;
+      const z = mote.z + Math.cos(this.time * 0.45 + mote.phase) * 0.4;
+      const ground = surfaceHeight(this.world, Math.round(x), Math.round(z)) || 1;
+      const at = this.project(x, ground + bob, z);
+      if (at) props.push({ depth: at.z, draw: () => this.drawMote(at, mote.phase) });
+    }
+    for (const wing of this.wings) {
+      const y = 1.3 + Math.sin(this.time * 1.1 + wing.phase) * 0.25;
+      const x = wing.x + Math.sin(this.time * 0.35 + wing.phase) * 1.2;
+      const z = wing.z + Math.cos(this.time * 0.28 + wing.phase) * 0.8;
+      const ground = surfaceHeight(this.world, Math.round(x), Math.round(z)) || 1;
+      const at = this.project(x, ground + y, z);
+      if (at) props.push({ depth: at.z, draw: () => this.drawWing(at, wing.phase) });
     }
     props.sort((a, b) => b.depth - a.depth);
     for (let i = 0; i < props.length; i += 1) props[i].draw();
@@ -756,6 +803,29 @@ class PlanetGame {
       critter.hop = 0.22;
     }
     critter.wait = 0.8 + Math.random() * 1.6;
+  }
+
+  drawSkyline() {
+    const { w, h } = this.view;
+    const ctx = this.ctx;
+    const base = h * (this.wideFrame() ? 0.36 : 0.4);
+    const x = w * 0.58;
+    ctx.fillStyle = '#2c3568';
+    ctx.fillRect(x - 26, base - 16, 92, 18);
+    ctx.fillRect(x, base - 34, 16, 34);
+    ctx.fillRect(x + 22, base - 52, 12, 52);
+    ctx.beginPath();
+    ctx.moveTo(x + 16, base - 52);
+    ctx.lineTo(x + 28, base - 74);
+    ctx.lineTo(x + 40, base - 52);
+    ctx.fill();
+    ctx.fillRect(x + 48, base - 26, 14, 26);
+    ctx.fillStyle = '#ffe7a3';
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(x + 26, base - 40, 3, 5);
+    ctx.fillRect(x + 5, base - 22, 3, 4);
+    ctx.fillRect(x + 53, base - 16, 3, 4);
+    ctx.globalAlpha = 1;
   }
 
   drawGhost() {
@@ -905,16 +975,89 @@ class PlanetGame {
     const stem = this.project(tile.x + 0.35, tile.height + 0.12, tile.z + 0.62);
     const cap = this.project(tile.x + 0.35, tile.height + 0.22, tile.z + 0.62);
     if (!stem || !cap) return;
+    const magic = (tile.x + tile.z) % 3 === 0;
     const ctx = this.ctx;
+    const glow = ctx.createRadialGradient(cap.x, cap.y, 1, cap.x, cap.y, 16);
+    glow.addColorStop(0, magic ? 'rgba(190, 160, 255, 0.55)' : 'rgba(255, 120, 90, 0.4)');
+    glow.addColorStop(1, 'rgba(255, 120, 90, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cap.x, cap.y, 16, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#f4efe6';
     ctx.fillRect(stem.x - 1, stem.y, 2, 6);
-    ctx.fillStyle = '#e24b4b';
+    ctx.fillStyle = magic ? '#b48cff' : '#e24b4b';
     ctx.beginPath();
     ctx.ellipse(cap.x, cap.y, 5, 3, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.fillRect(cap.x - 2, cap.y - 1, 1.2, 1.2);
     ctx.fillRect(cap.x + 1, cap.y, 1.2, 1.2);
+  }
+
+  drawBloom(tile) {
+    const at = this.project(tile.x + 0.42, tile.height + 0.2, tile.z + 0.58);
+    if (!at) return;
+    const ctx = this.ctx;
+    const glow = ctx.createRadialGradient(at.x, at.y, 1, at.x, at.y, 14);
+    glow.addColorStop(0, 'rgba(255, 220, 120, 0.7)');
+    glow.addColorStop(1, 'rgba(255, 220, 120, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffe14a';
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawPillar(tile) {
+    const base = this.project(tile.x + 0.5, tile.height + 0.02, tile.z + 0.5);
+    const top = this.project(tile.x + 0.5, tile.height + 1.25, tile.z + 0.5);
+    const width = this.worldRadius(tile.x + 0.5, tile.height + 0.6, tile.z + 0.5, 0.16);
+    if (!base || !top || !width) return;
+    const r = width.r;
+    const ctx = this.ctx;
+    ctx.fillStyle = '#5d6488';
+    ctx.beginPath();
+    ctx.moveTo(base.x - r, base.y);
+    ctx.lineTo(base.x + r, base.y);
+    ctx.lineTo(top.x + r * 0.72, top.y);
+    ctx.lineTo(top.x - r * 0.72, top.y);
+    ctx.fill();
+    ctx.fillStyle = '#9aa3c4';
+    ctx.fillRect(top.x - r, top.y - 4, r * 2, 5);
+    ctx.fillStyle = 'rgba(198, 170, 255, 0.95)';
+    ctx.fillRect(top.x - 1.2, top.y + r * 0.4, 2.4, r * 1.1);
+  }
+
+  drawMote(at, phase) {
+    const ctx = this.ctx;
+    const pulse = 0.45 + Math.sin(this.time * 4 + phase) * 0.35;
+    const glow = ctx.createRadialGradient(at.x, at.y, 0, at.x, at.y, 10);
+    glow.addColorStop(0, `rgba(255, 236, 160, ${pulse})`);
+    glow.addColorStop(1, 'rgba(255, 236, 160, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff8d8';
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, 1.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawWing(at, phase) {
+    const ctx = this.ctx;
+    const flap = Math.sin(this.time * 10 + phase) * 5;
+    ctx.fillStyle = 'rgba(255, 186, 220, 0.9)';
+    ctx.beginPath();
+    ctx.ellipse(at.x - 4, at.y + flap * 0.2, 5, 2.2, -0.6, 0, Math.PI * 2);
+    ctx.ellipse(at.x + 4, at.y - flap * 0.2, 5, 2.2, 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#5b3d86';
+    ctx.fillRect(at.x - 1, at.y - 1, 2, 3);
   }
 
   drawPebble(tile) {
@@ -1048,6 +1191,15 @@ class PlanetGame {
         ctx.arc(blob.at.x, blob.at.y, blob.r, 0, Math.PI * 2);
         ctx.fill();
       }
+      if ((tile.x + tile.z) % 4 === 0) {
+        const lamp = this.project(tile.x + 0.62, tile.height + 0.95 * scale, tile.z + 0.38);
+        if (lamp) {
+          ctx.fillStyle = 'rgba(255, 214, 90, 0.95)';
+          ctx.beginPath();
+          ctx.arc(lamp.x, lamp.y, Math.max(2, (width ? width.r : 4) * 0.35), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     } else if (node.kind === 'rock') {
       ctx.fillStyle = '#6d7380';
       ctx.beginPath();
@@ -1110,6 +1262,12 @@ class PlanetGame {
     ctx.save();
     ctx.translate(feet.x, feet.y - hop * s * 0.18);
     ctx.scale(flip, 1);
+    ctx.fillStyle = '#6d4ad4';
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.16, -s * 0.66);
+    ctx.quadraticCurveTo(-s * 0.58, -s * 0.2, -s * 0.3, s * 0.04);
+    ctx.lineTo(-s * 0.02, -s * 0.32);
+    ctx.fill();
     ctx.strokeStyle = '#3a2a22';
     ctx.lineWidth = Math.max(3, s * 0.08);
     ctx.lineCap = 'round';
@@ -1122,6 +1280,10 @@ class PlanetGame {
     ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
     ctx.roundRect(-s * 0.26, -s * 0.7, s * 0.52, s * 0.5, s * 0.16);
+    ctx.fill();
+    ctx.fillStyle = '#ffe14a';
+    ctx.beginPath();
+    ctx.arc(0, -s * 0.48, s * 0.045, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#ffb020';
     ctx.beginPath();
@@ -1251,7 +1413,14 @@ export default function PlanetBuilder() {
 
   return (
     <div className="planet-root" ref={wrapRef}>
-      <canvas ref={canvasRef} aria-label="Planet. Tap the ground to walk. Tap a tree or rock to gather." />
+      <canvas ref={canvasRef} aria-label="Planet. Hold the phone sideways. Tap the ground to walk. Tap a tree or rock to gather." />
+      <div className="planet-sideways">
+        <div>
+          <i />
+          <strong>Hold it sideways</strong>
+          <span>Planet is a wide game.</span>
+        </div>
+      </div>
       <div className="planet-hud">
         <strong>Planet</strong>
         <button type="button" onClick={() => setConfirm(true)}>New</button>
