@@ -5468,6 +5468,30 @@ button.vital-week-day {
   }
 }
 
+.ledger-days {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 72px;
+  margin: 4px 0 16px;
+}
+
+.ledger-days i {
+  flex: 1;
+  min-height: 4px;
+  border-radius: 99px 99px 2px 2px;
+  background: #c5d5cc;
+  font-style: normal;
+}
+
+.ledger-days i.is-today {
+  background: #2f6b4f;
+}
+
+.ledger-days i.is-future {
+  background: #eef1ee;
+}
+
 .ledger-app {
   background:
     radial-gradient(1200px 480px at 12% -10%, rgba(200, 146, 10, 0.12), transparent 55%),

@@ -215,9 +215,13 @@ export default function LedgerDashboardClient({
       ? `On pace to keep ${money(summary.expectedYear)} a year.`
       : `On pace to spend ${money(Math.abs(summary.expectedYear))} more than you take in, over a year.`;
 
-  const heroSub = summary.hasPlan
-    ? `${summary.bounds.label}: ${money(summary.monthSpend, { cents: true })} out of ${money(summary.monthIn)} in.`
-    : 'Log what goes out. Yearly savings is this month’s leftover × 12.';
+  const heroSub = !summary.hasPlan
+    ? 'Log what goes out. Yearly savings is this month’s leftover × 12.'
+    : summary.monthSpend <= 0
+      ? `${summary.bounds.label} has no spend yet.`
+      : summary.monthSaved >= 0
+        ? `${money(summary.dailyRoom)} a day left for the rest of ${summary.bounds.label}.${summary.hottest ? ` ${summary.hottest.name} is the biggest spend so far.` : ''}`
+        : `${money(Math.abs(summary.monthSaved))} over take-home already.${summary.hottest ? ` ${summary.hottest.name} is ${money(summary.hottest.spent)} of the month.` : ''}`;
 
   return (
     <div className="vital-app ledger-app">
@@ -442,6 +446,28 @@ export default function LedgerDashboardClient({
               </form>
             )}
 
+            {tab === 'today' && summary.monthRows.some((row) => row.logged_on === today) && (
+              <div className="vital-card">
+                <p className="vital-kicker">Logged today</p>
+                <ul className="ledger-list">
+                  {summary.monthRows.filter((row) => row.logged_on === today).map((row) => (
+                    <li key={row.id}>
+                      <div>
+                        <strong>
+                          {row.kind === 'income' ? '+' : '−'}
+                          {money(row.amount, { cents: true })}
+                        </strong>
+                        <span>
+                          {row.kind === 'income' ? 'Extra in' : (envelopes.find((item) => item.id === row.category)?.name || 'Other')}
+                          {row.note ? ` · ${row.note}` : ''}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {tab === 'month' && (
               <>
                 <div className="vital-card">
@@ -449,6 +475,22 @@ export default function LedgerDashboardClient({
                     <p className="vital-kicker">{summary.bounds.label}</p>
                     <span>{money(summary.monthSpend, { cents: true })} out</span>
                   </div>
+                  {summary.daySpend.some((row) => row.spend > 0) && (
+                    <div className="ledger-days" aria-label="Spend by day this month">
+                      {summary.daySpend.map((row) => {
+                        const peak = Math.max(...summary.daySpend.map((item) => item.spend), 1);
+                        const height = row.isFuture ? 4 : Math.max(4, Math.round((row.spend / peak) * 64));
+                        return (
+                          <i
+                            key={row.day}
+                            className={row.isToday ? 'is-today' : row.isFuture ? 'is-future' : ''}
+                            style={{ height }}
+                            title={row.isFuture ? '' : `${row.day.slice(8)} · ${money(row.spend, { cents: true })}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                   {summary.byCategory.length === 0 ? (
                     <p className="vital-muted">
                       {summary.hasAllocations

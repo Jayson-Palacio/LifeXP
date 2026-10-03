@@ -180,6 +180,18 @@ export function summarizeLedger({ settings, entries = [], today }) {
     };
   }).filter((row) => row.spent > 0 || row.allocated > 0);
 
+  const dayNum = Number(String(today).slice(8, 10)) || 1;
+  const daysLeft = Math.max(1, bounds.daysInMonth - dayNum + 1);
+  const dailyRoom = monthSaved / daysLeft;
+  const daySpend = Array.from({ length: bounds.daysInMonth }, (_, index) => {
+    const day = `${bounds.start.slice(0, 8)}${String(index + 1).padStart(2, '0')}`;
+    const spend = monthRows
+      .filter((row) => row.kind === 'spend' && row.logged_on === day)
+      .reduce((total, row) => total + (Number(row.amount) || 0), 0);
+    return { day, spend, isToday: day === today, isFuture: day > today };
+  });
+  const hottest = [...byCategory].sort((a, b) => b.spent - a.spent)[0] || null;
+
   return {
     monthlyIncome,
     yearlyGoal: Number.isFinite(yearlyGoal) ? yearlyGoal : null,
@@ -203,5 +215,10 @@ export function summarizeLedger({ settings, entries = [], today }) {
       if (a.logged_on === b.logged_on) return String(b.created_at).localeCompare(String(a.created_at));
       return a.logged_on < b.logged_on ? 1 : -1;
     }),
+    dayNum,
+    daysLeft,
+    dailyRoom,
+    daySpend,
+    hottest,
   };
 }
