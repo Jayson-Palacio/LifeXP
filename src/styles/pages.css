@@ -4817,11 +4817,34 @@ button.vital-week-day {
   color: #fff;
 }
 
-.vital-fiber-choice label {
-  display: grid;
+.vital-fiber-picks {
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  max-width: 160px;
-  font-size: 13px;
+  margin-top: 6px;
+}
+
+.vital-fiber-picks button {
+  border: 1px solid var(--vital-line, rgba(29, 29, 31, 0.12));
+  background: transparent;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.vital-fiber-picks button.is-active {
+  border-color: transparent;
+  background: var(--vital-fiber, #2f6b4f);
+  color: #fff;
+}
+
+.vital-fiber-type {
+  width: 52px;
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 12px;
 }
 
 .vital-name-gate,

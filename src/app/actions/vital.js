@@ -329,6 +329,7 @@ export async function logVitalFood(payload) {
   let carbs = num(payload.carbs_g);
   let fat = num(payload.fat_g);
   let fiber = num(payload.fiber_g);
+  if (!(fiber > 0)) fiber = null;
   const servings = num(payload.servings) || 1;
 
   const catalog = lookupFood(name);
@@ -338,10 +339,9 @@ export async function logVitalFood(payload) {
     if (protein == null) protein = catalog.protein_g;
     if (carbs == null) carbs = catalog.carbs_g;
     if (fat == null) fat = catalog.fat_g;
-    if (fiber == null) fiber = catalog.fiber_g;
   }
 
-  if (calories == null && name) {
+  if (name && (calories == null || fiber == null)) {
     const { data: kitchenItem } = await auth.supabase
       .from('vital_kitchen')
       .select('*')
@@ -349,14 +349,17 @@ export async function logVitalFood(payload) {
       .ilike('name', name)
       .maybeSingle();
     if (kitchenItem) {
-      name = kitchenItem.name;
-      calories = Number(kitchenItem.calories);
-      protein = protein ?? Number(kitchenItem.protein_g);
-      carbs = carbs ?? Number(kitchenItem.carbs_g);
-      fat = fat ?? Number(kitchenItem.fat_g);
-      fiber = fiber ?? Number(kitchenItem.fiber_g || 0);
+      if (calories == null) {
+        name = kitchenItem.name;
+        calories = Number(kitchenItem.calories);
+        protein = protein ?? Number(kitchenItem.protein_g);
+        carbs = carbs ?? Number(kitchenItem.carbs_g);
+        fat = fat ?? Number(kitchenItem.fat_g);
+      }
+      if (fiber == null && Number(kitchenItem.fiber_g) > 0) fiber = Number(kitchenItem.fiber_g);
     }
   }
+  if (fiber == null && Number(catalog?.fiber_g) > 0) fiber = Number(catalog.fiber_g);
 
   const scaled = scaleServing({
     calories,
@@ -515,6 +518,52 @@ export async function updateVitalFood(payload) {
     if (retry.error) return fail(retry.error.message);
   } else if (error) {
     return fail(error.message);
+  }
+  revalidatePath('/vital');
+  return { success: true };
+}
+
+export async function setVitalFoodFiber(payload) {
+  const auth = await vitalUser();
+  if (auth.error) return fail(auth.error);
+  if (typeof payload.id !== 'string') return fail('Invalid entry.');
+  const grams = Math.round((num(payload.fiber_g) ?? 0) * 10) / 10;
+  if (grams < 0 || grams > 80) return fail('Fiber should be between 0 and 80g.');
+  const { data: row, error: loadError } = await auth.supabase
+    .from('vital_foods')
+    .select('*')
+    .eq('id', payload.id)
+    .eq('owner_id', auth.user.id)
+    .maybeSingle();
+  if (loadError) return fail(loadError.message);
+  if (!row) return fail('That log is gone.');
+  const { error } = await auth.supabase
+    .from('vital_foods')
+    .update({ fiber_g: grams })
+    .eq('id', row.id)
+    .eq('owner_id', auth.user.id);
+  if (error) return fail(error.message);
+
+  const { data: kitchenItem } = await auth.supabase
+    .from('vital_kitchen')
+    .select('id')
+    .eq('owner_id', auth.user.id)
+    .ilike('name', row.name)
+    .maybeSingle();
+  if (kitchenItem?.id) {
+    await auth.supabase.from('vital_kitchen').update({
+      fiber_g: grams,
+      updated_at: new Date().toISOString(),
+    }).eq('id', kitchenItem.id).eq('owner_id', auth.user.id);
+  } else if (grams > 0) {
+    await rememberKitchen(auth.supabase, auth.user.id, {
+      name: row.name,
+      calories: row.calories,
+      protein_g: row.protein_g,
+      carbs_g: row.carbs_g,
+      fat_g: row.fat_g,
+      fiber_g: grams,
+    });
   }
   revalidatePath('/vital');
   return { success: true };

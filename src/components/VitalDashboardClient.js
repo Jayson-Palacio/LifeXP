@@ -54,6 +54,7 @@ import {
   searchVitalFoods,
   serveVitalFood,
   updateVitalFood,
+  setVitalFoodFiber,
   updateVitalKitchenItem,
 } from '../app/actions/vital';
 
@@ -523,6 +524,7 @@ export default function VitalDashboardClient({
     const portion = extras.servings ?? servings;
     const hasMacros = item.calories != null && item.calories !== '';
     const scaled = hasMacros ? scaleServing(item, portion) : item;
+    const knownFiber = Number(hasMacros ? scaled.fiber_g : item.fiber_g);
     const result = await logVitalFood({
       member_id: member.id,
       name: item.name,
@@ -530,7 +532,7 @@ export default function VitalDashboardClient({
       protein_g: hasMacros ? scaled.protein_g : item.protein_g,
       carbs_g: hasMacros ? scaled.carbs_g : item.carbs_g,
       fat_g: hasMacros ? scaled.fat_g : item.fat_g,
-      fiber_g: hasMacros ? scaled.fiber_g : item.fiber_g,
+      fiber_g: knownFiber > 0 ? knownFiber : undefined,
       servings: hasMacros ? 1 : portion,
       meal: extras.meal || mealForLog(item, meal),
       logged_on: logDate,
@@ -802,6 +804,12 @@ export default function VitalDashboardClient({
       }),
     });
     router.refresh();
+  };
+
+  const setFoodFiber = async (row, grams) => {
+    const result = await setVitalFoodFiber({ id: row.id, fiber_g: grams });
+    if (!result.success) setFoodError(result.error);
+    else router.refresh();
   };
 
   const copyMeal = async (mealId) => {
@@ -1239,6 +1247,7 @@ export default function VitalDashboardClient({
                       {calorieTarget
                         ? `${Math.round(journalEaten.calories).toLocaleString()} / ${calorieTarget.toLocaleString()} kcal · ${Math.round(journalEaten.protein)}g protein`
                         : `${Math.round(journalEaten.calories)} kcal · ${Math.round(journalEaten.protein)}g protein`}
+                      {fiberTarget ? ` · ${Math.round(journalEaten.fiber || 0)}g / ${fiberTarget}g fiber` : ''}
                     </span>
                     <div className="vital-meal-board">
                       {(child ? MEALS.filter((item) => item.id !== 'drink') : MEALS).map((group) => {
@@ -1297,9 +1306,39 @@ export default function VitalDashboardClient({
                                   <strong>{row.name}</strong>
                                   <p className="vital-food-pill-meta">
                                     {row.calories} kcal · {Math.round(Number(row.protein_g) || 0)}g
-                                    {fiberTarget && Number(row.fiber_g) ? ` · ${Math.round(Number(row.fiber_g))}g fiber` : ''}
                                     {row.meal === 'drink' ? ' · drink' : ''}
                                   </p>
+                                  {fiberTarget ? (
+                                    <div className="vital-fiber-picks">
+                                      {[0, 2, 5, 8].map((grams) => (
+                                        <button
+                                          key={grams}
+                                          type="button"
+                                          className={Math.round(Number(row.fiber_g) || 0) === grams ? 'is-active' : ''}
+                                          onClick={() => setFoodFiber(row, grams)}
+                                        >
+                                          {grams}g
+                                        </button>
+                                      ))}
+                                      <input
+                                        className="vital-input vital-fiber-type"
+                                        type="number"
+                                        min="0"
+                                        max="80"
+                                        step="1"
+                                        aria-label={`Fiber grams for ${row.name}`}
+                                        placeholder="g"
+                                        defaultValue={Number(row.fiber_g) > 0 && ![0, 2, 5, 8].includes(Math.round(Number(row.fiber_g))) ? Math.round(Number(row.fiber_g)) : ''}
+                                        key={`${row.id}-${row.fiber_g}`}
+                                        onBlur={(event) => {
+                                          if (event.target.value === '') return;
+                                          const grams = Number(event.target.value);
+                                          if (!Number.isFinite(grams) || grams === Number(row.fiber_g)) return;
+                                          setFoodFiber(row, grams);
+                                        }}
+                                      />
+                                    </div>
+                                  ) : null}
                                 </div>
                                 <div className="vital-row-actions">
                                   <button type="button" className="vital-text-btn" onClick={() => setEditFood(row)}>Size</button>
