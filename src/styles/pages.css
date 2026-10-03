@@ -4795,6 +4795,162 @@ button.vital-week-day {
   font-weight: 700;
 }
 
+.vital-week {
+  display: grid;
+  gap: 14px;
+}
+
+.vital-week > .vital-card {
+  margin-bottom: 0;
+}
+
+@media (min-width: 740px) {
+  .vital-week {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vital-week-wide,
+  .vital-pace {
+    grid-column: 1 / -1;
+  }
+}
+
+.vital-pace-number {
+  margin: 2px 0 4px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: var(--vital-ink);
+}
+
+.vital-pace-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eef1f4;
+  color: var(--vital-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vital-card-head .vital-pace-badge {
+  font-size: 12px;
+}
+
+.vital-pace.is-fast .vital-pace-badge {
+  background: #fbeee4;
+  color: #9a4a1c;
+}
+
+.vital-pace.is-on .vital-pace-badge {
+  background: #e7f0ea;
+  color: #2f6b4f;
+}
+
+.vital-pace.is-slow .vital-pace-badge,
+.vital-pace.is-drift .vital-pace-badge {
+  background: #eaeff6;
+  color: #3d5a80;
+}
+
+.vital-week-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.vital-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px;
+  margin: 18px 0 8px;
+}
+
+.vital-stat {
+  display: grid;
+  gap: 2px;
+}
+
+.vital-stat > span {
+  font-size: 12px;
+  color: var(--vital-muted);
+}
+
+.vital-stat strong {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.vital-stat em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--vital-muted);
+}
+
+.vital-meter-week {
+  margin: 6px 0 0;
+}
+
+.vital-move-rows {
+  display: grid;
+  gap: 14px;
+}
+
+.vital-move-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.vital-move-row-head span {
+  color: var(--vital-muted);
+}
+
+.vital-day-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--vital-muted);
+}
+
+.vital-day-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vital-day-key .vital-day {
+  display: inline-block;
+  width: 14px;
+}
+
+.vital-driver-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vital-driver-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--vital-line, #eceff3);
+  font-size: 14px;
+}
+
+.vital-driver-list li:last-child {
+  border-bottom: 0;
+}
+
+.vital-driver-list span {
+  flex-shrink: 0;
+  color: var(--vital-muted);
+}
+
 .vital-fiber-choice {
   display: grid;
   gap: 8px;

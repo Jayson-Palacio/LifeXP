@@ -32,8 +32,8 @@ import {
   suggestedWeeklyChangeKg,
   sumMacros,
 } from '../lib/nutrition';
-import { activityWeek, adaptiveCheck, familyWeek, memberInsights } from '../lib/vitalAnalytics';
-import { coachNote, weekSentence } from '../lib/vitalCoach';
+import { activityWeek, adaptiveCheck, familyWeek, memberInsights, weekGap } from '../lib/vitalAnalytics';
+import { coachNote } from '../lib/vitalCoach';
 import { encodeKitchenRecipe, safeHttpUrl, searchCookRecipes } from '../lib/vitalSuggest';
 import { usualPlates } from '../lib/vitalPlates';
 import { dayPlates, TABLE_LOCAL_KEY } from '../lib/table';
@@ -85,6 +85,15 @@ function FiberGrams({ value, onChange, label = 'Fiber' }) {
         value={current != null && !FIBER_PICKS.includes(current) ? current : ''}
         onChange={(event) => onChange(event.target.value === '' ? '' : Number(event.target.value))}
       />
+    </div>
+  );
+}
+
+function Meter({ value, max }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (Number(value) / max) * 100)) : 0;
+  return (
+    <div className="vital-meter vital-meter-week" aria-hidden="true">
+      <div className={`vital-meter-fill${max > 0 && Number(value) > max * 1.08 ? ' is-over' : ''}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -954,7 +963,14 @@ export default function VitalDashboardClient({
     const slot = meal === 'breakfast' || meal === 'lunch' || meal === 'dinner' ? meal : 'dinner';
     return searchCookRecipes(q, { slot, child, kitchen, simple: true }).slice(0, 8);
   }, [recipeQuery, meal, child, kitchen]);
-  const weekLine = weekSentence({ insights, child });
+  const weekView = weekGap({ insights, child });
+  const weightRows = insights.weightSeries.filter((row) => row.day >= shiftDay(today, -41));
+  const paceBadge = {
+    fast: 'Faster than plan',
+    on: 'On pace',
+    slow: 'Slower than plan',
+    drift: 'Drifting',
+  }[insights.paceStatus] || null;
   const coach = coachNote({
     member,
     plan: memberPlan,
@@ -1552,43 +1568,26 @@ export default function VitalDashboardClient({
             )}
 
             {tab === 'week' && (
-              <section className="vital-bento">
-                <div className="vital-card vital-bento-score">
-                  <p className="vital-kicker">This week</p>
-                  <p className="vital-number">{insights.weekScore}<span>/{insights.checks.length}</span></p>
-                  <p className="vital-hero-sub">{weekLine}</p>
-                  <ul className="vital-checks">
-                    {insights.checks.map((check) => (
-                      <li key={check.id} className={check.ok ? 'is-ok' : ''}>
-                        <span>{check.label}</span>
-                        <em>{check.detail}</em>
-                      </li>
-                    ))}
-                  </ul>
-                  {insights.streak ? (
-                    <p className="vital-muted">{insights.streak}-day logging streak</p>
-                  ) : null}
-                </div>
-
-                <form onSubmit={handleWeight} className="vital-card vital-bento-weight">
+              <section className="vital-week">
+                <form onSubmit={handleWeight} className={`vital-card vital-pace is-${insights.paceStatus}`}>
                   <div className="vital-card-head">
-                    <p className="vital-kicker">Weight</p>
-                    <span>{insights.weekDeltaLabel || insights.etaLabel || 'Trend'}</span>
+                    <p className="vital-kicker">Weight pace</p>
+                    {paceBadge ? <span className="vital-pace-badge">{paceBadge}</span> : null}
                   </div>
-                  <p className="vital-number vital-number-move">{insights.currentLabel}</p>
-                  <p className="vital-hero-sub">
-                    {todayWeight ? 'Today' : (insights.lostLabel || 'Log a weigh-in to start the trend.')}
-                    {todayWeight && insights.lostLabel ? ` · ${insights.lostLabel}` : ''}
-                    {insights.remainingLabel ? ` · ${insights.remainingLabel}` : ''}
+                  <p className="vital-pace-number">{insights.paceLabel || insights.currentLabel}</p>
+                  <p className="vital-muted">
+                    {insights.paceLabel
+                      ? [insights.planLabel, `Now ${insights.currentLabel}`, insights.remainingLabel].filter(Boolean).join(' · ')
+                      : 'Weigh in on 4 mornings across a week to see your pace.'}
                   </p>
-                  {insights.weightSeries.length > 1 && (
+                  {weightRows.length > 1 && (
                     <VitalChart
-                      values={insights.weightSeries.map((row) => (units === 'metric' ? row.kg : kgToLb(row.kg)))}
-                      trend={insights.weightSeries.map((row) => (units === 'metric' ? row.trendKg : kgToLb(row.trendKg)))}
-                      labels={insights.weightSeries.map((row) => row.label)}
-                      unit={units === 'metric' ? 'kg · 7-day mean' : 'lb · 7-day mean'}
+                      values={weightRows.map((row) => (units === 'metric' ? row.kg : kgToLb(row.kg)))}
+                      trend={weightRows.map((row) => (units === 'metric' ? row.trendKg : kgToLb(row.trendKg)))}
+                      labels={weightRows.map((row) => row.label)}
+                      unit={units === 'metric' ? 'kg · 7-day average' : 'lb · 7-day average'}
                       color="#3d5a80"
-                      height={88}
+                      height={110}
                     />
                   )}
                   <div className="vital-weigh-row">
@@ -1609,80 +1608,86 @@ export default function VitalDashboardClient({
                   {weightError && <p className="vital-err">{weightError}</p>}
                 </form>
 
-                <div className="vital-card vital-bento-metric">
-                  <p className="vital-kicker">{child ? 'Play' : 'Move'}</p>
-                  <VitalRing
-                    value={child ? insights.moveMinutes : insights.moveModerate}
-                    max={insights.moveGoal || (child ? 420 : 150)}
-                    unit="min"
-                    caption={child ? `${insights.moveMinutes} of ${insights.moveGoal}` : `${insights.moveModerate} / ${insights.moveGoal} mod. min`}
-                    color="var(--vital-move)"
-                    size={92}
-                  />
-                </div>
-                <div className="vital-card vital-bento-metric">
-                  <p className="vital-kicker">Steps</p>
-                  <p className="vital-number">{(insights.weekSteps || 0).toLocaleString()}</p>
-                  <p className="vital-muted">
-                    of {(stepGoal * 7).toLocaleString()} this week · was {(insights.lastWeekSteps || 0).toLocaleString()}
-                  </p>
-                </div>
-                {!child && (
-                  <div className="vital-card vital-bento-metric">
-                    <p className="vital-kicker">Strength</p>
-                    <p className="vital-number">{insights.strengthDays}/{insights.strengthGoal}</p>
-                    <p className="vital-muted">Lift days this week</p>
+                <div className="vital-card vital-week-wide">
+                  <div className="vital-card-head">
+                    <p className="vital-kicker">This week</p>
+                    <span>{insights.loggedDays}/7 days logged · {insights.weekScore} of {insights.checks.length} checks</span>
                   </div>
-                )}
-                <div className="vital-card vital-bento-metric">
-                  <p className="vital-kicker">On target</p>
-                  <p className="vital-number">{insights.onTarget}/{insights.loggedDays || 0}</p>
-                  <p className="vital-muted">{simple ? 'Protein days' : 'Days on target'}</p>
+                  <h2 className="vital-week-title">{weekView.title}</h2>
+                  <p className="vital-muted">{weekView.body}</p>
+                  <div className="vital-stat-grid">
+                    {!simple && insights.target ? (
+                      <div className="vital-stat">
+                        <span>Calories a day</span>
+                        <strong>{insights.loggedDays ? insights.avgKcal.toLocaleString() : '—'}</strong>
+                        <em>
+                          of {insights.target.toLocaleString()}
+                          {insights.prevAvg ? ` · last week ${insights.prevAvg.toLocaleString()}` : ''}
+                        </em>
+                        <Meter value={insights.avgKcal} max={insights.target} />
+                      </div>
+                    ) : null}
+                    {insights.proteinTarget ? (
+                      <div className="vital-stat">
+                        <span>Protein a day</span>
+                        <strong>{insights.loggedDays ? `${insights.avgProtein}g` : '—'}</strong>
+                        <em>of {insights.proteinTarget}g · hit on {insights.proteinDays} of {insights.loggedDays} days</em>
+                        <Meter value={insights.avgProtein} max={insights.proteinTarget} />
+                      </div>
+                    ) : null}
+                    {insights.fiberTarget ? (
+                      <div className="vital-stat">
+                        <span>Fiber a day</span>
+                        <strong>{insights.loggedDays ? `${insights.avgFiber}g` : '—'}</strong>
+                        <em>of {insights.fiberTarget}g</em>
+                        <Meter value={insights.avgFiber} max={insights.fiberTarget} />
+                      </div>
+                    ) : null}
+                  </div>
+                  <ul className="vital-checks">
+                    {insights.checks.map((check) => (
+                      <li key={check.id} className={check.ok ? 'is-ok' : ''}>
+                        <span>{check.label}</span>
+                        <em>{check.detail}</em>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                <div className="vital-card vital-bento-half">
-                  <p className="vital-kicker">Week vs last week</p>
-                  <div className="vital-compare">
+                <div className="vital-card">
+                  <div className="vital-card-head">
+                    <p className="vital-kicker">{child ? 'Play' : 'Movement'}</p>
+                    <span>This week</span>
+                  </div>
+                  <div className="vital-move-rows">
                     <div>
-                      <span>Avg energy</span>
-                      <strong>{insights.avgKcal || '—'}</strong>
-                      {insights.prevAvg ? <em>was {insights.prevAvg}</em> : null}
+                      <div className="vital-move-row-head">
+                        <strong>{child ? 'Play minutes' : 'Moderate minutes'}</strong>
+                        <span>{child ? insights.moveMinutes : insights.moveModerate} of {insights.moveGoal}</span>
+                      </div>
+                      <Meter value={child ? insights.moveMinutes : insights.moveModerate} max={insights.moveGoal} />
                     </div>
-                    <div>
-                      <span>Avg protein</span>
-                      <strong>{insights.proteinTarget ? `${insights.avgProtein}g` : (insights.avgProtein || '—')}</strong>
-                      {insights.proteinTarget ? <em>/ {insights.proteinTarget}g · {insights.proteinDays}/{insights.loggedDays || 0} days</em> : null}
-                    </div>
-                    <div>
-                      <span>Movement</span>
-                      <strong>{insights.moveMinutes} min</strong>
-                      {insights.lastMoveMinutes ? <em>was {insights.lastMoveMinutes}</em> : null}
-                    </div>
-                    {insights.fiberTarget != null && (
+                    {!child && (
                       <div>
-                        <span>Avg fiber</span>
-                        <strong>{insights.avgFiber}g</strong>
-                        <em>/ {insights.fiberTarget}g</em>
+                        <div className="vital-move-row-head">
+                          <strong>Lift days</strong>
+                          <span>{insights.strengthDays} of {insights.strengthGoal}</span>
+                        </div>
+                        <Meter value={insights.strengthDays} max={insights.strengthGoal} />
                       </div>
                     )}
-                  </div>
-                  {(insights.weekdayAvg != null || insights.weekendAvg != null) && (
-                    <div className="vital-compare vital-compare-split">
-                      <div>
-                        <span>Weekdays</span>
-                        <strong>{insights.weekdayAvg ?? '—'}</strong>
+                    <div>
+                      <div className="vital-move-row-head">
+                        <strong>Steps</strong>
+                        <span>{(insights.weekSteps || 0).toLocaleString()} of {(stepGoal * 7).toLocaleString()}</span>
                       </div>
-                      <div>
-                        <span>Weekends</span>
-                        <strong>{insights.weekendAvg ?? '—'}</strong>
-                      </div>
+                      <Meter value={insights.weekSteps || 0} max={stepGoal * 7} />
                     </div>
-                  )}
-                  {insights.intakePace && <p className="vital-muted">{insights.intakePace}</p>}
+                  </div>
                 </div>
 
                 {adaptive && (
-                  <div className="vital-card vital-bento-wide vital-adaptive">
+                  <div className="vital-card vital-week-wide vital-adaptive">
                     <p className="vital-kicker">From the scale</p>
                     <h2>{adaptive.title}</h2>
                     <p>{adaptive.body}</p>
@@ -1708,8 +1713,11 @@ export default function VitalDashboardClient({
                   </div>
                 )}
 
-                <div className="vital-card vital-bento-wide">
-                  <p className="vital-kicker">{simple ? 'Log · 14 days' : 'Energy · 14 days'}</p>
+                <div className="vital-card vital-week-wide">
+                  <div className="vital-card-head">
+                    <p className="vital-kicker">{simple ? 'Logging · last 14 days' : 'Calories · last 14 days'}</p>
+                    {!simple && insights.target ? <span>Dashed line is {insights.target.toLocaleString()}</span> : null}
+                  </div>
                   {!simple && (
                     <VitalChart
                       values={insights.energyPoints}
@@ -1725,11 +1733,14 @@ export default function VitalDashboardClient({
                       <span key={day.day} className={`vital-day vital-day-${day.status}`} title={`${day.day} ${day.status}`} />
                     ))}
                   </div>
-                  <p className="vital-muted">
-                    {insights.loggedDays < 4
-                      ? `${insights.loggedDays} of 7 days logged — not enough to judge the week.`
-                      : (insights.intakePace || 'Filled days are logged. A brighter mark is inside the target band. Gaps are missing logs.')}
-                  </p>
+                  <div className="vital-day-key" aria-hidden="true">
+                    <span><i className="vital-day vital-day-band" />In range</span>
+                    <span><i className="vital-day vital-day-off" />Off range</span>
+                    <span><i className="vital-day vital-day-missing" />Not logged</span>
+                  </div>
+                  {insights.loggedDays >= 4 && insights.intakePace ? (
+                    <p className="vital-muted">{insights.intakePace}</p>
+                  ) : null}
                   {insights.mealGap && (
                     <p className="vital-muted">
                       {insights.mealGap.meal[0].toUpperCase() + insights.mealGap.meal.slice(1)} is {insights.mealGap.avg}g protein against about {insights.mealGap.target}g.
@@ -1738,7 +1749,7 @@ export default function VitalDashboardClient({
                 </div>
 
                 {members.length > 1 && (
-                  <div className="vital-card vital-bento-wide">
+                  <div className="vital-card vital-week-wide">
                     <p className="vital-kicker">Household this week</p>
                     <div className="vital-house-grid">
                       {houseWeek.map((row) => (
@@ -1764,42 +1775,22 @@ export default function VitalDashboardClient({
                 )}
 
                 {(insights.foodDrivers.length > 0 || insights.drinkKcal > 0) && (
-                  <div className="vital-card vital-bento-wide">
-                    <p className="vital-kicker">What drove the calories</p>
-                    <div className="vital-tile-grid">
+                  <div className="vital-card vital-week-wide">
+                    <div className="vital-card-head">
+                      <p className="vital-kicker">Biggest calories this week</p>
+                      <span>Top 5 foods</span>
+                    </div>
+                    <ul className="vital-driver-list">
                       {insights.foodDrivers.map((row) => (
-                        <div key={row.name} className="vital-tile">
+                        <li key={row.name}>
                           <strong>{row.name}</strong>
-                          <span>{row.calories} kcal · {row.count}× · {row.proteinPer100}g protein / 100 kcal</span>
-                        </div>
+                          <span>{row.calories.toLocaleString()} kcal · {row.count}×</span>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                     {insights.drinkKcal > 0 && (
-                      <p className="vital-muted">Drinks added {insights.drinkKcal.toLocaleString()} kcal this week.</p>
+                      <p className="vital-muted">Drinks added {insights.drinkKcal.toLocaleString()} kcal.</p>
                     )}
-                  </div>
-                )}
-
-                {moves.length > 0 && (
-                  <div className="vital-card vital-bento-wide">
-                    <p className="vital-kicker">Saved moves</p>
-                    <div className="vital-chips">
-                      {moves.map((row) => (
-                        <span key={row.id} className="vital-chip vital-chip-row">
-                          {row.label}
-                          <button
-                            type="button"
-                            className="vital-text-btn"
-                            onClick={async () => {
-                              await deleteVitalMove(row.id);
-                              router.refresh();
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 )}
               </section>
@@ -2000,6 +1991,28 @@ export default function VitalDashboardClient({
                           </button>
                         </span>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {moves.length > 0 && (
+                <div className="vital-card" style={{ marginTop: 12 }}>
+                  <p className="vital-kicker">Saved moves</p>
+                  <div className="vital-chips">
+                    {moves.map((row) => (
+                      <span key={row.id} className="vital-chip vital-chip-row">
+                        {row.label}
+                        <button
+                          type="button"
+                          className="vital-text-btn"
+                          onClick={async () => {
+                            await deleteVitalMove(row.id);
+                            router.refresh();
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </span>
                     ))}
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { adaptiveCheck, memberInsights } from './vitalAnalytics.js';
+import { adaptiveCheck, memberInsights, weekGap } from './vitalAnalytics.js';
 import { shiftDay } from './nutrition.js';
 
 const today = '2026-09-23';
@@ -134,4 +134,39 @@ test('diet break can fire from weigh-ins older than 60 days', () => {
   });
   assert.ok(insights.cutWeeks >= 10);
   assert.equal(card?.kind, 'diet_break');
+});
+
+test('flags a cut that is losing much faster than the plan', () => {
+  const days = [0, 1, 2, 3, 4, 5].map((offset) => shiftDay(today, -offset));
+  const weighIns = Array.from({ length: 11 }, (_, index) => ({
+    logged_on: shiftDay(today, -10 + index),
+    weight_kg: 104.6 - index * 0.28,
+  }));
+  const insights = memberInsights({
+    plan: plan({ calorie_target: 2000, weekly_change_kg: 0.68 }),
+    foods: foodsFor(days, 1715, 150),
+    weighIns,
+    today,
+    units: 'metric',
+    child: false,
+  });
+  assert.equal(insights.paceStatus, 'fast');
+  assert.ok(insights.paceKgPerWeek < -1.8 && insights.paceKgPerWeek > -2.1);
+  assert.equal(weekGap({ insights, child: false }).id, 'fast');
+});
+
+test('pace waits for at least four weigh-ins over a week', () => {
+  const insights = memberInsights({
+    plan: plan(),
+    foods: [],
+    weighIns: [
+      { logged_on: shiftDay(today, -2), weight_kg: 80 },
+      { logged_on: today, weight_kg: 79 },
+    ],
+    today,
+    units: 'us',
+    child: false,
+  });
+  assert.equal(insights.paceKgPerWeek, null);
+  assert.equal(insights.paceStatus, 'unknown');
 });

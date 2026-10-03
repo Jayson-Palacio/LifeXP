@@ -59,6 +59,46 @@ function meanInRange(weights, startIso, endIso) {
   return rows.reduce((sum, row) => sum + Number(row.weight_kg), 0) / rows.length;
 }
 
+function dayIndex(iso) {
+  return Math.round(new Date(`${iso}T12:00:00`).getTime() / 86400000);
+}
+
+export function weightPace(sortedWeights, today, days = 28) {
+  const since = shiftDay(today, -(days - 1));
+  const rows = (sortedWeights || []).filter((row) => row.logged_on >= since && row.logged_on <= today);
+  if (rows.length < 4) return null;
+  const xs = rows.map((row) => dayIndex(row.logged_on));
+  const span = xs.at(-1) - xs[0];
+  if (span < 7) return null;
+  const ys = rows.map((row) => Number(row.weight_kg));
+  const meanX = xs.reduce((sum, x) => sum + x, 0) / xs.length;
+  const meanY = ys.reduce((sum, y) => sum + y, 0) / ys.length;
+  let top = 0;
+  let bottom = 0;
+  xs.forEach((x, index) => {
+    top += (x - meanX) * (ys[index] - meanY);
+    bottom += (x - meanX) ** 2;
+  });
+  if (!bottom) return null;
+  return { kgPerWeek: (top / bottom) * 7, weighIns: rows.length, spanDays: span };
+}
+
+function paceStatus({ intent, kgPerWeek, planKgPerWeek }) {
+  if (kgPerWeek == null) return 'unknown';
+  if (intent === 'lose') {
+    const loss = -kgPerWeek;
+    if (planKgPerWeek > 0 && loss > planKgPerWeek * 1.5 && loss > 0.5) return 'fast';
+    if (loss < Math.max(0.1, planKgPerWeek * 0.5)) return 'slow';
+    return 'on';
+  }
+  if (intent === 'gain') {
+    if (planKgPerWeek > 0 && kgPerWeek > planKgPerWeek * 1.5 && kgPerWeek > 0.4) return 'fast';
+    if (kgPerWeek < Math.max(0.05, planKgPerWeek * 0.5)) return 'slow';
+    return 'on';
+  }
+  return Math.abs(kgPerWeek) > 0.3 ? 'drift' : 'on';
+}
+
 function weekMove(activities, startIso, count) {
   const days = new Map();
   for (let i = 0; i < count; i += 1) days.set(shiftDay(startIso, i), true);
@@ -225,6 +265,17 @@ export function memberInsights({ plan, foods, weighIns, activities = [], today, 
   }
 
   const weekDelta = weekAvg != null && prevAvgWeight != null ? weekAvg - prevAvgWeight : null;
+  const pace = weightPace(sortedWeights, today);
+  const planKgPerWeek = intent === 'lose' || intent === 'gain' ? weekly : 0;
+  const pacing = paceStatus({ intent, kgPerWeek: pace?.kgPerWeek ?? null, planKgPerWeek });
+  const paceLabel = pace
+    ? (Math.abs(pace.kgPerWeek) < 0.05
+      ? 'Holding steady'
+      : `${pace.kgPerWeek < 0 ? 'Down' : 'Up'} ${formatWeight(Math.abs(pace.kgPerWeek), units)} a week`)
+    : null;
+  const planLabel = planKgPerWeek > 0
+    ? `Plan: ${formatWeight(planKgPerWeek, units)} a week`
+    : (intent === 'maintain' ? 'Plan: hold steady' : null);
   const weekdayLogged = thisWeek.filter((day) => day.count > 0 && !weekendDay(day.day));
   const weekendLogged = thisWeek.filter((day) => day.count > 0 && weekendDay(day.day));
   const weekendMissed = thisWeek.some((day) => weekendDay(day.day) && day.count === 0);
@@ -353,6 +404,12 @@ export function memberInsights({ plan, foods, weighIns, activities = [], today, 
     remaining,
     weekAvg,
     weekDelta,
+    paceKgPerWeek: pace?.kgPerWeek ?? null,
+    paceWeighIns: pace?.weighIns ?? 0,
+    planKgPerWeek,
+    paceStatus: pacing,
+    paceLabel,
+    planLabel,
     etaLabel,
     intakeKgWeek,
     intakePace,
@@ -409,6 +466,16 @@ export function weekGap({ insights, child }) {
       id: 'incomplete',
       title: 'The log is too thin to judge.',
       body: `${insights.loggedDays} of 7 days logged — not enough to judge the week.`,
+    };
+  }
+  if (!child && insights.paceStatus === 'fast' && insights.intent === 'lose') {
+    const eatUp = insights.target && insights.avgKcal && insights.avgKcal < insights.target - 100
+      ? ` You are averaging ${insights.avgKcal.toLocaleString()} kcal against ${insights.target.toLocaleString()}. Eat closer to the target.`
+      : ' Keep protein high and do not cut further.';
+    return {
+      id: 'fast',
+      title: 'You are losing faster than planned.',
+      body: `${insights.paceLabel}, against a plan of ${formatWeight(insights.planKgPerWeek, insights.units)}.${eatUp}`,
     };
   }
   if (insights.weekendGap) {
