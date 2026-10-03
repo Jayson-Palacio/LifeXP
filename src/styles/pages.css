@@ -8186,13 +8186,12 @@ body:has(.play-app) {
 
 .chicken-over {
   position: absolute;
-  z-index: 6;
+  z-index: 30;
   inset: 0;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(10, 18, 8, 0.28);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 18, 8, 0.45);
 }
 
 .chicken-card {
@@ -8581,18 +8580,77 @@ body:has(.play-app.is-planet) {
 .planet-palette::-webkit-scrollbar { display: none; }
 
 .planet-palette button {
-  width: 44px;
-  height: 44px;
+  width: 54px;
+  height: 54px;
   flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   border: 2px solid transparent;
-  border-radius: 12px;
-  box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   cursor: pointer;
+}
+
+.planet-palette button i {
+  width: 22px;
+  height: 14px;
+  border-radius: 4px;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
+}
+
+.planet-palette button b {
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .planet-palette button.is-on {
   border-color: #fff;
   transform: translateY(-3px);
+}
+
+.planet-gather {
+  position: absolute;
+  z-index: 3;
+  top: calc(148px + env(safe-area-inset-top));
+  left: 16px;
+  margin: 0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.planet-gather i {
+  display: block;
+  width: 120px;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 99px;
+  background: #ffd60a;
+  transform-origin: left center;
+}
+
+.planet-turns {
+  position: absolute;
+  z-index: 4;
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(168px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 8px;
+}
+
+.planet-turns button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
 }
 
 .planet-actions {

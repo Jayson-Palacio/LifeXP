@@ -1,51 +1,54 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  SIZE,
   canStep,
-  cellKey,
-  countBlocks,
-  placeBlock,
-  seedPlanet,
-  takeBlock,
+  findPath,
+  gatherNode,
+  makeWorld,
+  placeBuilt,
+  spawn,
+  surfaceHeight,
+  takeBuilt,
+  tileAt,
 } from './planetWorld.js';
 
-test('a new planet has ground under the start', () => {
-  const cells = seedPlanet();
-  assert.ok(cells[cellKey(0, 0)].includes('grass'));
-  assert.equal(canStep(cells, 0, 0, 0, -1), true);
-  assert.ok(countBlocks(cells) > 20);
+test('the planet is a wide walkable meadow at the start', () => {
+  const world = makeWorld(7);
+  const { x, z } = spawn();
+  assert.equal(SIZE, 72);
+  assert.equal(tileAt(world, x, z).id, 'grass');
+  assert.equal(canStep(world, x, z, 1, 0), true);
+  assert.ok(Object.keys(world.nodes).length > 40);
 });
 
-test('place grows empty space up to the height you are standing on', () => {
-  const cells = { [cellKey(0, 0)]: ['stone', 'dirt', 'grass'] };
-  const next = placeBlock(cells, 0, 0, 1, 0, 'sand');
-  assert.deepEqual(next[cellKey(1, 0)], ['sand', 'sand', 'sand']);
-  assert.equal(canStep(next, 0, 0, 1, 0), true);
+test('a click path stays on the ground', () => {
+  const world = makeWorld(7);
+  const { x, z } = spawn();
+  const path = findPath(world, x, z, x + 4, z + 1);
+  assert.ok(path.length >= 4);
+  assert.equal(path[0].x === x && path[0].z === z, false);
+  assert.equal(path[path.length - 1].x, x + 4);
 });
 
-test('place stacks when the front tile is already as tall', () => {
-  const cells = {
-    [cellKey(0, 0)]: ['grass'],
-    [cellKey(0, -1)]: ['grass'],
-  };
-  const next = placeBlock(cells, 0, 0, 0, -1, 'wood');
-  assert.deepEqual(next[cellKey(0, -1)], ['grass', 'wood']);
+test('cliffs are not a single step', () => {
+  const world = makeWorld(7);
+  const { x, z } = spawn();
+  world.ground[(z) * SIZE + (x + 1)].h = surfaceHeight(world, x, z) + 3;
+  assert.equal(canStep(world, x, z, 1, 0), false);
 });
 
-test('you cannot walk off the edge or up a cliff', () => {
-  const cells = { [cellKey(0, 0)]: ['grass', 'grass'] };
-  assert.equal(canStep(cells, 0, 0, 1, 0), false);
-  cells[cellKey(1, 0)] = ['grass', 'grass', 'grass', 'grass'];
-  assert.equal(canStep(cells, 0, 0, 1, 0), false);
-});
-
-test('take removes one block and can open a hole', () => {
-  const cells = {
-    [cellKey(0, 0)]: ['grass'],
-    [cellKey(1, 0)]: ['sand', 'sand'],
-  };
-  const once = takeBlock(cells, 0, 0, 1, 0);
-  assert.deepEqual(once[cellKey(1, 0)], ['sand']);
-  const twice = takeBlock(once, 0, 0, 1, 0);
-  assert.equal(twice[cellKey(1, 0)], undefined);
+test('gathering a tree gives wood and placing spends it', () => {
+  const world = makeWorld(7);
+  const { x, z } = spawn();
+  world.nodes[`${x + 1},${z}`] = { kind: 'tree', left: 2 };
+  const bag = { wood: 0, stone: 0, gold: 0, leaf: 0 };
+  assert.equal(gatherNode(world, x + 1, z), 'wood');
+  bag.wood += 1;
+  assert.equal(placeBuilt(world, x, z + 1, 'wood', bag), true);
+  assert.equal(bag.wood, 0);
+  assert.equal(surfaceHeight(world, x, z + 1), tileAt(world, x, z + 1).h + 1);
+  assert.equal(takeBuilt(world, x, z + 1, bag), true);
+  assert.equal(bag.wood, 1);
+  assert.equal(placeBuilt(world, x, z + 1, 'stone', bag), false);
 });

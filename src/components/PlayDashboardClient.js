@@ -29,7 +29,7 @@ export default function PlayDashboardClient() {
             <h1>Play</h1>
             <button type="button" className="is-planet" onClick={() => setGame('planet')}>
               <strong>Planet</strong>
-              <span>Walk and build. The view stays put, so you never have to look around.</span>
+              <span>Tap to walk a big world. Gather trees and rocks, then build. The view does not spin on its own.</span>
             </button>
             <button type="button" onClick={() => setGame('cross')}>
               <strong>Cross</strong>
