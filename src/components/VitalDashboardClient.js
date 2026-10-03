@@ -965,6 +965,16 @@ export default function VitalDashboardClient({
   }, [recipeQuery, meal, child, kitchen]);
   const weekView = weekGap({ insights, child });
   const weightRows = insights.weightSeries.filter((row) => row.day >= shiftDay(today, -41));
+  const toWeightUnits = (kg) => (units === 'metric' ? kg : kgToLb(kg));
+  const weightXs = weightRows.map((row) => Math.round(
+    (new Date(`${row.day}T12:00:00`) - new Date(`${weightRows[0].day}T12:00:00`)) / 86400000
+  ));
+  const planDirection = insights.intent === 'lose' ? -1 : insights.intent === 'gain' ? 1 : 0;
+  const showPlanLine = !child && weightRows.length > 1
+    && (planDirection === 0 ? insights.intent === 'maintain' : insights.planKgPerWeek > 0);
+  const weightPlanLine = showPlanLine
+    ? weightXs.map((days) => toWeightUnits(weightRows[0].trendKg + planDirection * insights.planKgPerWeek * (days / 7)))
+    : null;
   const paceBadge = {
     fast: 'Faster than plan',
     on: 'On pace',
@@ -1581,14 +1591,25 @@ export default function VitalDashboardClient({
                       : 'Weigh in on 4 mornings across a week to see your pace.'}
                   </p>
                   {weightRows.length > 1 && (
-                    <VitalChart
-                      values={weightRows.map((row) => (units === 'metric' ? row.kg : kgToLb(row.kg)))}
-                      trend={weightRows.map((row) => (units === 'metric' ? row.trendKg : kgToLb(row.trendKg)))}
-                      labels={weightRows.map((row) => row.label)}
-                      unit={units === 'metric' ? 'kg · 7-day average' : 'lb · 7-day average'}
-                      color="#3d5a80"
-                      height={110}
-                    />
+                    <>
+                      <VitalChart
+                        values={weightRows.map((row) => toWeightUnits(row.kg))}
+                        trend={weightRows.map((row) => toWeightUnits(row.trendKg))}
+                        guide={weightPlanLine}
+                        xs={weightXs}
+                        labels={weightRows.map((row) => row.label)}
+                        unit={units === 'metric' ? 'kg' : 'lb'}
+                        color="#3d5a80"
+                        height={150}
+                        zero={false}
+                        minSpan={units === 'metric' ? 1 : 2}
+                      />
+                      <div className="vital-chart-key" aria-hidden="true">
+                        <span><i className="is-trend" />7-day average</span>
+                        {weightPlanLine ? <span><i className="is-plan" />Plan</span> : null}
+                        <span><i className="is-dot" />Weigh-ins</span>
+                      </div>
+                    </>
                   )}
                   <div className="vital-weigh-row">
                     <label className="vital-sr" htmlFor="weigh_in">{todayWeight ? 'Update today’s weight' : 'Today’s weight'}</label>
