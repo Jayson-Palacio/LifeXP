@@ -5885,7 +5885,31 @@ button.vital-week-day {
   margin-top: 8px;
 }
 
-.table-pick-section {
+.table-recipes {
+  display: grid;
+  gap: 12px;
+}
+
+.table-recipe {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--table-line);
+}
+
+.table-recipe strong {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.table-recipe a {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--vital-muted);
+}
   margin: 14px 0 2px;
   font-size: 12px;
   font-weight: 700;

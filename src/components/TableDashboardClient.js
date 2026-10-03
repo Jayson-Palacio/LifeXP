@@ -35,6 +35,7 @@ import { playClick, playPop } from '../lib/sounds';
 const LOCAL_KEY = 'kaeluma.table.v1';
 const TABS = [
   { id: 'week', label: 'Week' },
+  { id: 'recipes', label: 'Recipes' },
   { id: 'list', label: 'List' },
 ];
 
@@ -145,6 +146,9 @@ export default function TableDashboardClient({
   const [savingRecipe, setSavingRecipe] = useState(false);
   const [ownKitchen, setOwnKitchen] = useState(kitchen);
   const [extraName, setExtraName] = useState('');
+  const [recipeQuery, setRecipeQuery] = useState('');
+  const [recipeLabel, setRecipeLabel] = useState('');
+  const [recipeSlot, setRecipeSlot] = useState('dinner');
 
   const seeded = useMemo(() => planForWeek(plans, weekStart, {}), [plans, weekStart]);
   const [meals, setMeals] = useState(seeded.meals);
@@ -174,6 +178,10 @@ export default function TableDashboardClient({
   const hits = useMemo(
     () => (picker ? searchPlates(query, { slot: picker.slot, kitchen: ownKitchen, label }) : []),
     [picker, query, ownKitchen, label]
+  );
+  const catalog = useMemo(
+    () => searchPlates(recipeQuery, { slot: recipeSlot, kitchen: ownKitchen, label: recipeLabel }),
+    [recipeQuery, recipeSlot, ownKitchen, recipeLabel]
   );
 
   const openSlot = (ymd, slot) => {
@@ -342,6 +350,7 @@ export default function TableDashboardClient({
           <p className="table-note">Saving on this device. Run <code>table_schema.sql</code> so the week follows the login.</p>
         ) : null}
 
+        {tab !== 'recipes' ? (
         <div className="table-bar">
           <div className="table-week-bar">
             <button type="button" className="table-week-shift" onClick={() => setWeekStart(shiftYmd(weekStart, -7))} aria-label="Last week">
@@ -372,6 +381,7 @@ export default function TableDashboardClient({
             </button>
           </div>
         </div>
+        ) : null}
 
         <div className="table-toolbar">
           <nav className="vital-tabs" aria-label="Table">
@@ -426,6 +436,68 @@ export default function TableDashboardClient({
               </div>
             ))}
           </div>
+        )}
+
+        {tab === 'recipes' && (
+          <section className="table-recipes">
+            <label htmlFor="table-browse-search" className="vital-sr">Search recipes</label>
+            <input
+              id="table-browse-search"
+              className="vital-input"
+              value={recipeQuery}
+              onChange={(e) => setRecipeQuery(e.target.value)}
+              placeholder="Search recipes"
+              autoComplete="off"
+            />
+            <div className="table-label-picks" role="group" aria-label="Meal">
+              {TABLE_SLOTS.map((slot) => (
+                <button
+                  key={slot.id}
+                  type="button"
+                  className={`table-label-btn${recipeSlot === slot.id ? ' is-on' : ''}`}
+                  onClick={() => setRecipeSlot(slot.id)}
+                >
+                  {slot.label}
+                </button>
+              ))}
+            </div>
+            <div className="table-label-picks" role="group" aria-label="Filter recipes">
+              <button
+                type="button"
+                className={`table-label-btn${recipeLabel === 'yours' ? ' is-on' : ''}`}
+                onClick={() => setRecipeLabel((prev) => (prev === 'yours' ? '' : 'yours'))}
+              >
+                Yours
+              </button>
+              {TABLE_LABELS.map((row) => (
+                <button
+                  key={row.id}
+                  type="button"
+                  className={`table-label-btn${recipeLabel === row.id ? ' is-on' : ''}`}
+                  onClick={() => setRecipeLabel((prev) => (prev === row.id ? '' : row.id))}
+                >
+                  {row.label}
+                </button>
+              ))}
+            </div>
+            <div className="table-pick-hits">
+              {catalog.length === 0 ? (
+                <p className="vital-muted">{recipeLabel === 'yours' ? 'No recipes of yours yet.' : 'No recipes for that.'}</p>
+              ) : null}
+              {catalog.map((hit) => {
+                const href = safeHttpUrl(hit.recipeUrl);
+                return (
+                  <div key={`${hit.saved ? 'yours' : 'lib'}-${hit.id}-${hit.title}`} className={`table-recipe${hit.saved ? ' is-yours' : ''}`}>
+                    <strong>
+                      {hit.title}
+                      {hit.saved ? <i className="table-yours">Yours</i> : null}
+                    </strong>
+                    {href ? <a href={href} target="_blank" rel="noopener noreferrer">Open</a> : null}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {tab === 'list' && (
