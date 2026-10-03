@@ -72,28 +72,50 @@ export function makeWorld(seed = 7) {
   for (let z = 0; z < SIZE; z += 1) {
     for (let x = 0; x < SIZE; x += 1) {
       const dist = Math.hypot(x - cx, z - cz);
-      const flatten = Math.max(0, 1 - dist / 7);
       const n = field(x, z, seed);
-      let h = Math.round(1 + n * 3.1 * (1 - flatten * 0.95));
-      h = Math.max(1, Math.min(5, h));
+      const biome = noise(x * 0.035, z * 0.035, seed + 4);
+      let h = 1;
       let groundId = 'grass';
-      if (h >= 5) groundId = 'snow';
-      else if (h >= 4) groundId = 'stone';
-      else if (n < 0.28 && h <= 2 && dist > 10) groundId = 'sand';
-      if (n < 0.18 && h <= 2 && dist > 9) {
+      if (dist > 14 && biome < 0.32) groundId = 'sand';
+      if (dist > 16 && biome > 0.74) {
+        groundId = 'stone';
+        h = 2 + (n > 0.6 ? 1 : 0);
+      }
+      if (dist > 22 && n > 0.82) {
+        groundId = 'snow';
+        h = 4;
+      }
+      if (dist > 12 && biome < 0.2 && n < 0.45) {
         groundId = 'water';
         h = 1;
       }
-      ground[z * SIZE + x] = { h, id: groundId };
-      if (groundId === 'water' || dist < 6) continue;
+      const flower = groundId === 'grass' && dist > 2.2 && dist < 9 && rand(x * 19 + z * 23 + seed) > 0.72;
+      ground[z * SIZE + x] = { h, id: groundId, flower };
+      if (groundId === 'water' || dist < 5) continue;
       const roll = rand(seed * 17 + x * 13 + z * 29);
+      const grove = Math.hypot(x - (cx + 6), z - (cz + 8));
+      const quarry = Math.hypot(x - (cx - 11), z - (cz + 14));
       let kind = null;
-      if (groundId === 'grass' && h <= 3 && roll > 0.94) kind = 'tree';
-      else if ((groundId === 'stone' || groundId === 'snow') && roll > 0.93) kind = roll > 0.975 ? 'crystal' : 'rock';
-      else if (groundId === 'grass' && roll > 0.9 && roll <= 0.94) kind = 'bush';
+      if (grove < 4.2 && groundId === 'grass') kind = 'tree';
+      else if (quarry < 3.2 && dist > 6) kind = 'rock';
+      else if (groundId === 'grass' && h <= 3 && roll > 0.955) kind = 'tree';
+      else if ((groundId === 'stone' || groundId === 'snow') && roll > 0.9) kind = roll > 0.97 ? 'crystal' : 'rock';
+      else if (groundId === 'grass' && roll > 0.93 && roll <= 0.955) kind = 'bush';
       if (kind) {
-        nodes[cellKey(x, z)] = { kind, left: 3 + Math.floor(rand(x * 3 + z) * 3) };
+        nodes[cellKey(x, z)] = {
+          kind,
+          left: 4 + Math.floor(rand(x * 3 + z) * 3),
+          scale: 0.85 + rand(x * 11 + z * 7) * 0.5,
+        };
       }
+    }
+  }
+  for (let z = 1; z < SIZE - 1; z += 1) {
+    for (let x = 1; x < SIZE - 1; x += 1) {
+      const tile = ground[z * SIZE + x];
+      if (tile.id !== 'grass') continue;
+      const shore = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => ground[(z + dz) * SIZE + (x + dx)].id === 'water');
+      if (shore) tile.id = 'sand';
     }
   }
   const bx = cx + 22;

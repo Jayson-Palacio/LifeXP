@@ -8580,8 +8580,8 @@ body:has(.play-app.is-planet) {
 .planet-palette::-webkit-scrollbar { display: none; }
 
 .planet-palette button {
-  width: 54px;
-  height: 54px;
+  width: 58px;
+  height: 64px;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -8603,8 +8603,17 @@ body:has(.play-app.is-planet) {
 }
 
 .planet-palette button b {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
+  line-height: 1;
+}
+
+.planet-palette button em {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  opacity: 0.8;
 }
 
 .planet-palette button.is-on {

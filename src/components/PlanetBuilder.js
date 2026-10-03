@@ -20,7 +20,7 @@ import {
   tileAt,
 } from '../lib/planetWorld';
 
-const SAVE_KEY = 'kaeluma.play.planet.v3';
+const SAVE_KEY = 'kaeluma.play.planet.v4';
 
 function emptyBag() {
   return { wood: 0, stone: 0, gold: 0, leaf: 0 };
@@ -45,11 +45,13 @@ function shade(hex, amount) {
 function growQuad(points) {
   const cx = (points[0].x + points[1].x + points[2].x + points[3].x) / 4;
   const cy = (points[0].y + points[1].y + points[2].y + points[3].y) / 4;
+  const span = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y);
+  const pad = Math.max(2, span * 0.14);
   return points.map((point) => {
     const dx = point.x - cx;
     const dy = point.y - cy;
     const len = Math.hypot(dx, dy) || 1;
-    return { ...point, x: point.x + (dx / len) * 1.4, y: point.y + (dy / len) * 1.4 };
+    return { ...point, x: point.x + (dx / len) * pad, y: point.y + (dy / len) * pad };
   });
 }
 
@@ -93,6 +95,8 @@ class PlanetGame {
     this.view = { w: 1, h: 1, dpr: 1 };
     this.hits = [];
     this.floats = [];
+    this.bits = [];
+    this.wobble = 0;
     this.time = 0;
     this.stopped = false;
     this.stars = Array.from({ length: 70 }, (_, i) => ({
@@ -317,6 +321,22 @@ class PlanetGame {
     this.floats.push({ text, x, z, life: 0.9 });
   }
 
+  burst(x, z, y, color) {
+    for (let i = 0; i < 10; i += 1) {
+      const angle = (i / 10) * Math.PI * 2;
+      this.bits.push({
+        x,
+        z,
+        y,
+        vx: Math.cos(angle) * 1.5,
+        vz: Math.sin(angle) * 1.5,
+        vy: 1.4 + (i % 3) * 0.35,
+        life: 0.75,
+        color,
+      });
+    }
+  }
+
   frame = (now) => {
     if (this.stopped) return;
     const dt = this.last ? Math.min(0.034, (now - this.last) / 1000) : 0.016;
@@ -355,6 +375,7 @@ class PlanetGame {
       const beside = Math.abs(this.job.x - this.ix) + Math.abs(this.job.z - this.iz) === 1;
       if (this.job.wait && beside && !this.path.length && !this.hop) this.job.wait = false;
       if (!this.job.wait && beside && !this.hop) {
+        this.wobble = 1;
         const spec = NODES[nodeAt(this.world, this.job.x, this.job.z)?.kind] || NODES.tree;
         this.job.t += dt;
         this.ui.onGather(spec.name, Math.min(1, this.job.t / spec.time));
@@ -364,6 +385,7 @@ class PlanetGame {
             this.bag[item] += 1;
             this.ui.onBag({ ...this.bag });
             this.float(`+ ${blockById(item).name}`, this.job.x + 0.5, this.job.z + 0.5);
+            this.burst(this.job.x + 0.5, this.job.z + 0.5, surfaceHeight(this.world, this.job.x, this.job.z) + 1.2, blockById(item).top);
             this.persist();
           }
           const left = nodeAt(this.world, this.job.x, this.job.z);
@@ -384,6 +406,15 @@ class PlanetGame {
 
     for (const floater of this.floats) floater.life -= dt;
     this.floats = this.floats.filter((floater) => floater.life > 0);
+    this.wobble = Math.max(0, this.wobble - dt * 2.4);
+    for (const bit of this.bits) {
+      bit.x += bit.vx * dt;
+      bit.z += bit.vz * dt;
+      bit.y += bit.vy * dt;
+      bit.vy -= 3.2 * dt;
+      bit.life -= dt;
+    }
+    this.bits = this.bits.filter((bit) => bit.life > 0);
 
     const back = 16;
     const lift = this.height() + 9.5;
@@ -401,25 +432,40 @@ class PlanetGame {
     const { w, h, dpr } = this.view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#08101f');
-    sky.addColorStop(0.45, '#243656');
-    sky.addColorStop(0.72, '#c47a4a');
-    sky.addColorStop(1, '#e7b15a');
+    sky.addColorStop(0, '#07101c');
+    sky.addColorStop(0.38, '#1d3358');
+    sky.addColorStop(0.62, '#7ea0c4');
+    sky.addColorStop(0.78, '#f0c27a');
+    sky.addColorStop(1, '#f7e7c3');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
+    const sun = ctx.createRadialGradient(w * 0.78, h * 0.2, 8, w * 0.78, h * 0.2, 140);
+    sun.addColorStop(0, 'rgba(255, 244, 210, 0.95)');
+    sun.addColorStop(0.35, 'rgba(255, 196, 120, 0.35)');
+    sun.addColorStop(1, 'rgba(255, 196, 120, 0)');
+    ctx.fillStyle = sun;
+    ctx.beginPath();
+    ctx.arc(w * 0.78, h * 0.2, 140, 0, Math.PI * 2);
+    ctx.fill();
     for (const star of this.stars) {
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const sy = star.y * h * 0.5;
+      ctx.globalAlpha = 0.35 + (star.r % 1) * 0.5;
+      ctx.fillStyle = '#fff';
       ctx.beginPath();
-      ctx.arc(star.x * w, star.y * h * 0.55, star.r, 0, Math.PI * 2);
+      ctx.arc(star.x * w, sy, star.r, 0, Math.PI * 2);
       ctx.fill();
     }
-    const moon = this.project(this.px + 18, 14, this.pz - 6);
-    if (moon && moon.z > 0) {
-      ctx.fillStyle = 'rgba(255, 236, 190, 0.9)';
+    ctx.globalAlpha = 0.55;
+    for (let i = 0; i < 4; i += 1) {
+      const cx = ((i * 0.28 + this.time * 0.008) % 1.3 - 0.15) * w;
+      const cy = h * (0.18 + i * 0.05);
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
       ctx.beginPath();
-      ctx.arc(w * 0.78, h * 0.16, 28, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, 70 + i * 16, 18, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 36, cy + 4, 46, 14, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.globalAlpha = 1;
 
     const reach = 15;
     const tiles = [];
@@ -447,10 +493,13 @@ class PlanetGame {
       const built = this.world.built[cellKey(tile.x, tile.z)];
       const topBlock = built?.length ? blockById(built[built.length - 1]) : null;
       const base = topBlock ? topBlock.top : GROUND[tile.tile.id];
-      const fog = Math.max(0.15, Math.min(1, 1 - (tile.depth - 14) / 16));
-      ctx.globalAlpha = fog;
+      ctx.globalAlpha = tile.depth > 18 ? Math.max(0, 1 - (tile.depth - 18) / 9) : 1;
       this.drawSides(tile, base);
-      fillQuad(ctx, tile.corners, shade(base, (tile.height - 2) * 10));
+      const tint = tile.tile.id === 'water'
+        ? Math.sin(this.time * 1.6 + tile.x * 0.7 + tile.z) * 14
+        : 0;
+      fillQuad(ctx, tile.corners, shade(base, tint));
+      if (tile.tile.flower) this.drawFlower(tile);
       const mid = this.project(tile.x + 0.5, tile.height + 0.2, tile.z + 0.5);
       const node = nodeAt(this.world, tile.x, tile.z);
       if (mid) {
@@ -473,6 +522,15 @@ class PlanetGame {
     const feet = this.project(this.px, py + 0.15 + bob, this.pz);
     if (feet) this.drawBuddy(feet);
 
+    for (const bit of this.bits) {
+      const at = this.project(bit.x, bit.y, bit.z);
+      if (!at) continue;
+      ctx.globalAlpha = Math.max(0, bit.life);
+      ctx.fillStyle = bit.color;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
     for (const floater of this.floats) {
       const at = this.project(floater.x, this.height() + 1.4, floater.z);
       if (!at) continue;
@@ -515,59 +573,141 @@ class PlanetGame {
     }
   }
 
-  drawNode(tile, node, mid) {
-    const top = this.project(tile.x + 0.5, tile.height + (node.kind === 'tree' ? 1.7 : 1.05), tile.z + 0.5);
-    if (!top) return;
-    const size = Math.max(10, mid.scale * 0.34);
+  drawFlower(tile) {
+    const at = this.project(tile.x + 0.68, tile.height + 0.15, tile.z + 0.32);
+    if (!at) return;
+    const s = Math.max(2, at.scale * 0.05);
     const ctx = this.ctx;
-    this.hits.push({ x: tile.x, z: tile.z, sx: top.x, sy: top.y, node: true });
+    ctx.fillStyle = '#ff6b8a';
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffe14a';
+    ctx.beginPath();
+    ctx.arc(at.x + s * 1.6, at.y + s * 0.4, s * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawNode(tile, node, mid) {
+    const scale = node.scale || 1;
+    const sway = this.job && this.job.x === tile.x && this.job.z === tile.z ? Math.sin(this.time * 22) * this.wobble * 5 : 0;
+    const lift = node.kind === 'tree' ? 1.85 * scale : node.kind === 'crystal' ? 1.35 : 0.7;
+    const top = this.project(tile.x + 0.5, tile.height + lift, tile.z + 0.5);
+    if (!top) return;
+    const size = Math.max(12, mid.scale * 0.42) * scale;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(sway, 0);
+    this.hits.push({ x: tile.x, z: tile.z, sx: top.x + sway, sy: top.y, node: true });
     if (node.kind === 'tree') {
-      ctx.fillStyle = '#6b4423';
-      ctx.fillRect(mid.x - size * 0.12, top.y, size * 0.24, mid.y - top.y);
-      ctx.fillStyle = '#2f9a46';
+      const trunkTop = this.project(tile.x + 0.5, tile.height + 0.7, tile.z + 0.5) || mid;
+      ctx.fillStyle = '#5c3a22';
       ctx.beginPath();
-      ctx.arc(top.x, top.y, size, 0, Math.PI * 2);
+      ctx.moveTo(mid.x - size * 0.16, mid.y);
+      ctx.lineTo(mid.x + size * 0.16, mid.y);
+      ctx.lineTo(trunkTop.x + size * 0.1, trunkTop.y);
+      ctx.lineTo(trunkTop.x - size * 0.1, trunkTop.y);
       ctx.fill();
-      ctx.fillStyle = '#46c46a';
+      ctx.fillStyle = '#1f7a38';
       ctx.beginPath();
-      ctx.arc(top.x - size * 0.28, top.y - size * 0.2, size * 0.45, 0, Math.PI * 2);
+      ctx.arc(top.x, top.y + size * 0.15, size * 0.95, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2f9e4a';
+      ctx.beginPath();
+      ctx.arc(top.x - size * 0.35, top.y, size * 0.62, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#67d36a';
+      ctx.beginPath();
+      ctx.arc(top.x + size * 0.28, top.y - size * 0.28, size * 0.48, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.beginPath();
+      ctx.arc(top.x - size * 0.15, top.y - size * 0.35, size * 0.18, 0, Math.PI * 2);
       ctx.fill();
     } else if (node.kind === 'rock') {
-      ctx.fillStyle = '#9aa1ab';
+      ctx.fillStyle = '#6d7380';
       ctx.beginPath();
-      ctx.ellipse(mid.x, mid.y - size * 0.45, size * 0.7, size * 0.45, 0, 0, Math.PI * 2);
+      ctx.ellipse(mid.x, mid.y - size * 0.22, size * 0.72, size * 0.32, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#b7bec8';
+      ctx.beginPath();
+      ctx.ellipse(mid.x - size * 0.08, mid.y - size * 0.48, size * 0.48, size * 0.28, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(mid.x - size * 0.18, mid.y - size * 0.58, size * 0.12, size * 0.07, 0, 0, Math.PI * 2);
       ctx.fill();
     } else if (node.kind === 'crystal') {
+      const glow = ctx.createRadialGradient(mid.x, mid.y - size, size * 0.2, mid.x, mid.y - size * 0.4, size * 1.4);
+      glow.addColorStop(0, 'rgba(160, 220, 255, 0.85)');
+      glow.addColorStop(1, 'rgba(160, 220, 255, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(mid.x, mid.y - size * 0.6, size * 1.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d7f4ff';
+      ctx.beginPath();
+      ctx.moveTo(mid.x, mid.y - size * 1.7);
+      ctx.lineTo(mid.x + size * 0.28, mid.y - size * 0.35);
+      ctx.lineTo(mid.x, mid.y - size * 0.1);
+      ctx.lineTo(mid.x - size * 0.22, mid.y - size * 0.45);
+      ctx.fill();
       ctx.fillStyle = '#7ec8ff';
       ctx.beginPath();
-      ctx.moveTo(mid.x, mid.y - size * 1.4);
-      ctx.lineTo(mid.x + size * 0.38, mid.y - size * 0.2);
-      ctx.lineTo(mid.x, mid.y);
-      ctx.lineTo(mid.x - size * 0.38, mid.y - size * 0.2);
+      ctx.moveTo(mid.x + size * 0.05, mid.y - size * 1.45);
+      ctx.lineTo(mid.x + size * 0.42, mid.y - size * 0.3);
+      ctx.lineTo(mid.x + size * 0.08, mid.y - size * 0.15);
       ctx.fill();
     } else {
-      ctx.fillStyle = '#3cb85a';
+      ctx.fillStyle = '#2f8f48';
       ctx.beginPath();
-      ctx.arc(mid.x, mid.y - size * 0.35, size * 0.45, 0, Math.PI * 2);
+      ctx.arc(mid.x - size * 0.2, mid.y - size * 0.28, size * 0.32, 0, Math.PI * 2);
+      ctx.arc(mid.x + size * 0.18, mid.y - size * 0.36, size * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ff6b8a';
+      ctx.beginPath();
+      ctx.arc(mid.x - size * 0.05, mid.y - size * 0.42, size * 0.1, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
   }
 
   drawBuddy(feet) {
     const ctx = this.ctx;
-    const s = Math.max(22, feet.scale * 0.48);
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    const s = Math.max(34, feet.scale * 0.72);
+    ctx.fillStyle = 'rgba(20, 30, 20, 0.3)';
     ctx.beginPath();
-    ctx.ellipse(feet.x, feet.y + 4, s * 0.45, s * 0.16, 0, 0, Math.PI * 2);
+    ctx.ellipse(feet.x, feet.y + 2, s * 0.36, s * 0.12, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#3a4258';
-    ctx.fillRect(feet.x - s * 0.28, feet.y - s * 0.85, s * 0.56, s * 0.7);
-    ctx.fillStyle = '#ffb38a';
+    ctx.strokeStyle = '#f0a030';
+    ctx.lineWidth = Math.max(3, s * 0.08);
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(feet.x, feet.y - s * 1.15, s * 0.32, 0, Math.PI * 2);
+    ctx.moveTo(feet.x - s * 0.16, feet.y - s * 0.15);
+    ctx.lineTo(feet.x - s * 0.16, feet.y);
+    ctx.moveTo(feet.x + s * 0.16, feet.y - s * 0.15);
+    ctx.lineTo(feet.x + s * 0.16, feet.y);
+    ctx.stroke();
+    ctx.fillStyle = '#2a3348';
+    ctx.beginPath();
+    ctx.roundRect(feet.x - s * 0.28, feet.y - s * 0.72, s * 0.56, s * 0.58, 6);
     ctx.fill();
-    ctx.fillStyle = '#ff8a5b';
-    ctx.fillRect(feet.x + s * 0.18, feet.y - s * 0.7, s * 0.22, s * 0.36);
+    ctx.fillStyle = '#ff7a45';
+    ctx.beginPath();
+    ctx.ellipse(feet.x - s * 0.34, feet.y - s * 0.42, s * 0.14, s * 0.22, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffe0c2';
+    ctx.beginPath();
+    ctx.arc(feet.x, feet.y - s * 0.95, s * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1c1c1e';
+    ctx.beginPath();
+    ctx.arc(feet.x + s * 0.08, feet.y - s * 0.98, s * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(feet.x + s * 0.1, feet.y - s * 1.0, s * 0.02, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   reset() {
@@ -671,6 +811,7 @@ export default function PlanetBuilder() {
             >
               <i style={{ background: block.top }} />
               <b>{bag[block.id] || 0}</b>
+              <em>{block.name}</em>
             </button>
           ))}
         </div>
