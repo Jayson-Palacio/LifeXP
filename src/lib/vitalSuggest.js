@@ -1,5 +1,6 @@
 import { lookupFood } from './foods';
 import { CROCKPOT_RECIPES } from './crockpotRecipes';
+import { LEAN_RECIPES } from './leanRecipes';
 
 const RECIPE_DOMAINS = [
   'budgetbytes.com',
@@ -3300,7 +3301,7 @@ const PACK_RECIPES = [
   },
 ];
 
-export const COOK_RECIPES = [...PACK_RECIPES, ...CROCKPOT_RECIPES];
+export const COOK_RECIPES = [...LEAN_RECIPES, ...PACK_RECIPES, ...CROCKPOT_RECIPES];
 
 function mealSlot(hour) {
   if (hour < 10) return 'breakfast';

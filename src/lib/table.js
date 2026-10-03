@@ -11,6 +11,7 @@ export const TABLE_SLOTS = [
 export const TABLE_AISLES = ['Produce', 'Meat & fish', 'Dairy & eggs', 'Bread', 'Frozen', 'Pantry', 'Other'];
 
 export const TABLE_LABELS = [
+  { id: 'lean', label: 'Lean' },
   { id: 'crockpot', label: 'Crockpot' },
   { id: 'easy', label: 'Easy' },
   { id: 'chicken', label: 'Chicken' },
@@ -25,6 +26,7 @@ export const TABLE_LABELS = [
 ];
 
 const LABEL_TAGS = {
+  lean: ['lean'],
   crockpot: ['crockpot', 'slow-cooker'],
   easy: ['easy'],
   chicken: ['chicken'],
