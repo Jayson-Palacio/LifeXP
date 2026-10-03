@@ -31,10 +31,11 @@ function TablePreviewScreen() {
 
 function PlayPreviewScreen() {
   return (
-    <div className="device-shot table-preview">
-      <p>Play</p>
-      <strong>Pairs</strong>
-      <span>Find the matches</span>
+    <div className="device-shot play-preview">
+      <i className="play-preview-road" />
+      <i className="play-preview-car" />
+      <b className="play-preview-chick" />
+      <strong>12</strong>
     </div>
   );
 }
