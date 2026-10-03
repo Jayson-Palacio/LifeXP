@@ -54,7 +54,6 @@ import {
   searchVitalFoods,
   serveVitalFood,
   updateVitalFood,
-  setVitalFoodFiber,
   updateVitalKitchenItem,
 } from '../app/actions/vital';
 
@@ -850,12 +849,6 @@ export default function VitalDashboardClient({
     router.refresh();
   };
 
-  const setFoodFiber = async (row, grams) => {
-    const result = await setVitalFoodFiber({ id: row.id, fiber_g: grams });
-    if (!result.success) setFoodError(result.error);
-    else router.refresh();
-  };
-
   const copyMeal = async (mealId) => {
     if (!member) return;
     const source = shiftDay(logDate, -1);
@@ -1353,37 +1346,6 @@ export default function VitalDashboardClient({
                                     {Number(row.fiber_g) > 0 ? ` · ${Math.round(Number(row.fiber_g))}g fiber` : ''}
                                     {row.meal === 'drink' ? ' · drink' : ''}
                                   </p>
-                                  {fiberTarget ? (
-                                    <div className="vital-fiber-picks">
-                                      {[0, 2, 5, 8].map((grams) => (
-                                        <button
-                                          key={grams}
-                                          type="button"
-                                          className={Math.round(Number(row.fiber_g) || 0) === grams ? 'is-active' : ''}
-                                          onClick={() => setFoodFiber(row, grams)}
-                                        >
-                                          {grams}g
-                                        </button>
-                                      ))}
-                                      <input
-                                        className="vital-input vital-fiber-type"
-                                        type="number"
-                                        min="0"
-                                        max="80"
-                                        step="1"
-                                        aria-label={`Fiber grams for ${row.name}`}
-                                        placeholder="g"
-                                        defaultValue={Number(row.fiber_g) > 0 && ![0, 2, 5, 8].includes(Math.round(Number(row.fiber_g))) ? Math.round(Number(row.fiber_g)) : ''}
-                                        key={`${row.id}-${row.fiber_g}`}
-                                        onBlur={(event) => {
-                                          if (event.target.value === '') return;
-                                          const grams = Number(event.target.value);
-                                          if (!Number.isFinite(grams) || grams === Number(row.fiber_g)) return;
-                                          setFoodFiber(row, grams);
-                                        }}
-                                      />
-                                    </div>
-                                  ) : null}
                                 </div>
                                 <div className="vital-row-actions">
                                   <button type="button" className="vital-text-btn" onClick={() => setEditFood(row)}>Size</button>
