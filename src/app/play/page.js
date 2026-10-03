@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Play — Kaeluma',
-  description: 'Six short household games. Bests stay on this device.',
+  description: 'A few quiet games. Hear a word, spell it, take a turn.',
 };
 
 export default async function PlayPage() {

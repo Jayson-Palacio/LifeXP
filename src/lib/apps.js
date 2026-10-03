@@ -41,7 +41,7 @@ export const KAELUMA_APPS = [
     id: 'play',
     name: 'Play',
     tagline: 'Games',
-    description: 'Pop words, spell them, and play a few table games.',
+    description: 'A few quiet games. Hear a word, spell it, take a turn.',
     href: '/play',
     accent: '#1d1d1f',
     available: true,

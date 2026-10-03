@@ -5,11 +5,11 @@ import Link from 'next/link';
 import BrandLogo from './BrandLogo';
 
 const GAMES = [
-  { id: 'pop', label: 'Pop', blurb: 'Hear a word. Pop that bubble.', hue: '#e36a45' },
-  { id: 'spell', label: 'Spell', blurb: 'Hear it, then tap the letters.', hue: '#3d7ea6' },
-  { id: 'echo', label: 'Echo', blurb: 'Watch the colors. Tap them back.', hue: '#d4a017' },
-  { id: 'pairs', label: 'Pairs', blurb: 'Flip two. Find the match.', hue: '#2f6b4f' },
-  { id: 'marks', label: 'Marks', blurb: 'Two players. Three in a row.', hue: '#5c4d7a' },
+  { id: 'listen', label: 'Listen', blurb: 'Hear a word. Tap it.' },
+  { id: 'spell', label: 'Spell', blurb: 'Hear it, then type it.' },
+  { id: 'recall', label: 'Recall', blurb: 'Watch the order. Repeat it.' },
+  { id: 'match', label: 'Match', blurb: 'Turn two tiles. Find the pair.' },
+  { id: 'board', label: 'Board', blurb: 'Two players. Three in a row.' },
 ];
 
 const BEST_KEY = 'kaeluma.play.bests';
@@ -48,9 +48,19 @@ function speak(text) {
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.86;
+  utter.rate = 0.9;
   utter.lang = 'en-US';
   window.speechSynthesis.speak(utter);
+}
+
+function Hud({ value, detail, action, onAction }) {
+  return (
+    <div className="ios-hud">
+      <strong>{value}</strong>
+      <span>{detail}</span>
+      {action ? <button type="button" onClick={onAction}>{action}</button> : null}
+    </div>
+  );
 }
 
 const WORDS = [
@@ -68,56 +78,48 @@ const WORDS = [
   { word: 'bug', near: ['bag', 'hug'] },
 ];
 
-function Pop() {
+function Listen() {
   const [round, setRound] = useState(0);
-  const [score, setScore] = useState(0);
-  const [shake, setShake] = useState(null);
-  const [best, saveBest] = useBest('pop');
+  const [picked, setPicked] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [best, saveBest] = useBest('listen');
   const current = WORDS[round % WORDS.length];
-  const bubbles = shuffle([current.word, ...current.near]).map((word, index) => ({
-    word,
-    left: 18 + index * 28,
-  }));
+  const options = shuffle([current.word, ...current.near]);
 
   useEffect(() => {
     speak(current.word);
-    const timer = window.setTimeout(() => {
-      setScore(0);
-      setRound((value) => value + 1);
-    }, 7000);
-    return () => window.clearTimeout(timer);
   }, [round, current.word]);
 
-  const tap = (word) => {
-    if (word !== current.word) {
-      setShake(word);
-      window.setTimeout(() => setShake(null), 280);
-      speak(current.word);
+  const choose = (word) => {
+    if (picked) return;
+    setPicked(word);
+    if (word === current.word) {
+      const next = streak + 1;
+      setStreak(next);
+      saveBest(next, (value, prev) => value > prev);
+      window.setTimeout(() => {
+        setPicked(null);
+        setRound((value) => value + 1);
+      }, 450);
       return;
     }
-    const next = score + 1;
-    setScore(next);
-    saveBest(next, (value, prev) => value > prev);
-    setRound((value) => value + 1);
+    setStreak(0);
+    speak(current.word);
+    window.setTimeout(() => setPicked(null), 700);
   };
 
   return (
-    <section className="play-panel">
-      <div className="play-hud">
-        <strong>{score}</strong>
-        <span>{best != null ? `Best ${best}` : 'Pop the word'}</span>
-        <button type="button" onClick={() => speak(current.word)}>Hear</button>
-      </div>
-      <div className="play-field">
-        {bubbles.map((bubble) => (
+    <section className="ios-game">
+      <Hud value={streak} detail={best != null ? `Best ${best}` : 'Listen'} action="Hear" onAction={() => speak(current.word)} />
+      <div className="ios-group">
+        {options.map((word) => (
           <button
-            key={`${round}-${bubble.word}`}
+            key={word}
             type="button"
-            className={`play-bubble${shake === bubble.word ? ' is-shake' : ''}`}
-            style={{ left: `${bubble.left}%` }}
-            onClick={() => tap(bubble.word)}
+            className={`ios-row${picked === word ? (word === current.word ? ' is-yes' : ' is-no') : ''}`}
+            onClick={() => choose(word)}
           >
-            {bubble.word}
+            {word}
           </button>
         ))}
       </div>
@@ -129,7 +131,7 @@ const SPELL_WORDS = ['cat', 'dog', 'sun', 'hat', 'pig', 'bus', 'cup', 'bed', 'ma
 
 function spellRound(index) {
   const word = SPELL_WORDS[index % SPELL_WORDS.length];
-  const extras = shuffle('abcdefghijklmnopqrstuvwxyz'.split('').filter((letter) => !word.includes(letter))).slice(0, 3);
+  const extras = shuffle('abcdefghijklmnopqrstuvwxyz'.split('').filter((letter) => !word.includes(letter))).slice(0, 2);
   return { word, letters: shuffle([...word.split(''), ...extras]) };
 }
 
@@ -142,7 +144,7 @@ function Spell() {
   const [best, saveBest] = useBest('spell');
 
   useEffect(() => {
-    speak(`Spell ${puzzle.word}`);
+    speak(puzzle.word);
   }, [puzzle.word, round]);
 
   const tap = (letter) => {
@@ -151,8 +153,8 @@ function Spell() {
       setBad(true);
       setBuilt('');
       setStreak(0);
-      speak(`Spell ${puzzle.word}`);
-      window.setTimeout(() => setBad(false), 280);
+      speak(puzzle.word);
+      window.setTimeout(() => setBad(false), 350);
       return;
     }
     setBuilt(next);
@@ -161,52 +163,50 @@ function Spell() {
     setStreak(count);
     saveBest(count, (value, prev) => value > prev);
     const upcoming = round + 1;
-    setRound(upcoming);
-    setPuzzle(spellRound(upcoming));
-    setBuilt('');
+    window.setTimeout(() => {
+      setRound(upcoming);
+      setPuzzle(spellRound(upcoming));
+      setBuilt('');
+    }, 400);
   };
 
   return (
-    <section className="play-panel">
-      <div className="play-hud">
-        <strong>{streak}</strong>
-        <span>{best != null ? `Best ${best}` : 'Spell what you hear'}</span>
-        <button type="button" onClick={() => speak(`Spell ${puzzle.word}`)}>Hear</button>
-      </div>
-      <p className={`play-built${bad ? ' is-bad' : ''}`}>{built || '·'}</p>
-      <div className="play-letters">
+    <section className="ios-game">
+      <Hud value={streak} detail={best != null ? `Best ${best}` : 'Spell'} action="Hear" onAction={() => speak(puzzle.word)} />
+      <p className={`ios-built${bad ? ' is-bad' : ''}`}>{built || ' '}</p>
+      <div className="ios-keys">
         {puzzle.letters.map((letter, index) => (
-          <button key={`${letter}-${index}`} type="button" className="play-letter" onClick={() => tap(letter)}>{letter}</button>
+          <button key={`${letter}-${index}`} type="button" onClick={() => tap(letter)}>{letter}</button>
         ))}
       </div>
     </section>
   );
 }
 
-const ECHO_TONES = [
-  { id: 0, name: 'Clay', tone: 'clay' },
-  { id: 1, name: 'Sea', tone: 'sea' },
-  { id: 2, name: 'Leaf', tone: 'leaf' },
-  { id: 3, name: 'Gold', tone: 'gold' },
+const RECALL = [
+  { id: 0, label: 'Blue' },
+  { id: 1, label: 'Green' },
+  { id: 2, label: 'Orange' },
+  { id: 3, label: 'Purple' },
 ];
 
-function Echo() {
+function Recall() {
   const [seq, setSeq] = useState(() => [Math.floor(Math.random() * 4)]);
   const [step, setStep] = useState(0);
   const [lit, setLit] = useState(null);
   const [playing, setPlaying] = useState(true);
   const [missed, setMissed] = useState(false);
-  const [best, saveBest] = useBest('echo');
+  const [best, saveBest] = useBest('recall');
 
   useEffect(() => {
     const timers = seq.map((tone, index) => window.setTimeout(() => {
       setLit(tone);
-      window.setTimeout(() => setLit(null), 320);
-    }, 420 + index * 560));
+      window.setTimeout(() => setLit(null), 280);
+    }, 400 + index * 520));
     const done = window.setTimeout(() => {
       setPlaying(false);
       setStep(0);
-    }, 420 + seq.length * 560);
+    }, 400 + seq.length * 520);
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
       window.clearTimeout(done);
@@ -216,7 +216,7 @@ function Echo() {
   const press = (tone) => {
     if (playing || missed) return;
     setLit(tone);
-    window.setTimeout(() => setLit(null), 160);
+    window.setTimeout(() => setLit(null), 140);
     if (tone !== seq[step]) {
       saveBest(Math.max(0, seq.length - 1), (next, prev) => next > prev);
       setMissed(true);
@@ -232,22 +232,23 @@ function Echo() {
   };
 
   return (
-    <section className="play-panel">
-      <div className="play-hud">
-        <strong>{seq.length}</strong>
-        <span>{missed ? 'Missed' : playing ? 'Watch' : 'Your turn'}{best != null ? ` · Best ${best}` : ''}</span>
-        {missed ? <button type="button" onClick={() => { setMissed(false); setPlaying(true); setSeq([Math.floor(Math.random() * 4)]); }}>Again</button> : <span />}
-      </div>
-      <div className="play-echo">
-        {ECHO_TONES.map((tone) => (
+    <section className="ios-game">
+      <Hud
+        value={seq.length}
+        detail={missed ? 'Missed' : playing ? 'Watch' : 'Your turn'}
+        action={missed ? 'Again' : null}
+        onAction={() => { setMissed(false); setPlaying(true); setSeq([Math.floor(Math.random() * 4)]); }}
+      />
+      {best != null ? <p className="ios-footnote">Best {best}</p> : null}
+      <div className="ios-recall">
+        {RECALL.map((tone) => (
           <button
             key={tone.id}
             type="button"
-            className={`play-echo-pad is-${tone.tone}${lit === tone.id ? ' is-lit' : ''}`}
+            className={`ios-orb is-${tone.id}${lit === tone.id ? ' is-lit' : ''}`}
             onClick={() => press(tone.id)}
-          >
-            {tone.name}
-          </button>
+            aria-label={tone.label}
+          />
         ))}
       </div>
     </section>
@@ -255,34 +256,29 @@ function Echo() {
 }
 
 function Glyph({ name }) {
-  const props = { viewBox: '0 0 48 48', width: '40', height: '40', fill: 'none', stroke: 'currentColor', strokeWidth: '2.4', strokeLinecap: 'round' };
-  if (name === 'Sun') return <svg {...props}><circle cx="24" cy="24" r="8" /><path d="M24 6v5M24 37v5M6 24h5M37 24h5M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4" /></svg>;
-  if (name === 'Moon') return <svg {...props}><path d="M28 8a14 14 0 1 0 10 24A12 12 0 0 1 28 8z" /></svg>;
-  if (name === 'House') return <svg {...props}><path d="M8 22 24 8l16 14v16H8z" /><path d="M20 38V26h8v12" /></svg>;
-  if (name === 'Star') return <svg {...props}><path d="m24 6 4.8 10.6L40 18.2l-8 7.6L34 38 24 32.4 14 38l2-12.2-8-7.6 11.2-1.6z" /></svg>;
-  if (name === 'Leaf') return <svg {...props}><path d="M10 34c12-2 22-12 26-26-14 2-24 12-26 26z" /><path d="M16 28c4-4 8-8 14-12" /></svg>;
-  if (name === 'Key') return <svg {...props}><circle cx="18" cy="20" r="8" /><path d="M24 24l14 14M32 32l4-4M36 36l4-4" /></svg>;
-  if (name === 'Heart') return <svg {...props}><path d="M24 40s-14-8.5-14-18a8 8 0 0 1 14-5 8 8 0 0 1 14 5c0 9.5-14 18-14 18z" /></svg>;
-  return <svg {...props}><circle cx="24" cy="24" r="10" /><circle cx="24" cy="24" r="3" /></svg>;
+  const props = { viewBox: '0 0 24 24', width: '28', height: '28', fill: 'none', stroke: 'currentColor', strokeWidth: '1.6', strokeLinecap: 'round', strokeLinejoin: 'round' };
+  if (name === 'Sun') return <svg {...props}><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" /></svg>;
+  if (name === 'Moon') return <svg {...props}><path d="M16 4a8 8 0 1 0 4 13A7 7 0 0 1 16 4z" /></svg>;
+  if (name === 'House') return <svg {...props}><path d="M4 11 12 4l8 7v8H4z" /><path d="M10 19v-5h4v5" /></svg>;
+  if (name === 'Star') return <svg {...props}><path d="m12 3 2.2 5.2L20 9l-4 3.6L17.2 18 12 15.4 6.8 18 8 12.6 4 9l5.8-.8z" /></svg>;
+  if (name === 'Leaf') return <svg {...props}><path d="M5 19c6-1 11-6 13-13-7 1-12 6-13 13z" /><path d="M8 15c2-2 4-4 7-6" /></svg>;
+  return <svg {...props}><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /></svg>;
 }
 
-const PAIR_NAMES = ['Sun', 'Moon', 'House', 'Star', 'Leaf', 'Key', 'Heart', 'Coin'];
+const PAIR_NAMES = ['Sun', 'Moon', 'House', 'Star', 'Leaf', 'Ring'];
 
 function freshPairs() {
   return shuffle(PAIR_NAMES.flatMap((name) => [name, name])).map((name, index) => ({
-    id: index,
-    name,
-    open: false,
-    matched: false,
+    id: index, name, open: false, matched: false,
   }));
 }
 
-function Pairs() {
+function Match() {
   const [cards, setCards] = useState(freshPairs);
   const [picks, setPicks] = useState([]);
   const [moves, setMoves] = useState(0);
   const [lock, setLock] = useState(false);
-  const [best, saveBest] = useBest('pairs');
+  const [best, saveBest] = useBest('match');
   const done = cards.every((card) => card.matched);
 
   const flip = (id) => {
@@ -310,25 +306,27 @@ function Pairs() {
     window.setTimeout(() => {
       setCards((rows) => rows.map((row) => (nextPicks.includes(row.id) ? { ...row, open: false } : row)));
       setLock(false);
-    }, 620);
+    }, 550);
   };
 
   return (
-    <section className="play-panel">
-      <div className="play-hud">
-        <strong>{moves}</strong>
-        <span>{done ? 'Matched' : 'Turns'}{best != null ? ` · Best ${best}` : ''}</span>
-        <button type="button" onClick={() => { setCards(freshPairs()); setPicks([]); setMoves(0); setLock(false); }}>New</button>
-      </div>
-      <div className="play-grid">
+    <section className="ios-game">
+      <Hud
+        value={moves}
+        detail={done ? 'Done' : 'Turns'}
+        action="New"
+        onAction={() => { setCards(freshPairs()); setPicks([]); setMoves(0); setLock(false); }}
+      />
+      {best != null ? <p className="ios-footnote">Best {best}</p> : null}
+      <div className="ios-match">
         {cards.map((card) => (
           <button
             key={card.id}
             type="button"
-            className={`play-card is-${card.name.toLowerCase()}${card.open || card.matched ? ' is-open' : ''}${card.matched ? ' is-matched' : ''}`}
+            className={`ios-tile${card.open || card.matched ? ' is-open' : ''}${card.matched ? ' is-matched' : ''}`}
             onClick={() => flip(card.id)}
           >
-            {card.open || card.matched ? <Glyph name={card.name} /> : <i />}
+            {card.open || card.matched ? <Glyph name={card.name} /> : null}
           </button>
         ))}
       </div>
@@ -346,7 +344,7 @@ function winningLine(cells) {
   return LINES.find((trio) => cells[trio[0]] && cells[trio[0]] === cells[trio[1]] && cells[trio[0]] === cells[trio[2]]) || null;
 }
 
-function Marks() {
+function Board() {
   const [cells, setCells] = useState(Array(9).fill(''));
   const [turn, setTurn] = useState('X');
   const [score, setScore] = useState({ X: 0, O: 0 });
@@ -355,18 +353,20 @@ function Marks() {
   const full = cells.every(Boolean);
 
   return (
-    <section className="play-panel">
-      <div className="play-hud">
-        <strong>{winner || turn}</strong>
-        <span>{winner ? 'wins' : full ? 'Draw' : 'to play'} · X {score.X} · O {score.O}</span>
-        <button type="button" onClick={() => { setCells(Array(9).fill('')); setTurn('X'); }}>Next</button>
-      </div>
-      <div className="play-marks">
+    <section className="ios-game">
+      <Hud
+        value={winner || (full ? '–' : turn)}
+        detail={winner ? 'Wins' : full ? 'Draw' : 'To play'}
+        action="Next"
+        onAction={() => { setCells(Array(9).fill('')); setTurn('X'); }}
+      />
+      <p className="ios-footnote">X {score.X} · O {score.O}</p>
+      <div className="ios-board">
         {cells.map((mark, index) => (
           <button
             key={index}
             type="button"
-            className={`play-mark${line?.includes(index) ? ' is-win' : ''}${mark === 'O' ? ' is-o' : ''}`}
+            className={line?.includes(index) ? 'is-win' : ''}
             disabled={Boolean(mark) || Boolean(winner)}
             onClick={() => {
               const next = cells.slice();
@@ -384,7 +384,7 @@ function Marks() {
   );
 }
 
-const BOARDS = { pop: Pop, spell: Spell, echo: Echo, pairs: Pairs, marks: Marks };
+const BOARDS = { listen: Listen, spell: Spell, recall: Recall, match: Match, board: Board };
 
 export default function PlayDashboardClient() {
   const [game, setGame] = useState(null);
@@ -400,25 +400,27 @@ export default function PlayDashboardClient() {
         </div>
         <Link href="/apps" className="vital-text-btn">Apps</Link>
       </header>
-      <main className="vital-main">
+      <main className="vital-main ios-play">
         {Active ? (
           <>
-            <div className="play-bar">
-              <button type="button" className="vital-text-btn" onClick={() => setGame(null)}>Games</button>
-              <p className="vital-kicker">{meta.label}</p>
-            </div>
+            <button type="button" className="ios-back" onClick={() => setGame(null)}>{meta.label}</button>
             <Active key={game} />
           </>
         ) : (
-          <div className="play-lobby">
-            {GAMES.map((row) => (
-              <button key={row.id} type="button" className="play-lobby-card" style={{ '--play-hue': row.hue }} onClick={() => setGame(row.id)}>
-                <i />
-                <strong>{row.label}</strong>
-                <span>{row.blurb}</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <h1 className="ios-title">Games</h1>
+            <div className="ios-group">
+              {GAMES.map((row) => (
+                <button key={row.id} type="button" className="ios-nav" onClick={() => setGame(row.id)}>
+                  <span>
+                    <strong>{row.label}</strong>
+                    <em>{row.blurb}</em>
+                  </span>
+                  <i />
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>
