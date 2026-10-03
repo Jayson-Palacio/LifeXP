@@ -5553,8 +5553,87 @@ button.vital-week-day {
   align-items: center;
 }
 
-.play-guess .vital-input {
-  max-width: 120px;
+.play-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.play-echo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.play-echo-pad,
+.play-choice {
+  min-height: 72px;
+  border: 0;
+  border-radius: 14px;
+  background: #eceff3;
+  color: var(--vital-ink, #1c1c1e);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.play-echo-pad.is-clay { background: #f3e4dc; }
+.play-echo-pad.is-sea { background: #dce8f2; }
+.play-echo-pad.is-leaf { background: #e3f0e6; }
+.play-echo-pad.is-gold { background: #f6edd4; }
+
+.play-echo-pad.is-lit {
+  filter: brightness(0.82);
+}
+
+.play-sum {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.play-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.play-bar .vital-kicker {
+  margin: 0;
+}
+
+.play-lobby {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+}
+
+.play-lobby-card {
+  display: grid;
+  gap: 2px;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.play-lobby-card strong {
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.play-lobby-card span {
+  color: var(--vital-muted);
+  font-size: 14px;
+}
+
+.play-mark.is-win {
+  background: #e7f0ea;
+  color: #2f6b4f;
 }
 
 .ledger-app {

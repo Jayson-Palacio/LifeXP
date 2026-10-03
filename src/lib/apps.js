@@ -41,7 +41,7 @@ export const KAELUMA_APPS = [
     id: 'play',
     name: 'Play',
     tagline: 'Games',
-    description: 'Short games for the kitchen table. Nothing is saved.',
+    description: 'Six short games for the kitchen table. Bests stay on this device.',
     href: '/play',
     accent: '#1d1d1f',
     available: true,
