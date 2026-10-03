@@ -22,7 +22,7 @@ import {
   tileAt,
 } from '../lib/planetWorld';
 
-const SAVE_KEY = 'kaeluma.play.planet.v5';
+const SAVE_KEY = 'kaeluma.play.planet.v6';
 const PITCH = -0.3;
 const ORIGIN = 0.56;
 const FOV = 1.1;
@@ -39,6 +39,110 @@ const SIDE = {
   snow: '#a9b8cc',
   water: '#2c6fb0',
 };
+
+const HERO_PAL = {
+  H: '#3f2516', h: '#52321f', S: '#f0bf94', s: '#d9a27a', W: '#ffffff', E: '#2f5fb3',
+  P: '#f19a8c', M: '#a8483f', T: '#2f6fd6', t: '#5a94ee', Y: '#ffd23f', B: '#6b4423',
+  D: '#2b3550', d: '#3b4a74', O: '#5a3a22', o: '#7a5234', R: '#c8323c', r: '#8e222c', G: '#ffd23f',
+};
+
+const mirror = (rows) => rows.map((row) => [...row].reverse().join(''));
+const HEAD_SIDE = ['HHHHHHHH', 'HHHHHhHH', 'HHHHHHSS', 'HHHHSSSS', 'HHHSsSSS', 'HHHSSSSS', 'HHHSSSSS', 'HHSSSSSS'];
+const BODY_SIDE = ['TTTT', 'TTTT', 'TTTT', 'TTTT', 'TTTT', 'TTTT', 'BBBB', 'TTTT'];
+const ARM = ['TTTT', 'TTTT', 'tttt', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'ssss'];
+const LEG = ['DDDD', 'DDDD', 'DdDD', 'DDDD', 'DDDD', 'oooo', 'OOOO', 'OOOO'];
+
+function prepare(spec) {
+  const faces = {};
+  for (const key of ['front', 'back', 'left', 'right', 'top', 'bottom']) {
+    const rows = spec[key] || [spec.fill];
+    const count = {};
+    for (const row of rows) for (const ch of row) count[ch] = (count[ch] || 0) + 1;
+    const base = Object.keys(count).sort((a, b) => count[b] - count[a])[0];
+    faces[key] = { rows, base };
+  }
+  return { palette: spec.palette || HERO_PAL, faces };
+}
+
+const HERO = {
+  head: prepare({
+    front: ['HHHHHHHH', 'HHhHHHHH', 'HSSSSSSH', 'SSSSSSSS', 'SWESSEWS', 'SPSSSSPS', 'SSMSSMSS', 'SSSMMSSS'],
+    back: ['HHHHHHHH', 'HHHhHHHH', 'HhHHHHhH', 'HHHHHHHH', 'HHHHHhHH', 'HHhHHHHH', 'HHHHHHHH', 'HHHHHHHH'],
+    right: HEAD_SIDE,
+    left: mirror(HEAD_SIDE),
+    top: ['HHHHHHHH', 'HhHHHHhH', 'HHHHHHHH', 'HHHhHHHH', 'HHHHHHHH', 'HhHHHHHH', 'HHHHHhHH', 'HHHHHHHH'],
+    fill: 'S',
+  }),
+  body: prepare({
+    front: ['TTTttTTT', 'TTTTTTTT', 'TTTYYTTT', 'TTYYYYTT', 'TTTYYTTT', 'TTTTTTTT', 'BBBYYBBB', 'TTTTTTTT'],
+    back: ['TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'BBBBBBBB', 'TTTTTTTT'],
+    right: BODY_SIDE,
+    left: BODY_SIDE,
+    fill: 'T',
+  }),
+  arm: prepare({ front: ARM, back: ARM, left: ARM, right: ARM, top: ['T'], bottom: ['S'] }),
+  leg: prepare({ front: LEG, back: LEG, left: LEG, right: LEG, top: ['D'], bottom: ['O'] }),
+  cape: prepare({
+    back: ['GRRRRRRG', 'RRRRRRRR', 'RRRrRRRR', 'RRRRRRRR', 'RRRRRRRR', 'RRRRRrRR', 'RRRRRRRR', 'RrRRRRRR', 'RRRRRRRR', 'GGGGGGGG'],
+    top: ['G'],
+    fill: 'r',
+  }),
+};
+
+const BLOCK_TEX = new Map();
+function blockTex(id) {
+  if (!BLOCK_TEX.has(id)) {
+    const block = blockById(id);
+    const side = ['BBBB', 'AAAA', 'AaAA', 'AAAA'];
+    BLOCK_TEX.set(id, prepare({
+      palette: { A: block.side, a: shade(block.side, -18), B: block.top },
+      front: side, back: side, left: side, right: side, top: ['B'], fill: 'A',
+    }));
+  }
+  return BLOCK_TEX.get(id);
+}
+
+const FACES = [
+  { key: 'front', n: [0, 0, 1], u: [0, 1, 0] },
+  { key: 'back', n: [0, 0, -1], u: [0, 1, 0] },
+  { key: 'right', n: [1, 0, 0], u: [0, 1, 0] },
+  { key: 'left', n: [-1, 0, 0], u: [0, 1, 0] },
+  { key: 'top', n: [0, 1, 0], u: [0, 0, -1] },
+  { key: 'bottom', n: [0, -1, 0], u: [0, 0, 1] },
+];
+const LIGHT = (() => {
+  const v = [-0.45, 0.8, -0.4];
+  const len = Math.hypot(...v);
+  return v.map((x) => x / len);
+})();
+
+function cross(a, b) {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+
+function polygon(ctx, points, color, pad) {
+  let cx = 0;
+  let cy = 0;
+  for (const point of points) {
+    cx += point.x;
+    cy += point.y;
+  }
+  cx /= points.length;
+  cy /= points.length;
+  ctx.beginPath();
+  points.forEach((point, i) => {
+    const dx = point.x - cx;
+    const dy = point.y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    const x = point.x + (dx / len) * pad;
+    const y = point.y + (dy / len) * pad;
+    if (i) ctx.lineTo(x, y);
+    else ctx.moveTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
 
 function emptyBag() {
   return { wood: 0, stone: 0, gold: 0, leaf: 0 };
@@ -128,8 +232,10 @@ class PlanetGame {
     this.yaw = saved?.yaw ?? 0.7;
     this.yawTarget = this.yaw;
     this.viewMode = ['behind', 'side', 'front'].includes(saved?.viewMode) ? saved.viewMode : 'behind';
-    this.faceX = 0;
-    this.faceZ = 1;
+    this.heading = this.yaw;
+    this.headingTarget = this.yaw;
+    this.idle = 0;
+    this.stride = 1;
     this.audio = null;
     this.held = null;
     this.cam = {
@@ -401,17 +507,6 @@ class PlanetGame {
     return next;
   }
 
-  pose() {
-    let rel = this.lookYaw() - this.yaw;
-    while (rel > Math.PI) rel -= Math.PI * 2;
-    while (rel < -Math.PI) rel += Math.PI * 2;
-    const abs = Math.abs(rel);
-    let pose = 'side';
-    if (abs < 0.85) pose = 'back';
-    else if (abs > 2.3) pose = 'front';
-    return { pose, flip: rel > 0 ? -1 : 1 };
-  }
-
   screenAxes() {
     const aim = this.lookYaw();
     const fx = Math.sin(aim);
@@ -438,8 +533,9 @@ class PlanetGame {
     if (!dx && !dz) return;
     if (this.hop) return;
     if (!canStep(this.world, this.ix, this.iz, dx, dz)) return;
-    this.faceX = dx;
-    this.faceZ = dz;
+    this.headingTarget = Math.atan2(dx, dz);
+    this.idle = 0;
+    this.stride = -this.stride;
     this.tone(220, 0.045, 'triangle', 0.03, 320);
     this.hop = {
       x0: this.ix,
@@ -585,7 +681,7 @@ class PlanetGame {
           if (!left || left.left <= 0) this.job = null;
           else this.job.t = 0;
         }
-      } else if (!beside && !this.path.length) {
+      } else if (!beside && !this.path.length && !this.hop) {
         this.job = null;
       }
       if (!this.job) this.ui.onGather(null, 0);
@@ -596,6 +692,17 @@ class PlanetGame {
       this.placeOnArrive = null;
       if (Math.abs(spot.x - this.ix) + Math.abs(spot.z - this.iz) <= 1) this.tryPlace(spot.x, spot.z);
     }
+
+    if (this.job && !this.job.wait) {
+      this.headingTarget = Math.atan2(this.job.x - this.ix, this.job.z - this.iz);
+      this.idle = 0;
+    } else if (!this.hop && !this.path.length) {
+      this.idle += dt;
+      if (this.idle > 1.2) this.headingTarget = this.yaw;
+    }
+    let turnBy = this.headingTarget - this.heading;
+    turnBy = Math.atan2(Math.sin(turnBy), Math.cos(turnBy));
+    this.heading += turnBy * Math.min(1, dt * 12);
 
     for (const critter of this.critters) this.stepCritter(critter, dt);
     for (const floater of this.floats) floater.life -= dt;
@@ -687,9 +794,9 @@ class PlanetGame {
     this.drawSkyline(horizon, pan);
     this.drawRidge('#45387e', horizon, h * 0.06, 3.4, pan * w * 0.55, 4.1, false);
     const field = ctx.createLinearGradient(0, horizon, 0, h);
-    field.addColorStop(0, '#7f9c6a');
-    field.addColorStop(0.18, '#66b046');
-    field.addColorStop(1, '#5aa83c');
+    field.addColorStop(0, '#9a8fc0');
+    field.addColorStop(0.08, '#5a86c8');
+    field.addColorStop(1, '#3a86d0');
     ctx.fillStyle = field;
     ctx.fillRect(0, horizon, w, h - horizon);
 
@@ -765,8 +872,6 @@ class PlanetGame {
       ? surfaceHeight(this.world, this.hop.x0, this.hop.z0) * (1 - Math.min(1, this.hop.t))
         + surfaceHeight(this.world, this.hop.x1, this.hop.z1) * Math.min(1, this.hop.t)
       : this.height();
-    const bob = this.hop ? Math.sin(Math.min(1, this.hop.t) * Math.PI) * 0.35 : Math.sin(this.time * 3) * 0.05;
-    const feet = this.project(this.px, py + 0.15 + bob, this.pz);
     if (this.path.length) {
       const end = this.path[this.path.length - 1];
       props.push({ depth: 8, draw: () => this.drawMark(end.x, end.z) });
@@ -774,7 +879,7 @@ class PlanetGame {
     if (this.world.camp) {
       const campAt = this.project(this.world.camp.x + 0.5, 1, this.world.camp.z + 0.5);
       if (campAt) props.push({ depth: campAt.z, draw: () => this.drawCamp() });
-      const tentAt = this.project(this.world.camp.x - 2.4, 1, this.world.camp.z - 1.1);
+      const tentAt = this.project(this.world.camp.x + 2.4, 1, this.world.camp.z - 2.7);
       if (tentAt) props.push({ depth: tentAt.z, draw: () => this.drawTent() });
     }
     const ghost = this.buildSpot();
@@ -805,7 +910,8 @@ class PlanetGame {
     }
     props.sort((a, b) => b.depth - a.depth);
     for (let i = 0; i < props.length; i += 1) props[i].draw();
-    if (feet) this.drawBuddy(feet);
+    this.drawFocus();
+    this.drawHero(py);
 
     for (const bit of this.bits) {
       const at = this.project(bit.x, bit.y, bit.z);
@@ -836,7 +942,6 @@ class PlanetGame {
     vignette.addColorStop(1, 'rgba(10, 6, 30, 0.38)');
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
-    this.drawFocus();
   }
 
   drawSides(tile, topBlock) {
@@ -857,7 +962,8 @@ class PlanetGame {
     for (let i = 0; i < edges.length; i += 1) {
       const [dx, dz, pair, light] = edges[i];
       const neighbor = surfaceHeight(this.world, tile.x + dx, tile.z + dz);
-      const low = neighbor == null ? 0 : neighbor;
+      if (neighbor == null) continue;
+      const low = neighbor;
       if (low >= tile.height) continue;
       const [a, b] = pair;
       const highA = tile.corners[a];
@@ -1069,8 +1175,9 @@ class PlanetGame {
 
   drawLamp(tile) {
     const ctx = this.ctx;
-    const foot = this.surfacePoint(tile, 0.08, 0.5);
-    const top = this.surfacePoint(tile, 0.08, 0.5, 1.15);
+    const [u, v] = tile.tile.lamp === 'n' ? [0.5, 0.06] : [0.06, 0.5];
+    const foot = this.surfacePoint(tile, u, v);
+    const top = this.surfacePoint(tile, u, v, 1.15);
     if (!foot || !top) return;
     const s = foot.scale;
     ctx.strokeStyle = '#2d2a3a';
@@ -1324,7 +1431,13 @@ class PlanetGame {
     const at = this.project(tile.x + 0.5, tile.height + 0.04, tile.z + 0.5);
     if (!at) return;
     const ctx = this.ctx;
-    const inset = [[0.12, 0.02], [0.88, 0.02], [0.88, 0.98], [0.12, 0.98]]
+    const joined = (dx, dz) => Boolean(tileAt(this.world, tile.x + dx, tile.z + dz)?.path)
+      || (this.world.camp && tile.x + dx === this.world.camp.x && tile.z + dz === this.world.camp.z);
+    const u0 = joined(-1, 0) ? 0 : 0.14;
+    const u1 = joined(1, 0) ? 1 : 0.86;
+    const v0 = joined(0, -1) ? 0 : 0.14;
+    const v1 = joined(0, 1) ? 1 : 0.86;
+    const inset = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]]
       .map(([u, v]) => this.surfacePoint(tile, u, v, 0.02));
     if (inset.every(Boolean)) fillQuad(ctx, inset, '#b8925e');
     const seed = tile.x * 11 + tile.z * 23;
@@ -1364,10 +1477,10 @@ class PlanetGame {
     const h = surfaceHeight(this.world, camp.x, camp.z);
     if (h == null) return;
     const ctx = this.ctx;
-    const tentL = this.project(camp.x - 3.2, h + 0.02, camp.z - 0.6);
-    const tentR = this.project(camp.x - 1.6, h + 0.02, camp.z - 0.6);
-    const tentBack = this.project(camp.x - 2.4, h + 0.02, camp.z - 1.6);
-    const tentTop = this.project(camp.x - 2.4, h + 1.15, camp.z - 1.1);
+    const tentL = this.project(camp.x + 1.6, h + 0.02, camp.z - 2.2);
+    const tentR = this.project(camp.x + 3.2, h + 0.02, camp.z - 2.2);
+    const tentBack = this.project(camp.x + 2.4, h + 0.02, camp.z - 3.2);
+    const tentTop = this.project(camp.x + 2.4, h + 1.15, camp.z - 2.7);
     if (tentL && tentR && tentBack && tentTop) {
       const s = tentTop.scale;
       ctx.fillStyle = '#7a2f3f';
@@ -1548,7 +1661,7 @@ class PlanetGame {
     const stem = this.project(tile.x + 0.35, tile.height + 0.12, tile.z + 0.62);
     const cap = this.project(tile.x + 0.35, tile.height + 0.22, tile.z + 0.62);
     if (!stem || !cap) return;
-    const magic = (tile.x + tile.z) % 3 === 0;
+    const magic = tile.tile.mushroom === 'magic';
     const ctx = this.ctx;
     const glow = ctx.createRadialGradient(cap.x, cap.y, 1, cap.x, cap.y, 16);
     glow.addColorStop(0, magic ? 'rgba(190, 160, 255, 0.55)' : 'rgba(255, 120, 90, 0.4)');
@@ -2100,190 +2213,127 @@ class PlanetGame {
     }
   }
 
-  drawHeld(ctx, s, x, y) {
-    const heldId = this.ui.blockId();
-    if (!heldId || !(this.bag[heldId] > 0)) return;
-    const color = blockById(heldId).top;
-    const edge = shade(color, -36);
-    ctx.fillStyle = edge;
-    ctx.beginPath();
-    ctx.roundRect(x, y, s * 0.22, s * 0.22, s * 0.04);
-    ctx.fill();
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.roundRect(x + s * 0.02, y - s * 0.06, s * 0.18, s * 0.14, s * 0.03);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.fillRect(x + s * 0.05, y - s * 0.03, s * 0.06, s * 0.04);
-  }
-
-  drawBuddy(feet) {
+  drawHero(groundY) {
     const ctx = this.ctx;
-    const s = Math.max(78, feet.scale * 1.25);
-    const hop = this.hop ? Math.sin(Math.min(1, this.hop.t) * Math.PI) : 0;
-    const stride = this.hop ? Math.sin(this.hop.t * Math.PI * 2) : Math.sin(this.time * 1.6) * 0.12;
-    const { pose, flip } = this.pose();
-    ctx.fillStyle = 'rgba(12, 24, 16, 0.32)';
-    ctx.beginPath();
-    ctx.ellipse(feet.x + 2, feet.y + 5, s * 0.46, s * 0.13, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.save();
-    ctx.translate(feet.x, feet.y - hop * s * 0.14);
-    ctx.scale(flip, 1);
-    if (pose === 'back') this.drawBack(ctx, s, stride);
-    else if (pose === 'front') this.drawFront(ctx, s, stride);
-    else this.drawSide(ctx, s, stride);
-    ctx.restore();
+    const K = 1.15;
+    const th = this.heading;
+    const fx = Math.sin(th);
+    const fz = Math.cos(th);
+    const rx = Math.cos(th);
+    const rz = -Math.sin(th);
+    const hopT = this.hop ? Math.min(1, this.hop.t) : 0;
+    const y0 = groundY + (this.hop ? Math.sin(hopT * Math.PI) * 0.14 : 0);
+    const shadow = this.worldRadius(this.px, groundY + 0.01, this.pz, 0.36);
+    if (shadow) {
+      ctx.fillStyle = 'rgba(12, 24, 16, 0.32)';
+      ctx.beginPath();
+      ctx.ellipse(shadow.at.x, shadow.at.y, shadow.r, shadow.r * 0.42, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const swing = this.hop ? Math.sin(hopT * Math.PI) * 0.7 * this.stride : 0;
+    const working = this.job && !this.job.wait && !this.hop
+      && Math.abs(this.job.x - this.ix) + Math.abs(this.job.z - this.iz) === 1;
+    const heldId = this.ui.blockId();
+    const holding = Boolean(heldId && this.bag[heldId] > 0);
+    const sway = Math.sin(this.time * 2) * 0.05;
+    let rightArm = -swing + sway;
+    const leftArm = swing - sway;
+    if (holding) rightArm = -0.85 + swing * 0.2;
+    if (working) rightArm = -1.6 + Math.sin(this.time * 18) * 0.8;
+    const cape = 0.12 + (this.hop ? 0.5 : 0) + Math.sin(this.time * 2.6) * 0.05;
+    const nod = this.hop ? Math.sin(hopT * Math.PI) * 0.015 : Math.sin(this.time * 1.6) * 0.006;
+    const parts = [
+      { c: [-0.095, 0.18, 0], s: [0.17, 0.36, 0.19], pivot: [0.36, 0], rot: swing, tex: HERO.leg },
+      { c: [0.095, 0.18, 0], s: [0.17, 0.36, 0.19], pivot: [0.36, 0], rot: -swing, tex: HERO.leg },
+      { c: [0, 0.58, 0], s: [0.4, 0.44, 0.22], tex: HERO.body },
+      { c: [-0.27, 0.58, 0], s: [0.14, 0.42, 0.15], pivot: [0.77, 0], rot: leftArm, tex: HERO.arm },
+      { c: [0.27, 0.58, 0], s: [0.14, 0.42, 0.15], pivot: [0.77, 0], rot: rightArm, tex: HERO.arm },
+      { c: [0, 1.04 + nod, 0], s: [0.48, 0.48, 0.48], tex: HERO.head },
+      { c: [0, 0.52, -0.13], s: [0.38, 0.52, 0.03], pivot: [0.78, -0.12], rot: cape, tex: HERO.cape },
+    ];
+    if (holding) {
+      parts.push({ c: [0.27, 0.3, 0.06], s: [0.2, 0.2, 0.2], pivot: [0.77, 0], rot: rightArm, tex: blockTex(heldId) });
+    }
+    const spin = (p, part) => {
+      if (!part.rot) return p;
+      const [py, pz] = part.pivot;
+      const cos = Math.cos(part.rot);
+      const sin = Math.sin(part.rot);
+      const dy = p[1] - py;
+      const dz = p[2] - pz;
+      return [p[0], py + dy * cos - dz * sin, pz + dy * sin + dz * cos];
+    };
+    const world = (p) => [
+      this.px + (rx * p[0] + fx * p[2]) * K,
+      y0 + p[1] * K,
+      this.pz + (rz * p[0] + fz * p[2]) * K,
+    ];
+    const faces = [];
+    for (const part of parts) {
+      for (const face of FACES) {
+        const { n, u } = face;
+        const r = cross(u, [-n[0], -n[1], -n[2]]);
+        const half = (axis) => (Math.abs(axis[0]) * part.s[0] + Math.abs(axis[1]) * part.s[1] + Math.abs(axis[2]) * part.s[2]) / 2;
+        const hn = half(n);
+        const hr = half(r);
+        const hu = half(u);
+        const center = [0, 1, 2].map((i) => part.c[i] + n[i] * hn);
+        const corner = (a, b) => [0, 1, 2].map((i) => center[i] + r[i] * hr * a + u[i] * hu * b);
+        const local = [corner(-1, 1), corner(1, 1), corner(1, -1), corner(-1, -1)].map((p) => spin(p, part));
+        const normal = spin([n[0], n[1], n[2]], { ...part, pivot: [0, 0] });
+        const nw = [rx * normal[0] + fx * normal[2], normal[1], rz * normal[0] + fz * normal[2]];
+        const cw = world(spin(center, part));
+        const toCam = [this.cam.x - cw[0], this.cam.y - cw[1], this.cam.z - cw[2]];
+        if (nw[0] * toCam[0] + nw[1] * toCam[1] + nw[2] * toCam[2] <= 0) continue;
+        const pts = local.map((p) => {
+          const w = world(p);
+          return this.project(w[0], w[1], w[2]);
+        });
+        const mid = this.project(cw[0], cw[1], cw[2]);
+        if (!mid || pts.some((p) => !p)) continue;
+        const light = Math.round((nw[0] * LIGHT[0] + nw[1] * LIGHT[1] + nw[2] * LIGHT[2]) * 34 - 6);
+        faces.push({ depth: mid.z, pts, face: part.tex.faces[face.key], palette: part.tex.palette, light });
+      }
+    }
+    faces.sort((a, b) => b.depth - a.depth);
+    for (const { pts, face, palette, light } of faces) this.drawPixels(pts, face, palette, light);
   }
 
-  drawLegs(ctx, s, stride, spread) {
-    ctx.strokeStyle = '#3a2a22';
-    ctx.lineWidth = Math.max(3.5, s * 0.09);
-    ctx.lineCap = 'round';
+  drawPixels(pts, face, palette, light) {
+    const ctx = this.ctx;
+    const [tl, tr, br, bl] = pts;
+    polygon(ctx, pts, shade(palette[face.base], light), 0.5);
+    const rows = face.rows;
+    const tall = rows.length;
+    const wide = rows[0].length;
+    const at = (u, v) => {
+      const topX = tl.x + (tr.x - tl.x) * u;
+      const topY = tl.y + (tr.y - tl.y) * u;
+      const lowX = bl.x + (br.x - bl.x) * u;
+      const lowY = bl.y + (br.y - bl.y) * u;
+      return { x: topX + (lowX - topX) * v, y: topY + (lowY - topY) * v };
+    };
+    for (let j = 0; j < tall; j += 1) {
+      for (let i = 0; i < wide; i += 1) {
+        const ch = rows[j][i];
+        if (ch === face.base) continue;
+        polygon(ctx, [
+          at(i / wide, j / tall),
+          at((i + 1) / wide, j / tall),
+          at((i + 1) / wide, (j + 1) / tall),
+          at(i / wide, (j + 1) / tall),
+        ], shade(palette[ch], light), 0.3);
+      }
+    }
+    ctx.strokeStyle = 'rgba(20, 14, 30, 0.35)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(-spread, -s * 0.18);
-    ctx.lineTo(-spread - stride * s * 0.12, s * 0.02);
-    ctx.moveTo(spread, -s * 0.18);
-    ctx.lineTo(spread + stride * s * 0.12, s * 0.02);
+    ctx.moveTo(tl.x, tl.y);
+    ctx.lineTo(tr.x, tr.y);
+    ctx.lineTo(br.x, br.y);
+    ctx.lineTo(bl.x, bl.y);
+    ctx.closePath();
     ctx.stroke();
-    ctx.fillStyle = '#2c241c';
-    ctx.beginPath();
-    ctx.ellipse(-spread - stride * s * 0.12, s * 0.04, s * 0.09, s * 0.045, 0, 0, Math.PI * 2);
-    ctx.ellipse(spread + stride * s * 0.12, s * 0.04, s * 0.09, s * 0.045, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  drawBack(ctx, s, stride) {
-    this.drawLegs(ctx, s, stride, s * 0.12);
-    const cape = ctx.createLinearGradient(0, -s * 0.7, 0, s * 0.05);
-    cape.addColorStop(0, '#8d68ee');
-    cape.addColorStop(1, '#4c2f9e');
-    ctx.fillStyle = cape;
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.22, -s * 0.62);
-    ctx.quadraticCurveTo(-s * 0.46, -s * 0.15, -s * 0.28, s * 0.06);
-    ctx.lineTo(s * 0.28, s * 0.06);
-    ctx.quadraticCurveTo(s * 0.46, -s * 0.15, s * 0.22, -s * 0.62);
-    ctx.fill();
-    const shirt = ctx.createLinearGradient(-s * 0.2, -s * 0.7, s * 0.2, -s * 0.2);
-    shirt.addColorStop(0, '#5b9bff');
-    shirt.addColorStop(1, '#2458c9');
-    ctx.fillStyle = shirt;
-    ctx.beginPath();
-    ctx.roundRect(-s * 0.24, -s * 0.68, s * 0.48, s * 0.5, s * 0.14);
-    ctx.fill();
-    ctx.fillStyle = '#ffe14a';
-    ctx.beginPath();
-    ctx.arc(0, -s * 0.46, s * 0.045, 0, Math.PI * 2);
-    ctx.fill();
-    this.drawHeld(ctx, s, s * 0.18, -s * 0.42);
-    const hair = ctx.createLinearGradient(0, -s * 1.2, 0, -s * 0.7);
-    hair.addColorStop(0, '#6b4630');
-    hair.addColorStop(1, '#2a1810');
-    ctx.fillStyle = hair;
-    ctx.beginPath();
-    ctx.arc(0, -s * 0.9, s * 0.28, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.06, -s * 1.02, s * 0.08, s * 0.04, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  drawFront(ctx, s, stride) {
-    this.drawLegs(ctx, s, stride, s * 0.13);
-    ctx.fillStyle = '#ffb020';
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.34, -s * 0.46, s * 0.1, s * 0.16, -0.5, 0, Math.PI * 2);
-    ctx.fill();
-    const shirt = ctx.createLinearGradient(0, -s * 0.72, 0, -s * 0.2);
-    shirt.addColorStop(0, '#6aa6ff');
-    shirt.addColorStop(1, '#2d62d6');
-    ctx.fillStyle = shirt;
-    ctx.beginPath();
-    ctx.roundRect(-s * 0.26, -s * 0.7, s * 0.52, s * 0.52, s * 0.16);
-    ctx.fill();
-    ctx.fillStyle = '#ffe14a';
-    ctx.beginPath();
-    ctx.arc(0, -s * 0.48, s * 0.04, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#1f4fa3';
-    ctx.beginPath();
-    ctx.ellipse(s * 0.24, -s * 0.4, s * 0.11, s * 0.15, 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    this.drawHeld(ctx, s, s * 0.16, -s * 0.4);
-    const skin = ctx.createRadialGradient(-s * 0.04, -s * 0.98, s * 0.04, 0, -s * 0.9, s * 0.28);
-    skin.addColorStop(0, '#ffe4cc');
-    skin.addColorStop(1, '#f0b48a');
-    ctx.fillStyle = skin;
-    ctx.beginPath();
-    ctx.arc(0, -s * 0.92, s * 0.26, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#3a2418';
-    ctx.beginPath();
-    ctx.arc(0, -s * 1.02, s * 0.26, Math.PI * 1.05, Math.PI * 1.95);
-    ctx.fill();
-    ctx.fillStyle = '#1c1c1e';
-    ctx.beginPath();
-    ctx.arc(-s * 0.08, -s * 0.94, s * 0.035, 0, Math.PI * 2);
-    ctx.arc(s * 0.08, -s * 0.94, s * 0.035, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(-s * 0.07, -s * 0.95, s * 0.012, 0, Math.PI * 2);
-    ctx.arc(s * 0.09, -s * 0.95, s * 0.012, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255, 140, 150, 0.45)';
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.12, -s * 0.86, s * 0.04, s * 0.025, 0, 0, Math.PI * 2);
-    ctx.ellipse(s * 0.12, -s * 0.86, s * 0.04, s * 0.025, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#c47a62';
-    ctx.lineWidth = Math.max(1.5, s * 0.03);
-    ctx.beginPath();
-    ctx.arc(0, -s * 0.84, s * 0.05, 0.2, Math.PI - 0.2);
-    ctx.stroke();
-  }
-
-  drawSide(ctx, s, stride) {
-    this.drawLegs(ctx, s, stride, s * 0.04);
-    const cape = ctx.createLinearGradient(-s * 0.3, -s * 0.6, s * 0.1, 0);
-    cape.addColorStop(0, '#4c2f9e');
-    cape.addColorStop(1, '#8d68ee');
-    ctx.fillStyle = cape;
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.08, -s * 0.62);
-    ctx.quadraticCurveTo(-s * 0.42, -s * 0.2, -s * 0.22, s * 0.04);
-    ctx.lineTo(-s * 0.02, -s * 0.28);
-    ctx.fill();
-    const shirt = ctx.createLinearGradient(0, -s * 0.7, 0, -s * 0.2);
-    shirt.addColorStop(0, '#6aa6ff');
-    shirt.addColorStop(1, '#2458c9');
-    ctx.fillStyle = shirt;
-    ctx.beginPath();
-    ctx.ellipse(0, -s * 0.46, s * 0.2, s * 0.26, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffb020';
-    ctx.beginPath();
-    ctx.ellipse(s * 0.16, -s * 0.42, s * 0.07, s * 0.14, 0.4, 0, Math.PI * 2);
-    ctx.fill();
-    this.drawHeld(ctx, s, s * 0.12, -s * 0.55);
-    ctx.fillStyle = '#f0b48a';
-    ctx.beginPath();
-    ctx.arc(s * 0.04, -s * 0.9, s * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#3a2418';
-    ctx.beginPath();
-    ctx.arc(-s * 0.02, -s * 0.98, s * 0.22, Math.PI * 0.85, Math.PI * 1.7);
-    ctx.fill();
-    ctx.fillStyle = '#1c1c1e';
-    ctx.beginPath();
-    ctx.arc(s * 0.1, -s * 0.92, s * 0.03, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#e7a07a';
-    ctx.beginPath();
-    ctx.ellipse(s * 0.2, -s * 0.86, s * 0.05, s * 0.03, 0, 0, Math.PI * 2);
-    ctx.fill();
   }
 
   reset() {

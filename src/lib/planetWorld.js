@@ -64,112 +64,174 @@ export function inBounds(x, z) {
   return x >= 0 && z >= 0 && x < SIZE && z < SIZE;
 }
 
+export function regions() {
+  const c = Math.floor(SIZE / 2);
+  return {
+    mountain: { x: c - 2, z: c - 17, r: 11 },
+    lake: { x: c + 15, z: c + 2, r: 5.5 },
+    forest: { x: c - 16, z: c + 5, r: 9 },
+    birch: { x: c + 9, z: c + 17, r: 6 },
+    magic: { x: c - 10, z: c + 19, r: 4.5 },
+  };
+}
+
+function reach(x, z, region) {
+  return Math.hypot(x - region.x, z - region.z) / region.r;
+}
+
+function carve(ground, x0, z0, tx, tz, seed, stop) {
+  const points = [];
+  let x = x0;
+  let z = z0;
+  for (let step = 0; step < 60; step += 1) {
+    if (!inBounds(x, z)) break;
+    const tile = ground[z * SIZE + x];
+    if (tile.id === 'water' || (stop && stop(tile, x, z))) break;
+    points.push([x, z]);
+    const dx = tx - x;
+    const dz = tz - z;
+    if (!dx && !dz) break;
+    let alongX = Math.abs(dx) >= Math.abs(dz);
+    if (rand(seed + step * 31 + x * 7 + z * 3) < 0.22 && (alongX ? dz : dx)) alongX = !alongX;
+    if (alongX && !dx) alongX = false;
+    if (!alongX && !dz) alongX = true;
+    if (alongX) x += Math.sign(dx);
+    else z += Math.sign(dz);
+  }
+  for (let i = 0; i < points.length; i += 1) {
+    const [x, z] = points[i];
+    const tile = ground[z * SIZE + x];
+    tile.path = true;
+    if (i % 6 === 4) {
+      const next = points[i + 1] || points[i - 1];
+      tile.lamp = next && next[0] !== x ? 'n' : 'w';
+    }
+  }
+  return points;
+}
+
 export function makeWorld(seed = 7) {
   const ground = new Array(SIZE * SIZE);
   const nodes = {};
-  const cx = Math.floor(SIZE / 2);
-  const cz = cx;
+  const c = Math.floor(SIZE / 2);
+  const R = regions();
   for (let z = 0; z < SIZE; z += 1) {
     for (let x = 0; x < SIZE; x += 1) {
-      const dist = Math.hypot(x - cx, z - cz);
+      const dist = Math.hypot(x - c, z - c);
+      const coast = 27 + noise(x * 0.09, z * 0.09, seed + 2) * 6;
       const n = field(x, z, seed);
-      const biome = noise(x * 0.035, z * 0.035, seed + 4);
-      let h = 1;
-      let groundId = 'grass';
-      if (dist > 14 && biome < 0.32) groundId = 'sand';
-      if (dist > 16 && biome > 0.74) {
-        groundId = 'stone';
-        h = 2 + (n > 0.6 ? 1 : 0);
-      }
-      if (dist > 22 && n > 0.82) {
-        groundId = 'snow';
-        h = 4;
-      }
-      if (dist > 12 && biome < 0.2 && n < 0.45) {
-        groundId = 'water';
+      let h = 2;
+      let id = 'grass';
+      let zone = 'meadow';
+      if (dist > coast) {
+        id = 'water';
         h = 1;
+        zone = 'sea';
+      } else {
+        const peak = reach(x, z, R.mountain);
+        const pond = reach(x, z, R.lake) + (noise(x * 0.2, z * 0.2, seed + 5) - 0.5) * 0.35;
+        if (peak < 1) {
+          zone = 'mountain';
+          h = Math.max(2, Math.min(MAX_HEIGHT, Math.round(2 + (1 - peak) * 5.6 + (n - 0.5) * 1.4)));
+          if (h >= 7) id = 'snow';
+          else if (h >= 4) id = 'stone';
+        }
+        if (pond < 1) {
+          id = 'water';
+          h = 1;
+          zone = 'lake';
+        } else if (zone === 'meadow') {
+          if (reach(x, z, R.forest) < 1) zone = 'forest';
+          else if (reach(x, z, R.birch) < 1) zone = 'birch';
+          else if (reach(x, z, R.magic) < 1) zone = 'magic';
+          else if (n > 0.76 && dist > 9) h = 3;
+        }
+        if (zone !== 'mountain' && zone !== 'lake' && dist > coast - 2.2) {
+          id = 'sand';
+          h = 2;
+          zone = 'beach';
+        }
       }
-      const rollDecor = rand(x * 19 + z * 23 + seed);
-      const flower = groundId === 'grass' && dist > 1.6 && rollDecor > 0.74;
-      const mushroom = groundId === 'grass' && dist > 3 && rollDecor > 0.9 && rollDecor < 0.96;
-      const bloom = groundId === 'grass' && dist > 4 && rollDecor > 0.965;
-      ground[z * SIZE + x] = { h, id: groundId, flower, mushroom, bloom };
-      if (groundId === 'water' || dist < 5) continue;
-      const roll = rand(seed * 17 + x * 13 + z * 29);
-      const grove = Math.hypot(x - (cx + 6), z - (cz + 8));
-      const quarry = Math.hypot(x - (cx - 11), z - (cz + 14));
-      let kind = null;
-      if (grove < 4.2 && groundId === 'grass') kind = 'tree';
-      else if (quarry < 3.2 && dist > 6) kind = 'rock';
-      else if (groundId === 'grass' && h <= 3 && roll > 0.955) kind = 'tree';
-      else if ((groundId === 'stone' || groundId === 'snow') && roll > 0.9) kind = roll > 0.97 ? 'crystal' : 'rock';
-      else if (groundId === 'grass' && roll > 0.93 && roll <= 0.955) kind = 'bush';
-      if (kind) {
-        const pick = rand(x * 41 + z * 17 + seed);
-        nodes[cellKey(x, z)] = {
-          kind,
-          left: 4 + Math.floor(rand(x * 3 + z) * 3),
-          scale: 0.85 + rand(x * 11 + z * 7) * 0.5,
-          variant: kind === 'tree'
-            ? (pick > 0.86 ? 'glow' : pick > 0.62 ? 'pine' : pick > 0.44 ? 'birch' : 'oak')
-            : null,
-        };
-      }
+      ground[z * SIZE + x] = { h, id, zone };
     }
   }
+
   for (let z = 1; z < SIZE - 1; z += 1) {
     for (let x = 1; x < SIZE - 1; x += 1) {
       const tile = ground[z * SIZE + x];
       if (tile.id !== 'grass') continue;
-      const shore = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => ground[(z + dz) * SIZE + (x + dx)].id === 'water');
-      if (shore) {
-        tile.id = 'sand';
-        tile.flower = false;
-        tile.mushroom = false;
-        tile.bloom = false;
-        tile.reed = rand(x * 7 + z * 13 + seed) > 0.45;
+      const wet = DIRS.map(([dx, dz]) => ground[(z + dz) * SIZE + (x + dx)]).filter((next) => next.id === 'water');
+      if (!wet.length) continue;
+      tile.id = 'sand';
+      tile.reed = wet.some((next) => next.zone === 'lake') && rand(x * 7 + z * 13 + seed) > 0.4;
+    }
+  }
+
+  carve(ground, c, c - 1, R.mountain.x, R.mountain.z, seed + 1, (tile) => tile.h >= 4);
+  carve(ground, c + 1, c + 1, R.lake.x, R.lake.z, seed + 2);
+  carve(ground, c - 1, c + 1, R.forest.x, R.forest.z, seed + 3, (tile, x, z) => reach(x, z, R.forest) < 0.45);
+  const south = carve(ground, c, c + 2, R.birch.x, R.birch.z, seed + 4, (tile, x, z) => reach(x, z, R.birch) < 0.4);
+  const fork = south[Math.min(5, south.length - 1)];
+  if (fork) carve(ground, fork[0] - 1, fork[1], R.magic.x, R.magic.z, seed + 5, (tile, x, z) => reach(x, z, R.magic) < 0.95);
+
+  const place = (x, z, kind, variant) => {
+    const tile = ground[z * SIZE + x];
+    if (!tile || tile.path || tile.id === 'water' || nodes[cellKey(x, z)]) return;
+    nodes[cellKey(x, z)] = {
+      kind,
+      left: 4 + Math.floor(rand(x * 3 + z) * 3),
+      scale: 0.85 + rand(x * 11 + z * 7) * 0.45,
+      variant: variant || null,
+    };
+  };
+
+  for (let z = 0; z < SIZE; z += 1) {
+    for (let x = 0; x < SIZE; x += 1) {
+      const tile = ground[z * SIZE + x];
+      const dist = Math.hypot(x - c, z - c);
+      const roll = rand(seed * 17 + x * 13 + z * 29);
+      const deco = rand(x * 19 + z * 23 + seed);
+      if (tile.zone === 'lake' && deco > 0.8) tile.lily = true;
+      if (tile.path || tile.id === 'water' || tile.id === 'sand' || dist < 5) continue;
+      if (tile.zone === 'forest') {
+        const edge = reach(x, z, R.forest);
+        if (roll < 0.34) place(x, z, 'tree', 'oak');
+        else if (edge > 0.72 && roll < 0.42) place(x, z, 'bush');
+        else if (deco > 0.86) tile.mushroom = 'red';
+        else if (deco < 0.03) tile.flower = true;
+      } else if (tile.zone === 'mountain') {
+        if (tile.id === 'grass' && roll < 0.2) place(x, z, 'tree', 'pine');
+        else if (tile.id === 'stone' && roll < 0.14) place(x, z, 'rock');
+        else if (tile.id === 'snow' && reach(x, z, R.mountain) < 0.4 && roll < 0.4) place(x, z, 'crystal');
+      } else if (tile.zone === 'birch') {
+        if (roll < 0.26) place(x, z, 'tree', 'birch');
+        else if (roll < 0.3) place(x, z, 'bush');
+        else if (deco > 0.45) tile.flower = true;
+      } else if (tile.zone === 'magic') {
+        const ring = reach(x, z, R.magic);
+        if (ring > 0.5 && roll < 0.38) place(x, z, 'tree', 'glow');
+        else if (deco > 0.55) tile.bloom = true;
+        else if (deco < 0.14) tile.mushroom = 'magic';
+      } else if (tile.zone === 'meadow') {
+        if (dist > 7 && roll < 0.016) place(x, z, 'tree', 'oak');
+        else if (dist > 7 && roll < 0.026) place(x, z, 'bush');
+        else if (deco > 0.87) tile.flower = true;
       }
     }
   }
-  for (let z = 1; z < SIZE - 1; z += 1) {
-    for (let x = 1; x < SIZE - 1; x += 1) {
-      const tile = ground[z * SIZE + x];
-      if (tile.id === 'water' && rand(x * 23 + z * 31 + seed) > 0.82) tile.lily = true;
-    }
+
+  for (const [dx, dz, kind] of [[5, -4, 'tree'], [-5, -3, 'tree'], [4, 5, 'tree'], [-3, -7, 'rock'], [3, -8, 'rock']]) {
+    place(c + dx, c + dz, kind, kind === 'tree' ? 'oak' : null);
   }
-  const bx = cx + 22;
-  const bz = cz - 16;
-  for (let dz = -2; dz <= 2; dz += 1) {
-    for (let dx = -2; dx <= 2; dx += 1) {
-      const x = bx + dx;
-      const z = bz + dz;
-      if (!inBounds(x, z)) continue;
-      const tile = ground[z * SIZE + x];
-      tile.h = Math.max(tile.h, 5 - Math.abs(dx) - Math.abs(dz));
-      tile.id = 'snow';
-      if (Math.abs(dx) + Math.abs(dz) <= 1) {
-        nodes[cellKey(x, z)] = { kind: 'crystal', left: 5 };
-      }
-    }
-  }
-  for (let i = 2; i <= 8; i += 1) {
-    const tile = ground[(cz + i) * SIZE + cx];
-    if (tile && tile.id !== 'water') {
-      tile.path = true;
-      tile.flower = false;
-      tile.mushroom = false;
-      tile.bloom = false;
-      if (i % 3 === 0) tile.lamp = true;
-    }
-  }
-  for (let i = 0; i < 7; i += 1) {
-    const angle = (i / 7) * Math.PI * 2 + 0.4;
-    const x = cx + Math.round(Math.cos(angle) * 9);
-    const z = cz + 1 + Math.round(Math.sin(angle) * 9);
+
+  for (let i = 0; i < 8; i += 1) {
+    const angle = (i / 8) * Math.PI * 2;
+    const x = Math.round(R.magic.x + Math.cos(angle) * (R.magic.r + 0.6));
+    const z = Math.round(R.magic.z + Math.sin(angle) * (R.magic.r + 0.6));
     const tile = inBounds(x, z) ? ground[z * SIZE + x] : null;
-    if (tile && tile.id === 'grass' && !nodes[cellKey(x, z)]) tile.pillar = true;
+    if (tile && tile.id === 'grass' && !tile.path && !nodes[cellKey(x, z)]) tile.pillar = true;
   }
-  return { seed, ground, nodes, built: {}, camp: { x: cx, z: cz + 1 } };
+  return { seed, ground, nodes, built: {}, camp: { x: c, z: c + 1 } };
 }
 
 export function tileAt(world, x, z) {
@@ -193,6 +255,7 @@ export function canStep(world, x, z, dx, dz) {
   const h1 = surfaceHeight(world, x + dx, z + dz);
   if (h0 == null || h1 == null) return false;
   if (Math.abs(h1 - h0) > 1) return false;
+  if (tileAt(world, x + dx, z + dz).id === 'water' && !world.built[cellKey(x + dx, z + dz)]) return false;
   const node = nodeAt(world, x + dx, z + dz);
   if (node && node.left > 0) return false;
   return true;

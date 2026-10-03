@@ -38,6 +38,17 @@ test('cliffs are not a single step', () => {
   assert.equal(canStep(world, x, z, 1, 0), false);
 });
 
+test('water stops a walk until a block bridges it', () => {
+  const world = makeWorld(7);
+  const { x, z } = spawn();
+  const tile = world.ground[z * SIZE + (x + 1)];
+  tile.id = 'water';
+  tile.h = 1;
+  assert.equal(canStep(world, x, z, 1, 0), false);
+  world.built[`${x + 1},${z}`] = ['wood'];
+  assert.equal(canStep(world, x, z, 1, 0), true);
+});
+
 test('gathering a tree gives wood and placing spends it', () => {
   const world = makeWorld(7);
   const { x, z } = spawn();
