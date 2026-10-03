@@ -5,6 +5,9 @@ import Link from 'next/link';
 import BrandLogo from './BrandLogo';
 
 const GAMES = [
+  { id: 'hear', label: 'Hear', blurb: 'Listen, then tap the word.' },
+  { id: 'starts', label: 'Starts with', blurb: 'Find the word that starts with the sound.' },
+  { id: 'spell', label: 'Spell', blurb: 'Tap the letters in order.' },
   { id: 'pairs', label: 'Pairs', blurb: 'Flip two cards. Find every match.' },
   { id: 'marks', label: 'Marks', blurb: 'Two players. Three in a row.' },
   { id: 'higher', label: 'Higher', blurb: 'Guess a number from 1 to 50.' },
@@ -386,7 +389,181 @@ function Sum() {
   );
 }
 
-const BOARDS = { pairs: Pairs, marks: Marks, higher: Higher, echo: Echo, odd: Odd, sum: Sum };
+function speak(text) {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.82;
+  utter.lang = 'en-US';
+  window.speechSynthesis.speak(utter);
+}
+
+const HEAR_WORDS = [
+  { word: 'cat', near: ['cap', 'bat'] },
+  { word: 'dog', near: ['log', 'dig'] },
+  { word: 'sun', near: ['sit', 'run'] },
+  { word: 'hat', near: ['hot', 'bat'] },
+  { word: 'pig', near: ['pin', 'big'] },
+  { word: 'bus', near: ['bug', 'bun'] },
+  { word: 'cup', near: ['cap', 'pup'] },
+  { word: 'bed', near: ['bad', 'red'] },
+  { word: 'map', near: ['mop', 'mat'] },
+  { word: 'mom', near: ['mud', 'man'] },
+  { word: 'dad', near: ['did', 'sad'] },
+  { word: 'fish', near: ['dish', 'wish'] },
+];
+
+function Hear() {
+  const [round, setRound] = useState(0);
+  const [options, setOptions] = useState(() => shuffle([HEAR_WORDS[0].word, ...HEAR_WORDS[0].near]));
+  const [note, setNote] = useState('Tap the word you hear.');
+  const [streak, setStreak] = useState(0);
+  const [best, saveBest] = useBest('hear');
+  const current = HEAR_WORDS[round % HEAR_WORDS.length];
+
+  useEffect(() => {
+    speak(current.word);
+  }, [current.word, round]);
+
+  const pick = (word) => {
+    if (word === current.word) {
+      const next = streak + 1;
+      setStreak(next);
+      saveBest(next, (value, prev) => value > prev);
+      setNote('Yes.');
+      const upcoming = HEAR_WORDS[(round + 1) % HEAR_WORDS.length];
+      setOptions(shuffle([upcoming.word, ...upcoming.near]));
+      setRound(round + 1);
+      return;
+    }
+    setNote(`That was ${current.word}.`);
+    setStreak(0);
+    speak(current.word);
+  };
+
+  return (
+    <section className="play-panel">
+      <p className="vital-muted">{note} · Streak {streak}{best != null ? ` · Best ${best}` : ''}</p>
+      <button type="button" className="vital-btn" onClick={() => speak(current.word)}>Hear it again</button>
+      <div className="play-words">
+        {options.map((word) => (
+          <button key={word} type="button" className="play-word" onClick={() => pick(word)}>{word}</button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const STARTS = [
+  { sound: 'mmm', letter: 'm', answer: 'mom', others: ['sun', 'cat'] },
+  { sound: 'sss', letter: 's', answer: 'sun', others: ['dog', 'pig'] },
+  { sound: 'bbb', letter: 'b', answer: 'bus', others: ['hat', 'cup'] },
+  { sound: 'ddd', letter: 'd', answer: 'dog', others: ['map', 'sun'] },
+  { sound: 'ppp', letter: 'p', answer: 'pig', others: ['bed', 'mom'] },
+  { sound: 'ccc', letter: 'c', answer: 'cup', others: ['hat', 'log'] },
+  { sound: 'hhh', letter: 'h', answer: 'hat', others: ['bus', 'pig'] },
+  { sound: 'fff', letter: 'f', answer: 'fish', others: ['dog', 'sun'] },
+];
+
+function Starts() {
+  const [round, setRound] = useState(0);
+  const [options, setOptions] = useState(() => shuffle([STARTS[0].answer, ...STARTS[0].others]));
+  const [note, setNote] = useState('Tap the word that starts with the sound.');
+  const [streak, setStreak] = useState(0);
+  const [best, saveBest] = useBest('starts');
+  const current = STARTS[round % STARTS.length];
+
+  useEffect(() => {
+    speak(`Which word starts with ${current.sound}?`);
+  }, [current.sound, round]);
+
+  const pick = (word) => {
+    if (word === current.answer) {
+      const next = streak + 1;
+      setStreak(next);
+      saveBest(next, (value, prev) => value > prev);
+      setNote('Yes.');
+      const upcoming = STARTS[(round + 1) % STARTS.length];
+      setOptions(shuffle([upcoming.answer, ...upcoming.others]));
+      setRound(round + 1);
+      return;
+    }
+    setNote(`${current.answer} starts with ${current.letter}.`);
+    setStreak(0);
+    speak(`Which word starts with ${current.sound}?`);
+  };
+
+  return (
+    <section className="play-panel">
+      <p className="play-sum">{current.letter}</p>
+      <p className="vital-muted">{note} · Streak {streak}{best != null ? ` · Best ${best}` : ''}</p>
+      <button type="button" className="vital-btn" onClick={() => speak(`Which word starts with ${current.sound}?`)}>Hear the sound</button>
+      <div className="play-words">
+        {options.map((word) => (
+          <button key={word} type="button" className="play-word" onClick={() => pick(word)}>{word}</button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const SPELL_WORDS = ['cat', 'dog', 'sun', 'hat', 'pig', 'bus', 'cup', 'bed', 'map', 'mom'];
+
+function spellRound(index) {
+  const word = SPELL_WORDS[index % SPELL_WORDS.length];
+  const extras = shuffle('abcdefghijklmnopqrstuvwxyz'.split('').filter((letter) => !word.includes(letter))).slice(0, 3);
+  return { word, letters: shuffle([...word.split(''), ...extras]) };
+}
+
+function Spell() {
+  const [round, setRound] = useState(0);
+  const [puzzle, setPuzzle] = useState(() => spellRound(0));
+  const [built, setBuilt] = useState('');
+  const [note, setNote] = useState('Tap the letters in order.');
+  const [streak, setStreak] = useState(0);
+  const [best, saveBest] = useBest('spell');
+
+  useEffect(() => {
+    speak(`Spell ${puzzle.word}`);
+  }, [puzzle.word, round]);
+
+  const tap = (letter) => {
+    const next = built + letter;
+    if (!puzzle.word.startsWith(next)) {
+      setNote(`Spell ${puzzle.word}.`);
+      setBuilt('');
+      setStreak(0);
+      speak(`Spell ${puzzle.word}`);
+      return;
+    }
+    setBuilt(next);
+    if (next === puzzle.word) {
+      const count = streak + 1;
+      setStreak(count);
+      saveBest(count, (value, prev) => value > prev);
+      setNote('Yes.');
+      const upcoming = round + 1;
+      setRound(upcoming);
+      setPuzzle(spellRound(upcoming));
+      setBuilt('');
+    }
+  };
+
+  return (
+    <section className="play-panel">
+      <p className="play-sum">{built || '·'}</p>
+      <p className="vital-muted">{note} · Streak {streak}{best != null ? ` · Best ${best}` : ''}</p>
+      <button type="button" className="vital-btn" onClick={() => speak(`Spell ${puzzle.word}`)}>Hear the word</button>
+      <div className="play-letters">
+        {puzzle.letters.map((letter, index) => (
+          <button key={`${letter}-${index}`} type="button" className="play-letter" onClick={() => tap(letter)}>{letter}</button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const BOARDS = { pairs: Pairs, marks: Marks, higher: Higher, echo: Echo, odd: Odd, sum: Sum, hear: Hear, starts: Starts, spell: Spell };
 
 export default function PlayDashboardClient() {
   const [game, setGame] = useState(null);

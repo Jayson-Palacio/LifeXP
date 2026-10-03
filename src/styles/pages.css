@@ -5631,9 +5631,37 @@ button.vital-week-day {
   font-size: 14px;
 }
 
-.play-mark.is-win {
-  background: #e7f0ea;
-  color: #2f6b4f;
+.play-word,
+.play-letter {
+  min-height: 64px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--vital-ink, #1c1c1e);
+  font: inherit;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.play-words {
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.play-letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.play-letter {
+  width: 64px;
+  text-transform: lowercase;
 }
 
 .ledger-app {
