@@ -350,3 +350,124 @@ export function spawn() {
   const c = Math.floor(SIZE / 2);
   return { x: c, z: c };
 }
+
+const square = (n) => Array.from({ length: n * n }, (_, i) => [i % n, Math.floor(i / n)]);
+
+export const PLANS = [
+  { id: 'wall', name: 'Garden wall', block: 'wood', need: 1, cells: [[0, 0], [1, 0], [2, 0], [3, 0]], clear: [[0, 0], [1, 0], [2, 0], [3, 0]] },
+  { id: 'tower', name: 'Lookout tower', block: 'stone', need: 4, cells: [[0, 0]], clear: [[0, 0]] },
+  {
+    id: 'house',
+    name: 'Little house',
+    block: 'wood',
+    need: 2,
+    cells: [[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
+    clear: square(3),
+  },
+];
+
+export function reachable(world, x0, z0) {
+  const seen = new Set([cellKey(x0, z0)]);
+  const queue = [[x0, z0]];
+  for (let head = 0; head < queue.length; head += 1) {
+    const [x, z] = queue[head];
+    for (const [dx, dz] of DIRS) {
+      const key = cellKey(x + dx, z + dz);
+      if (seen.has(key) || !canStep(world, x, z, dx, dz)) continue;
+      seen.add(key);
+      queue.push([x + dx, z + dz]);
+    }
+  }
+  return seen;
+}
+
+function openTile(world, x, z) {
+  const tile = tileAt(world, x, z);
+  return Boolean(tile && tile.h === 2 && (tile.id === 'grass' || tile.id === 'sand')
+    && !tile.path && !tile.lamp && !tile.pillar && !tile.reed && !nodeAt(world, x, z));
+}
+
+export function makeQuests(world) {
+  const home = spawn();
+  const seen = reachable(world, home.x, home.z);
+  const taken = new Set();
+  const camp = world.camp;
+  for (let dx = -2; dx <= 4; dx += 1) {
+    for (let dz = -4; dz <= 2; dz += 1) taken.add(cellKey(camp.x + dx, camp.z + dz));
+  }
+  const plans = [];
+  for (const plan of PLANS) {
+    let site = null;
+    for (let r = 3; r <= 14 && !site; r += 1) {
+      for (let dz = -r; dz <= r && !site; dz += 1) {
+        for (let dx = -r; dx <= r && !site; dx += 1) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+          const ax = home.x + dx;
+          const az = home.z + dz;
+          const fits = plan.clear.every(([cx, cz]) => {
+            const key = cellKey(ax + cx, az + cz);
+            return seen.has(key) && !taken.has(key) && openTile(world, ax + cx, az + cz);
+          });
+          if (fits) site = { ax, az };
+        }
+      }
+    }
+    if (!site) continue;
+    for (const [cx, cz] of plan.clear) {
+      for (let mx = -1; mx <= 1; mx += 1) {
+        for (let mz = -1; mz <= 1; mz += 1) taken.add(cellKey(site.ax + cx + mx, site.az + cz + mz));
+      }
+    }
+    plans.push({
+      id: plan.id,
+      name: plan.name,
+      block: plan.block,
+      cells: plan.cells.map(([cx, cz]) => ({ x: site.ax + cx, z: site.az + cz, need: plan.need })),
+    });
+  }
+
+  const R = regions();
+  const goals = [
+    { id: 'peak', at: R.mountain, score: (tile, d) => d - tile.h * 4 },
+    { id: 'forest', at: R.forest },
+    { id: 'birch', at: R.birch },
+    { id: 'magic', at: R.magic },
+    { id: 'lake', at: R.lake },
+  ];
+  const chests = [];
+  for (const goal of goals) {
+    let best = null;
+    let bestScore = Infinity;
+    for (const key of seen) {
+      if (taken.has(key)) continue;
+      const [x, z] = key.split(',').map(Number);
+      const tile = tileAt(world, x, z);
+      if (!tile || tile.id === 'water' || tile.path || tile.lamp || tile.pillar) continue;
+      const d = Math.hypot(x - goal.at.x, z - goal.at.z);
+      const score = goal.score ? goal.score(tile, d) : d;
+      if (score < bestScore) {
+        bestScore = score;
+        best = { x, z };
+      }
+    }
+    if (!best) continue;
+    taken.add(cellKey(best.x, best.z));
+    const tile = tileAt(world, best.x, best.z);
+    tile.flower = false;
+    tile.mushroom = null;
+    tile.bloom = false;
+    tile.reed = false;
+    chests.push({ id: goal.id, x: best.x, z: best.z });
+  }
+  return { plans, chests };
+}
+
+export function planProgress(world, plan) {
+  let have = 0;
+  let need = 0;
+  for (const cell of plan.cells) {
+    need += cell.need;
+    have += Math.min(cell.need, world.built[cellKey(cell.x, cell.z)]?.length || 0);
+  }
+  return { have, need, done: have >= need };
+}

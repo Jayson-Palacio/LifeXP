@@ -21,7 +21,7 @@ export function prepare(spec) {
     });
     faces[key] = { rows, base, groups, wide: rows[0].length, tall: rows.length };
   }
-  return { palette: spec.palette, faces };
+  return { palette: spec.palette, faces, glow: Boolean(spec.glow) };
 }
 
 function speckle(w, h, base, mix, seed) {
@@ -49,9 +49,10 @@ function speckle(w, h, base, mix, seed) {
 const around = (rows) => ({ front: rows, back: rows, left: rows, right: rows });
 const variants = (n, make) => Array.from({ length: n }, (_, i) => make(i + 1));
 const solidCache = new Map();
-export function solid(hex) {
-  if (!solidCache.has(hex)) solidCache.set(hex, prepare({ palette: { a: hex }, fill: 'a' }));
-  return solidCache.get(hex);
+export function solid(hex, glow = false) {
+  const key = glow ? `${hex}!` : hex;
+  if (!solidCache.has(key)) solidCache.set(key, prepare({ palette: { a: hex }, fill: 'a', glow }));
+  return solidCache.get(key);
 }
 
 const HERO_PAL = {
@@ -159,7 +160,7 @@ const PLANK_PAL = { F: '#d39a5a', f: '#93623a', g: '#b07a44' };
 export const BLOCK_TEX = {
   wood: prepare({ palette: PLANK_PAL, ...around(PLANKS), top: PLANKS, bottom: PLANKS }),
   stone: prepare({ palette: { S: '#c9ccd4', s: '#8d93a0', t: '#e2e4e9' }, ...around(BRICKS), top: BRICKS, bottom: BRICKS }),
-  gold: prepare({ palette: { O: '#ffd60a', Q: '#fff3a0', o: '#d9b000' }, ...around(GEM), top: GEM, bottom: GEM }),
+  gold: prepare({ palette: { O: '#ffd60a', Q: '#fff3a0', o: '#d9b000' }, ...around(GEM), top: GEM, bottom: GEM, glow: true }),
   leaf: prepare({ palette: { L: '#46c46a', m: '#2f9a4e', n: '#6ad884' }, ...around(LEAF_ROWS), top: LEAF_ROWS, bottom: LEAF_ROWS }),
 };
 
@@ -172,9 +173,10 @@ function log(palette) {
   });
 }
 
-function leaves(palette, mix, seed) {
+function leaves(palette, mix, seed, glow = false) {
   return prepare({
     palette,
+    glow,
     ...around(speckle(6, 6, 'L', mix, seed)),
     top: speckle(6, 6, 'L', mix, seed + 1),
     bottom: speckle(6, 6, 'L', mix, seed + 2),
@@ -195,7 +197,7 @@ const TEX = {
   appleLeaf: leaves(OAK_PAL, [['m', 0.26], ['o', 0.14], ['R', 0.07]], 21),
   pineLeaf: leaves({ L: '#1d5a3a', m: '#154a2f', o: '#2a7550' }, [['m', 0.3], ['o', 0.16]], 31),
   birchLeaf: leaves({ L: '#8cc63f', m: '#74ab30', o: '#a9dc5e' }, [['m', 0.26], ['o', 0.18]], 41),
-  glowLeaf: leaves({ L: '#5a3fb8', m: '#432f96', C: '#7ff0e0' }, [['m', 0.28], ['C', 0.1]], 51),
+  glowLeaf: leaves({ L: '#5a3fb8', m: '#432f96', C: '#7ff0e0' }, [['m', 0.28], ['C', 0.1]], 51, true),
   snowCap: prepare({ palette: SNOW_PAL, ...around(['nnnn', 'nmnn']), top: ['nnnn', 'nwnn', 'nnmn', 'nnnn'] }),
   bush: leaves({ L: '#2f8f48', m: '#23733a', R: '#ff4f7a', V: '#8a5cff' }, [['m', 0.26], ['R', 0.1], ['V', 0.05]], 61),
   rocks: [
@@ -206,6 +208,7 @@ const TEX = {
     palette: { Z: '#7ec8ff', z: '#4a8fd6', w: '#d7f4ff' },
     ...around(['ZwZZ', 'ZZwZ', 'zZZw', 'ZzZZ', 'ZZzZ', 'zZZZ']),
     top: ['wZ', 'Zw'],
+    glow: true,
   }),
   stone: prepare({ palette: STONE, ...around(stoneRows(77)), top: stoneRows(78) }),
   pillar: prepare({
@@ -218,11 +221,30 @@ const TEX = {
     ...around(['kkkk', 'kYYk', 'kyYk', 'kkkk']),
     top: ['k'],
     bottom: ['k'],
+    glow: true,
   }),
   stemCap: {
     red: prepare({ palette: { R: '#d63a3a', W: '#fff4ec' }, ...around(['RRWR', 'RRRR']), top: ['RRRR', 'RWRR', 'RRRW', 'WRRR'] }),
-    magic: prepare({ palette: { R: '#a07cff', W: '#e7dcff' }, ...around(['RRWR', 'RRRR']), top: ['RRRR', 'RWRR', 'RRRW', 'WRRR'] }),
+    magic: prepare({ palette: { R: '#a07cff', W: '#e7dcff' }, ...around(['RRWR', 'RRRR']), top: ['RRRR', 'RWRR', 'RRRW', 'WRRR'], glow: true }),
   },
+  chest: prepare({
+    palette: { W: '#a8692f', w: '#7d4a20', k: '#3a2412', G: '#ffd23f' },
+    front: ['kkkkkk', 'kWWWWk', 'kWGGWk', 'kwGGwk', 'kWWWWk', 'kkkkkk'],
+    back: ['kkkkkk', 'kWWWWk', 'kwWWwk', 'kWWWWk', 'kkkkkk'],
+    left: ['kkkk', 'kWWk', 'kwwk', 'kkkk'],
+    right: ['kkkk', 'kWWk', 'kwwk', 'kkkk'],
+    top: ['kkkkkk', 'kGGGGk', 'kGGGGk', 'kGGGGk', 'kkkkkk'],
+    bottom: ['k'],
+  }),
+  lid: prepare({
+    palette: { W: '#b97a3a', w: '#8a5426', k: '#3a2412', G: '#ffd23f' },
+    front: ['kkkkkk', 'kGWWGk', 'kkkkkk'],
+    back: ['kkkkkk', 'kWWWWk', 'kkkkkk'],
+    left: ['kkkk', 'kWWk', 'kkkk'],
+    right: ['kkkk', 'kWWk', 'kkkk'],
+    top: ['kkkkkk', 'kWWWWk', 'kWGGWk', 'kWwwWk', 'kWWWWk', 'kkkkkk'],
+    bottom: ['k'],
+  }),
   tent: prepare({
     palette: { R: '#d9485f', W: '#f6e3c8' },
     ...around(['RRWWRRWW', 'RRWWRRWW']),
@@ -336,7 +358,7 @@ export function mushroomModel(magic) {
 export function bloomModel() {
   return [
     box(-0.08, 0, 0.08, 0.05, 0.18, 0.05, solid('#3f8f2e')),
-    box(-0.08, 0.18, 0.08, 0.16, 0.16, 0.16, solid('#ffe14a')),
+    box(-0.08, 0.18, 0.08, 0.16, 0.16, 0.16, solid('#ffe14a', true)),
   ];
 }
 
@@ -395,9 +417,9 @@ export function fireModel(time) {
   parts.push(box(0, 0, 0, 0.5, 0.1, 0.12, TEX.oakLog));
   parts.push(box(0, 0.1, 0, 0.12, 0.1, 0.5, TEX.oakLog));
   const flick = (k) => 0.5 + Math.sin(time * 9 + k * 2.1) * 0.5;
-  parts.push(box(0, 0.2, 0, 0.26, 0.16 + flick(0) * 0.08, 0.26, solid('#ff9f0a')));
-  parts.push(box(0.02, 0.36, -0.02, 0.16, 0.12 + flick(1) * 0.1, 0.16, solid('#ffc21a')));
-  parts.push(box(-0.01, 0.5 + flick(2) * 0.06, 0.01, 0.08, 0.08, 0.08, solid('#ffe14a')));
+  parts.push(box(0, 0.2, 0, 0.26, 0.16 + flick(0) * 0.08, 0.26, solid('#ff9f0a', true)));
+  parts.push(box(0.02, 0.36, -0.02, 0.16, 0.12 + flick(1) * 0.1, 0.16, solid('#ffc21a', true)));
+  parts.push(box(-0.01, 0.5 + flick(2) * 0.06, 0.01, 0.08, 0.08, 0.08, solid('#ffe14a', true)));
   return parts;
 }
 
@@ -428,13 +450,30 @@ export function tentModel(time) {
   ];
 }
 
-export function rabbitModel(hop) {
+export function rabbitModel(hop, pet = false) {
   const y = hop > 0 ? 0.12 : 0;
-  return [
+  const parts = [
     box(0, y, -0.04, 0.22, 0.18, 0.3, TEX.rabbit),
     box(0, y + 0.1, 0.16, 0.16, 0.16, 0.16, TEX.rabbitHead),
     box(-0.04, y + 0.26, 0.14, 0.04, 0.16, 0.04, solid('#f4a4b0')),
     box(0.04, y + 0.26, 0.14, 0.04, 0.16, 0.04, solid('#f4a4b0')),
     box(0, y + 0.06, -0.21, 0.08, 0.08, 0.06, solid('#ffffff')),
   ];
+  if (pet) {
+    parts.push(box(0, y + 0.1, 0.07, 0.18, 0.04, 0.04, solid('#e8384f')));
+    parts.push(box(0, y + 0.06, 0.1, 0.05, 0.05, 0.03, solid('#ffd23f', true)));
+  }
+  return parts;
 }
+
+export function chestModel(open) {
+  return [
+    box(0, 0, 0, 0.62, 0.38, 0.46, TEX.chest),
+    { c: [0, 0.45, 0], s: [0.64, 0.14, 0.48], pivot: [0.38, -0.24], rot: -open * 1.9, tex: TEX.lid },
+  ];
+}
+
+export function cube(size, hex, glow = false) {
+  return [{ c: [0, size / 2, 0], s: [size, size, size], tex: solid(hex, glow) }];
+}
+

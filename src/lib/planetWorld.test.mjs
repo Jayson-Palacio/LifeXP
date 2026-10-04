@@ -4,9 +4,13 @@ import {
   SIZE,
   canStep,
   findPath,
+  cellKey,
   gatherNode,
+  makeQuests,
   makeWorld,
   placeBuilt,
+  planProgress,
+  reachable,
   spawn,
   surfaceHeight,
   takeBuilt,
@@ -47,6 +51,25 @@ test('water stops a walk until a block bridges it', () => {
   assert.equal(canStep(world, x, z, 1, 0), false);
   world.built[`${x + 1},${z}`] = ['wood'];
   assert.equal(canStep(world, x, z, 1, 0), true);
+});
+
+test('every blueprint and treasure chest can be walked to from home', () => {
+  const world = makeWorld(7);
+  const { plans, chests } = makeQuests(world);
+  const seen = reachable(world, spawn().x, spawn().z);
+  assert.equal(plans.length, 3);
+  assert.equal(chests.length, 5);
+  const used = new Set();
+  for (const spot of [...plans.flatMap((plan) => plan.cells), ...chests]) {
+    const key = cellKey(spot.x, spot.z);
+    assert.ok(seen.has(key), `${key} is reachable`);
+    assert.equal(used.has(key), false);
+    used.add(key);
+  }
+  const tower = plans.find((plan) => plan.id === 'tower');
+  assert.deepEqual(planProgress(world, tower), { have: 0, need: 4, done: false });
+  world.built[cellKey(tower.cells[0].x, tower.cells[0].z)] = ['stone', 'wood', 'stone', 'stone', 'leaf'];
+  assert.equal(planProgress(world, tower).done, true);
 });
 
 test('gathering a tree gives wood and placing spends it', () => {

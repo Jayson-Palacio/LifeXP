@@ -8627,6 +8627,42 @@ body:has(.play-app.is-planet) {
   opacity: 0.4;
 }
 
+.planet-palette button.is-bump {
+  animation: planet-bump 0.42s ease-out;
+}
+
+@keyframes planet-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.22); box-shadow: 0 0 0 3px #ffd60a; }
+  100% { transform: scale(1); }
+}
+
+.planet-toast {
+  position: absolute;
+  z-index: 6;
+  top: 34%;
+  left: 50%;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: #ffd60a;
+  color: #1c1c1e;
+  font-size: 20px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+  animation: planet-toast 2.6s ease-out forwards;
+}
+
+@keyframes planet-toast {
+  0% { opacity: 0; transform: translate(-50%, 16px) scale(0.7); }
+  10% { opacity: 1; transform: translate(-50%, 0) scale(1.08); }
+  16% { transform: translate(-50%, 0) scale(1); }
+  82% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -12px) scale(0.96); }
+}
+
 .planet-tasks {
   position: absolute;
   z-index: 3;
