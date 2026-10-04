@@ -8898,6 +8898,88 @@ body:has(.play-app.is-planet) {
   color: #1c1c1e;
 }
 
+.planet-map {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  background: rgba(6, 10, 24, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.planet-map > div {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  padding: 12px;
+  border-radius: 24px;
+  background: #fff7e6;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+}
+
+.planet-map canvas {
+  width: min(78vh, 62vw);
+  height: min(78vh, 62vw);
+  border-radius: 16px;
+  image-rendering: pixelated;
+}
+
+.planet-map aside {
+  display: flex;
+  flex-direction: column;
+  min-width: 128px;
+  color: #3a2412;
+}
+
+.planet-map strong {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.planet-map ul {
+  flex: 1;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planet-map li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.9;
+}
+
+.planet-map li i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #3a2412;
+  border-radius: 3px;
+}
+
+.planet-map .is-you { background: #ff3b4e; }
+.planet-map .is-home { background: linear-gradient(#c0562f 50%, #8a5a2b 50%); }
+.planet-map .is-chest { background: #ffd23f; }
+.planet-map .is-plan { background: #ffd60a; border-style: dashed; }
+.planet-map .is-bunny { background: #fff; }
+.planet-map .is-slime { background: #7be35f; }
+
+.planet-map aside button {
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: #1d1d1f;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .planet-sideways {
   display: none;
 }

@@ -5,6 +5,7 @@ import {
   BLOCKS,
   MAX_HEIGHT,
   NODES,
+  SIZE,
   blockById,
   canStep,
   cellKey,
@@ -45,7 +46,9 @@ import {
   rockModel,
   seatModel,
   signModel,
+  slimeModel,
   stumpModel,
+  TOOLS,
   tentModel,
   treeModel,
 } from '../lib/planetArt';
@@ -139,6 +142,16 @@ const NODE_BITS = {
 const BLOCK_BITS = { wood: '#c98a4a', stone: '#a9afbb', gold: '#ffd60a', leaf: '#46c46a' };
 const STEP_SOUND = { grass: [190, 'triangle'], sand: [150, 'sawtooth'], stone: [330, 'square'], snow: [120, 'sawtooth'], water: [260, 'sine'] };
 
+const SWING = 0.3;
+const SLIME_COUNT = 5;
+const MAP_GROUND = { grass: '#5fae3e', sand: '#e4c56e', stone: '#8e95a3', snow: '#eef3f8', water: '#3c93d8' };
+const MAP_NODE = { oak: '#2f7a34', pine: '#1f5a3a', birch: '#9fd06a', glow: '#7a5cd8', rock: '#646a78', crystal: '#7ec8ff', bush: '#2e8a45' };
+
+function swingAngle(p) {
+  if (p < 0.62) return 0.35 + (1 - (1 - p / 0.62) ** 2) * 1.95;
+  return 2.3 - ((p - 0.62) / 0.38) ** 2 * 1.95;
+}
+
 function easeOutBack(t) {
   const k = 1.9;
   return 1 + (k + 1) * (t - 1) ** 3 + k * (t - 1) ** 2;
@@ -174,11 +187,21 @@ class PlanetGame {
     this.opened = new Set(saved?.opened || []);
     this.chestOpen = {};
     this.pops = {};
-    this.chip = 0;
     this.trail = [{ x: this.ix, z: this.iz }];
     this.hearts = [];
     this.feedTarget = null;
     this.canFeed = false;
+    this.fight = null;
+    this.fightTarget = null;
+    this.canFight = false;
+    this.swingT = 0;
+    this.tool = null;
+    this.toolOut = 0;
+    this.mapImage = null;
+    this.mapDirty = true;
+    this.mapCanvas = null;
+    this.miniRect = null;
+    this.slimes = [];
     this.colors = new Map();
     this.moodKey = -1;
     this.time = 0;
@@ -200,6 +223,7 @@ class PlanetGame {
       critter.z = this.pz;
     }
     this.plansDone = new Set(this.quests.plans.filter((plan) => planProgress(this.world, plan).done).map((plan) => plan.id));
+    for (let i = 0; i < SLIME_COUNT; i += 1) this.slimes.push(this.spawnSlime({}, 0));
     this.motes = Array.from({ length: 18 }, (_, i) => ({
       x: home.x - 7 + (i % 6) * 2.3,
       z: home.z - 3 + (i % 5) * 2.1,
@@ -376,6 +400,11 @@ class PlanetGame {
       this.feed(bunny);
       return;
     }
+    const slime = this.slimeBeside();
+    if (slime) {
+      this.startFight(slime);
+      return;
+    }
     if (this.near) {
       this.goGather(this.near.x, this.near.z);
       return;
@@ -440,6 +469,110 @@ class PlanetGame {
     this.ui.onToast('Treasure! +3 Crystal');
     this.reportQuest();
     this.persist();
+  }
+
+  slimeOpen(x, z) {
+    const tile = tileAt(this.world, x, z);
+    if (!tile || (tile.id !== 'grass' && tile.id !== 'sand') || tile.path) return false;
+    if (nodeAt(this.world, x, z)?.left > 0 || this.world.built[cellKey(x, z)]?.length) return false;
+    if (this.planCells?.has(cellKey(x, z))) return false;
+    return !this.quests.chests.some((chest) => chest.x === x && chest.z === z);
+  }
+
+  spawnSlime(slime, delay) {
+    const home = spawn();
+    for (let tries = 0; tries < 80; tries += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 8 + Math.random() * 14;
+      const x = Math.floor(home.x + Math.cos(angle) * dist);
+      const z = Math.floor(home.z + Math.sin(angle) * dist);
+      if (!this.slimeOpen(x, z)) continue;
+      if (Math.abs(x - (this.ix ?? home.x)) + Math.abs(z - (this.iz ?? home.z)) < 6) continue;
+      Object.assign(slime, {
+        x: x + 0.5, z: z + 0.5, fx: x + 0.5, fz: z + 0.5,
+        hp: 3, hop: 0, wait: 1 + Math.random() * 2, hurt: 0, squish: 0,
+        heading: Math.random() * Math.PI * 2, dead: false, back: delay,
+      });
+      return slime;
+    }
+    Object.assign(slime, { x: home.x + 9.5, z: home.z + 0.5, fx: home.x + 9.5, fz: home.z + 0.5, hp: 3, hop: 0, wait: 2, hurt: 0, squish: 0, heading: 0, dead: false, back: delay });
+    return slime;
+  }
+
+  stepSlime(slime, dt) {
+    if (slime.back > 0) {
+      slime.back -= dt;
+      return;
+    }
+    slime.hurt = Math.max(0, slime.hurt - dt);
+    slime.squish = Math.max(0, slime.squish - dt * 3);
+    if (slime.dead) return;
+    if (slime.hop > 0) {
+      slime.hop -= dt;
+      if (slime.hop <= 0) slime.squish = 1;
+      return;
+    }
+    if (this.fight?.slime === slime || this.fightTarget === slime) return;
+    slime.wait -= dt;
+    if (slime.wait > 0) return;
+    slime.wait = 1 + Math.random() * 2;
+    const [dx, dz] = [[1, 0], [-1, 0], [0, 1], [0, -1]][Math.floor(Math.random() * 4)];
+    const x0 = Math.floor(slime.x);
+    const z0 = Math.floor(slime.z);
+    const x = x0 + dx;
+    const z = z0 + dz;
+    if (!this.slimeOpen(x, z) || (x === this.ix && z === this.iz)) return;
+    if (Math.abs(surfaceHeight(this.world, x, z) - surfaceHeight(this.world, x0, z0)) > 1) return;
+    if (this.slimes.some((other) => other !== slime && !other.dead && Math.floor(other.x) === x && Math.floor(other.z) === z)) return;
+    slime.fx = slime.x;
+    slime.fz = slime.z;
+    slime.x = x + 0.5;
+    slime.z = z + 0.5;
+    slime.heading = Math.atan2(dx, dz);
+    slime.hop = 0.42;
+    this.tone(260 + Math.random() * 60, 0.07, 'sine', 0.012, 420);
+  }
+
+  advanceSwing(dt) {
+    const before = Math.floor(this.swingT / SWING);
+    this.swingT += dt;
+    return Math.floor(this.swingT / SWING) > before;
+  }
+
+  slimeBeside() {
+    return this.slimes.find((slime) => !slime.dead && slime.back <= 0 && slime.hop <= 0
+      && Math.abs(Math.floor(slime.x) - this.ix) + Math.abs(Math.floor(slime.z) - this.iz) === 1) || null;
+  }
+
+  startFight(slime) {
+    this.job = null;
+    this.placeOnArrive = null;
+    this.path = [];
+    this.fightTarget = null;
+    this.fight = { slime };
+    this.swingT = 0;
+  }
+
+  hitSlime(slime) {
+    slime.hp -= 1;
+    slime.hurt = 0.14;
+    slime.squish = 1;
+    const ground = surfaceHeight(this.world, Math.floor(slime.x), Math.floor(slime.z)) || 2;
+    this.burst(slime.x, slime.z, ground + 0.4, ['#7be35f', '#e2ffd6'], 4, 0.5);
+    this.tone(210, 0.06, 'square', 0.04, 140);
+    this.tone(560, 0.09, 'sine', 0.03, 280, 0.02);
+    if (slime.hp > 0) return;
+    this.burst(slime.x, slime.z, ground + 0.4, ['#7be35f', '#5cc847', '#e2ffd6', '#ffd60a'], 20, 1.3);
+    [523, 784, 1047].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.04, 0, i * 0.07));
+    slime.dead = true;
+    this.fight = null;
+    this.bag.gold += 1;
+    this.stats.slimes = (this.stats.slimes || 0) + 1;
+    this.float('+ Crystal', slime.x, slime.z);
+    this.ui.onBag({ ...this.bag });
+    this.ui.onToast(this.stats.slimes === 1 ? 'Slime popped! +1 Crystal' : `${this.stats.slimes} slimes popped!`);
+    this.persist();
+    this.spawnSlime(slime, 25);
   }
 
   tone(freq, dur, type, vol, slide, delay = 0) {
@@ -559,6 +692,7 @@ class PlanetGame {
     if (key === 'q') this.turn(-1);
     if (key === 'e') this.turn(1);
     if (key === 'v') this.cycleView();
+    if (key === 'm') this.ui.onMap(!this.mapCanvas);
   };
 
   onDown = (event) => {
@@ -567,6 +701,11 @@ class PlanetGame {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
+    const mini = this.miniRect;
+    if (mini && x >= mini.x && x <= mini.x + mini.size && y >= mini.y && y <= mini.y + mini.size) {
+      this.ui.onMap(true);
+      return;
+    }
     let best = null;
     let bestDist = 72;
     for (let i = 0; i < this.hits.length; i += 1) {
@@ -579,6 +718,24 @@ class PlanetGame {
     }
     if (!best) return;
     this.ui.onHideHint();
+    this.fight = null;
+    this.fightTarget = null;
+    if (best.slime) {
+      const slime = best.slime;
+      const sx = Math.floor(slime.x);
+      const sz = Math.floor(slime.z);
+      this.job = null;
+      this.placeOnArrive = null;
+      if (Math.abs(sx - this.ix) + Math.abs(sz - this.iz) === 1 && !this.hop) {
+        this.startFight(slime);
+        return;
+      }
+      const stand = nearestStand(this.world, sx, sz, this.ix, this.iz);
+      if (!stand) return;
+      this.fightTarget = slime;
+      this.walkTo(stand.x, stand.z);
+      return;
+    }
     if (best.node) {
       this.goGather(best.x, best.z);
       return;
@@ -647,6 +804,8 @@ class PlanetGame {
     const dz = Math.abs(wz) >= Math.abs(wx) ? Math.sign(wz) : 0;
     this.path = [];
     this.job = null;
+    this.fight = null;
+    this.fightTarget = null;
     this.placeOnArrive = null;
     this.tryStep(dx, dz);
   }
@@ -678,6 +837,8 @@ class PlanetGame {
     const stand = nearestStand(this.world, x, z, this.ix, this.iz);
     if (!stand) return;
     this.placeOnArrive = null;
+    this.fight = null;
+    this.fightTarget = null;
     if (Math.abs(stand.x - this.ix) + Math.abs(stand.z - this.iz) === 0) {
       this.job = { x, z, t: 0 };
       this.path = [];
@@ -692,6 +853,7 @@ class PlanetGame {
     if (!id) return;
     if (placeBuilt(this.world, x, z, id, this.bag)) {
       this.stats.built += 1;
+      this.mapDirty = true;
       this.pops[cellKey(x, z)] = this.time;
       this.ui.onBag({ ...this.bag });
       this.ui.onStats({ ...this.stats });
@@ -717,6 +879,7 @@ class PlanetGame {
     ];
     for (let i = 0; i < spots.length; i += 1) {
       if (takeBuilt(this.world, spots[i][0], spots[i][1], this.bag)) {
+        this.mapDirty = true;
         const top = surfaceHeight(this.world, spots[i][0], spots[i][1]);
         this.dust(spots[i][0] + 0.5, spots[i][1] + 0.5, top, '#c9b38a', 6, 0.6);
         this.tone(300, 0.07, 'triangle', 0.04, 180);
@@ -857,16 +1020,15 @@ class PlanetGame {
         const spec = NODES[node?.kind] || NODES.tree;
         const ground = surfaceHeight(this.world, this.job.x, this.job.z);
         this.job.t += dt;
-        this.chip += dt;
-        if (node && this.chip > 0.16) {
-          this.chip = 0;
-          const colors = this.nodeBits(node);
-          this.burst(this.job.x + 0.5, this.job.z + 0.5, ground + 0.7, colors, 2, 0.6);
+        const strike = this.advanceSwing(dt);
+        if (node && strike) {
+          this.burst(this.job.x + 0.5, this.job.z + 0.5, ground + 0.7, this.nodeBits(node), 4, 0.7);
           this.chipSound(node.kind);
         }
         this.ui.onGather(spec.name, Math.min(1, this.job.t / spec.time));
-        if (this.job.t >= spec.time) {
+        if (strike && this.job.t >= spec.time) {
           const item = gatherNode(this.world, this.job.x, this.job.z);
+          this.mapDirty = true;
           if (item) {
             this.bag[item] += 1;
             if (item === 'wood' || item === 'stone') this.stats[item] += 1;
@@ -915,10 +1077,53 @@ class PlanetGame {
       this.ui.onFeed(canFeed);
     }
 
+    if (this.fightTarget && !this.path.length && !this.hop) {
+      const slime = this.fightTarget;
+      this.fightTarget = null;
+      if (!slime.dead && Math.abs(Math.floor(slime.x) - this.ix) + Math.abs(Math.floor(slime.z) - this.iz) === 1) this.startFight(slime);
+    }
+    if (this.fight) {
+      const { slime } = this.fight;
+      const sx = Math.floor(slime.x);
+      const sz = Math.floor(slime.z);
+      if (slime.dead || this.hop || Math.abs(sx - this.ix) + Math.abs(sz - this.iz) !== 1) {
+        this.fight = null;
+      } else {
+        this.headingTarget = Math.atan2(sx - this.ix, sz - this.iz);
+        this.idle = 0;
+        if (this.advanceSwing(dt)) this.hitSlime(slime);
+      }
+    }
+    for (const slime of this.slimes) this.stepSlime(slime, dt);
+    const canFight = Boolean(this.slimeBeside());
+    if (canFight !== this.canFight) {
+      this.canFight = canFight;
+      this.ui.onFoe(canFight);
+    }
+
+    const working = Boolean(this.fight) || Boolean(this.job && !this.job.wait && !this.hop
+      && Math.abs(this.job.x - this.ix) + Math.abs(this.job.z - this.iz) === 1);
+    let tool = null;
+    if (this.fight) tool = 'sword';
+    else if (working) {
+      const kind = nodeAt(this.world, this.job.x, this.job.z)?.kind;
+      tool = kind === 'tree' ? 'axe' : kind === 'rock' || kind === 'crystal' ? 'pickaxe' : null;
+    }
+    if (!working) this.swingT = 0;
+    if (tool !== this.tool) {
+      this.toolOut -= this.toolOut * Math.min(1, dt * 10);
+      if (this.toolOut < 0.05) {
+        this.tool = tool;
+        if (tool) this.tone(tool === 'sword' ? 1400 : 700, 0.06, 'triangle', 0.02, tool === 'sword' ? 2000 : 900);
+      }
+    } else if (tool) {
+      this.toolOut += (1 - this.toolOut) * Math.min(1, dt * 14);
+    }
+
     if (this.job && !this.job.wait) {
       this.headingTarget = Math.atan2(this.job.x - this.ix, this.job.z - this.iz);
       this.idle = 0;
-    } else if (!this.hop && !this.path.length) {
+    } else if (!this.hop && !this.path.length && !this.fight) {
       this.idle += dt;
       if (this.idle > 1.2) this.headingTarget = this.yaw;
     }
@@ -1172,6 +1377,14 @@ class PlanetGame {
       props.push({ depth: at.z, draw: () => this.drawCritter(critter) });
       if (at.z < 24) this.hits.push({ x: Math.floor(critter.x), z: Math.floor(critter.z), sx: at.x, sy: at.y - 8, critter });
     }
+    for (const slime of this.slimes) {
+      if (slime.back > 0 || slime.dead) continue;
+      const pos = this.slimePos(slime);
+      const at = this.project(pos.x, pos.y + 0.25, pos.z);
+      if (!at || at.z > 30) continue;
+      props.push({ depth: at.z, draw: () => this.drawSlime(slime, pos) });
+      if (at.z < 24) this.hits.push({ x: Math.floor(slime.x), z: Math.floor(slime.z), sx: at.x, sy: at.y, slime });
+    }
     for (const chest of this.quests.chests) {
       const ground = surfaceHeight(this.world, chest.x, chest.z);
       const at = ground == null ? null : this.project(chest.x + 0.5, ground + 0.3, chest.z + 0.5);
@@ -1235,6 +1448,8 @@ class PlanetGame {
     vignette.addColorStop(1, `rgba(6, 6, 24, ${0.26 + night * 0.3})`);
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
+    this.drawMinimap();
+    if (this.mapCanvas) this.drawBigMap();
   }
 
   drawEdgeShade(tile) {
@@ -1323,6 +1538,250 @@ class PlanetGame {
         ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
       }
       ctx.globalAlpha = 1;
+    }
+  }
+
+  mapTexture() {
+    if (this.mapImage && !this.mapDirty) return this.mapImage;
+    this.mapDirty = false;
+    if (!this.mapImage) {
+      this.mapImage = document.createElement('canvas');
+      this.mapImage.width = SIZE;
+      this.mapImage.height = SIZE;
+    }
+    const ctx = this.mapImage.getContext('2d');
+    const image = ctx.createImageData(SIZE, SIZE);
+    for (let z = 0; z < SIZE; z += 1) {
+      for (let x = 0; x < SIZE; x += 1) {
+        const tile = tileAt(this.world, x, z);
+        const built = this.world.built[cellKey(x, z)];
+        const node = nodeAt(this.world, x, z);
+        let hex = MAP_GROUND[tile.id] || MAP_GROUND.grass;
+        if (built?.length) hex = blockById(built[built.length - 1]).top;
+        else if (node?.left > 0) hex = MAP_NODE[node.kind === 'tree' ? node.variant || 'oak' : node.kind] || hex;
+        else if (tile.path) hex = '#c9b48a';
+        const h = surfaceHeight(this.world, x, z);
+        const north = surfaceHeight(this.world, x, z - 1) ?? h;
+        const lift = (tile.id === 'water' ? 0 : (h - 2) * 6) + Math.max(-14, Math.min(14, (h - north) * 12));
+        const c = rgb(hex);
+        const i = (z * SIZE + x) * 4;
+        image.data[i] = Math.max(0, Math.min(255, c[0] + lift));
+        image.data[i + 1] = Math.max(0, Math.min(255, c[1] + lift));
+        image.data[i + 2] = Math.max(0, Math.min(255, c[2] + lift));
+        image.data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+    return this.mapImage;
+  }
+
+  paintMap(ctx, view) {
+    const { cx, cy, k, angle, ox, oz, radius, big } = view;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const at = (x, z) => {
+      const dx = x - ox;
+      const dz = z - oz;
+      return { x: cx + (cos * dx - sin * dz) * k, y: cy + (-sin * dx - cos * dz) * k };
+    };
+    const edge = (p, pad) => {
+      if (!radius) return { ...p, out: false };
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      const limit = radius - pad;
+      if (Math.abs(dx) <= limit && Math.abs(dy) <= limit) return { ...p, out: false };
+      const s = limit / Math.max(Math.abs(dx), Math.abs(dy));
+      return { x: cx + dx * s, y: cy + dy * s, out: true };
+    };
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.transform(cos, -sin, -sin, -cos, 0, 0);
+    ctx.scale(k, k);
+    ctx.translate(-ox, -oz);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.mapTexture(), 0, 0);
+    ctx.restore();
+
+    const unit = big ? Math.max(6, k * 0.9) : 5;
+    const pulse = 0.6 + Math.sin(this.time * 5) * 0.4;
+    const plan = this.activePlan();
+    if (plan) {
+      for (const cell of plan.cells) {
+        if ((this.world.built[cellKey(cell.x, cell.z)]?.length || 0) >= cell.need) continue;
+        const p = edge(at(cell.x + 0.5, cell.z + 0.5), 4);
+        const s = p.out ? 5 : Math.max(5, k * 1.2);
+        ctx.fillStyle = 'rgba(40, 28, 0, 0.8)';
+        ctx.fillRect(p.x - s / 2 - 1, p.y - s / 2 - 1, s + 2, s + 2);
+        ctx.fillStyle = `rgba(255, 214, 10, ${0.55 + pulse * 0.45})`;
+        ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+      }
+    }
+    const camp = this.world.camp;
+    if (camp) {
+      const p = edge(at(camp.x + 0.5, camp.z + 0.5), 6);
+      const s = big ? 16 : 9;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(p.x - s / 2 - 1, p.y - s / 2 - 1, s + 2, s + 2);
+      ctx.fillStyle = '#c0562f';
+      ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s / 2);
+      ctx.fillStyle = '#8a5a2b';
+      ctx.fillRect(p.x - s / 2, p.y, s, s / 2);
+      if (big) {
+        ctx.font = '800 13px ui-sans-serif, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.fillText('Home', p.x + 1, p.y + s + 13);
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Home', p.x, p.y + s + 12);
+      }
+    }
+    for (const chest of this.quests.chests) {
+      const opened = this.opened.has(cellKey(chest.x, chest.z));
+      const raw = at(chest.x + 0.5, chest.z + 0.5);
+      if (opened && radius && edge(raw, 4).out) continue;
+      const p = opened ? raw : edge(raw, 6);
+      const s = (big ? 14 : 8) * (opened ? 0.8 : 1 + pulse * 0.15);
+      ctx.fillStyle = opened ? 'rgba(40, 30, 20, 0.5)' : '#3a2412';
+      ctx.fillRect(p.x - s / 2 - 1.5, p.y - s / 2 - 1.5, s + 3, s + 3);
+      ctx.fillStyle = opened ? '#9a8a6a' : '#ffd23f';
+      ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+      if (!opened) {
+        ctx.fillStyle = '#a8692f';
+        ctx.fillRect(p.x - s / 2, p.y - s * 0.1, s, s * 0.2);
+      }
+    }
+    for (const slime of this.slimes) {
+      if (slime.dead || slime.back > 0) continue;
+      const p = at(slime.x, slime.z);
+      if (radius && edge(p, 3).out) continue;
+      ctx.fillStyle = '#173214';
+      ctx.fillRect(p.x - unit / 2 - 1, p.y - unit / 2 - 1, unit + 2, unit + 2);
+      ctx.fillStyle = '#7be35f';
+      ctx.fillRect(p.x - unit / 2, p.y - unit / 2, unit, unit);
+    }
+    for (const critter of this.critters) {
+      if (!critter.pet) continue;
+      const p = at(critter.x, critter.z);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(p.x - unit / 2, p.y - unit / 2, unit, unit);
+    }
+    const me = at(this.px, this.pz);
+    const turn = this.heading - angle;
+    const dir = [Math.sin(turn), -Math.cos(turn)];
+    const side = [-dir[1], dir[0]];
+    const len = big ? 13 : 9;
+    ctx.beginPath();
+    ctx.moveTo(me.x + dir[0] * len, me.y + dir[1] * len);
+    ctx.lineTo(me.x - dir[0] * len * 0.6 + side[0] * len * 0.7, me.y - dir[1] * len * 0.6 + side[1] * len * 0.7);
+    ctx.lineTo(me.x - dir[0] * len * 0.25, me.y - dir[1] * len * 0.25);
+    ctx.lineTo(me.x - dir[0] * len * 0.6 - side[0] * len * 0.7, me.y - dir[1] * len * 0.6 - side[1] * len * 0.7);
+    ctx.closePath();
+    ctx.fillStyle = '#ff3b4e';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fill();
+    const north = [Math.sin(angle), Math.cos(angle)];
+    const reach = radius ? radius - 9 : Math.min(cx, cy) - 14;
+    ctx.font = `900 ${big ? 16 : 11}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillText('N', cx + north[0] * reach + 1, cy + north[1] * reach + 1);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('N', cx + north[0] * reach, cy + north[1] * reach);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  drawMinimap() {
+    const { h } = this.view;
+    const ctx = this.ctx;
+    const size = h < 480 ? 104 : 128;
+    const x = 14;
+    const y = h - size - 14;
+    this.miniRect = { x, y, size };
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, 18);
+    ctx.fillStyle = '#2a5f9e';
+    ctx.fill();
+    ctx.clip();
+    this.paintMap(ctx, {
+      cx: x + size / 2, cy: y + size / 2, k: size / 26, angle: this.lookYaw(), ox: this.px, oz: this.pz, radius: size / 2,
+    });
+    ctx.restore();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, 18);
+    ctx.stroke();
+  }
+
+  openMap(canvas) {
+    this.mapCanvas = canvas;
+  }
+
+  closeMap() {
+    this.mapCanvas = null;
+  }
+
+  drawBigMap() {
+    const canvas = this.mapCanvas;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 2) return;
+    const dpr = this.view.dpr;
+    const width = Math.floor(rect.width * dpr);
+    const height = Math.floor(rect.height * dpr);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#2a5f9e';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    this.paintMap(ctx, {
+      cx: rect.width / 2,
+      cy: rect.height / 2,
+      k: (Math.min(rect.width, rect.height) / SIZE) * 0.98,
+      angle: Math.PI,
+      ox: SIZE / 2,
+      oz: SIZE / 2,
+      big: true,
+    });
+  }
+
+  slimePos(slime) {
+    const t = slime.hop > 0 ? 1 - slime.hop / 0.42 : 1;
+    const from = surfaceHeight(this.world, Math.floor(slime.fx), Math.floor(slime.fz)) ?? 2;
+    const to = surfaceHeight(this.world, Math.floor(slime.x), Math.floor(slime.z)) ?? 2;
+    return {
+      x: slime.fx + (slime.x - slime.fx) * t,
+      z: slime.fz + (slime.z - slime.fz) * t,
+      y: from + (to - from) * t + Math.sin(Math.PI * t) * 0.45 * (slime.hop > 0 ? 1 : 0),
+      ground: to,
+      air: slime.hop > 0,
+    };
+  }
+
+  drawSlime(slime, pos) {
+    const ctx = this.ctx;
+    this.shadowQuad(pos.x, pos.ground, pos.z, pos.air ? 0.18 : 0.26);
+    const squash = pos.air ? -0.35 : Math.sin(this.time * 5 + slime.fx) * 0.08 + slime.squish * 0.7;
+    const heading = this.fight?.slime === slime ? Math.atan2(this.px - slime.x, this.pz - slime.z) : slime.heading;
+    ctx.globalAlpha = 0.94;
+    this.drawModel(slimeModel(squash, slime.hurt > 0), pos.x, pos.y, pos.z, heading);
+    ctx.globalAlpha = 1;
+    if (slime.hp < 3 || this.fight?.slime === slime) {
+      const top = this.project(pos.x, pos.y + 0.75, pos.z);
+      if (!top) return;
+      const s = Math.max(4, Math.min(8, top.scale * 0.05));
+      for (let i = 0; i < 3; i += 1) {
+        ctx.fillStyle = 'rgba(20, 30, 20, 0.6)';
+        ctx.fillRect(top.x + (i - 1.5) * (s + 2) - 1, top.y - 1, s + 2, s + 2);
+        ctx.fillStyle = i < slime.hp ? '#7be35f' : 'rgba(255, 255, 255, 0.25)';
+        ctx.fillRect(top.x + (i - 1.5) * (s + 2), top.y, s, s);
+      }
     }
   }
 
@@ -1811,15 +2270,19 @@ class PlanetGame {
     const y0 = groundY + (this.hop ? Math.sin(hopT * Math.PI) * 0.14 : 0);
     this.shadowQuad(this.px, groundY, this.pz, 0.3);
     const swing = this.hop ? Math.sin(hopT * Math.PI) * 0.7 * this.stride : 0;
-    const working = this.job && !this.job.wait && !this.hop
-      && Math.abs(this.job.x - this.ix) + Math.abs(this.job.z - this.iz) === 1;
+    const working = Boolean(this.fight) || Boolean(this.job && !this.job.wait && !this.hop
+      && Math.abs(this.job.x - this.ix) + Math.abs(this.job.z - this.iz) === 1);
     const heldId = this.ui.blockId();
-    const holding = Boolean(heldId && this.bag[heldId] > 0);
+    const tooled = Boolean(this.tool && this.toolOut > 0.02);
+    const holding = Boolean(heldId && this.bag[heldId] > 0) && !tooled;
     const sway = Math.sin(this.time * 2) * 0.05;
     let rightArm = -swing + sway;
-    const leftArm = swing - sway;
+    let leftArm = swing - sway;
     if (holding) rightArm = -0.85 + swing * 0.2;
-    if (working) rightArm = -1.6 + Math.sin(this.time * 18) * 0.8;
+    const chop = swingAngle((this.swingT % SWING) / SWING);
+    if (tooled) rightArm = working ? -chop : -0.6 * this.toolOut + rightArm * (1 - this.toolOut);
+    else if (working) rightArm = -0.5 - chop * 0.55;
+    if (working) leftArm = -0.35 + Math.sin(this.time * 4) * 0.05;
     const cape = 0.12 + (this.hop ? 0.5 : 0) + Math.sin(this.time * 2.6) * 0.05;
     const nod = this.hop ? Math.sin(hopT * Math.PI) * 0.015 : Math.sin(this.time * 1.6) * 0.006;
     const parts = [
@@ -1833,6 +2296,19 @@ class PlanetGame {
     ];
     if (holding) {
       parts.push({ c: [0.27, 0.3, 0.06], s: [0.2, 0.2, 0.2], pivot: [0.77, 0], rot: rightArm, tex: blockTex(heldId) });
+    }
+    if (tooled) {
+      const k = this.toolOut * 1.35;
+      const hand = [0.27, 0.4, 0.02];
+      for (const piece of TOOLS[this.tool]) {
+        parts.push({
+          c: hand.map((v, i) => v + piece.c[i] * k),
+          s: piece.s.map((v) => v * k),
+          pivot: [0.77, 0],
+          rot: rightArm,
+          tex: piece.tex,
+        });
+      }
     }
     this.paintFaces(this.modelFaces(parts, { x: this.px, y: y0, z: this.pz, heading: this.heading, scale: 1.15, lit: 0.45 }));
   }
@@ -1950,6 +2426,9 @@ class PlanetGame {
   reset() {
     this.world = makeWorld(7);
     this.quests = makeQuests(this.world);
+    this.mapDirty = true;
+    this.fight = null;
+    this.fightTarget = null;
     const home = spawn();
     this.ix = home.x;
     this.iz = home.z;
@@ -1990,6 +2469,9 @@ export default function PlanetBuilder() {
   const [viewMode, setViewMode] = useState('behind');
   const [quest, setQuest] = useState(null);
   const [canFeed, setCanFeed] = useState(false);
+  const [canFight, setCanFight] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const mapRef = useRef(null);
   const [toast, setToast] = useState(null);
   const [bumps, setBumps] = useState({});
   const lastBag = useRef(null);
@@ -2013,13 +2495,22 @@ export default function PlanetBuilder() {
     ? `Build ${blockById(blockId).name}`
     : canFeed
       ? 'Feed bunny'
-      : near
-        ? verbs[near.kind]
-        : 'Gather';
+      : canFight
+        ? 'Fight slime'
+        : near
+          ? verbs[near.kind]
+          : 'Gather';
 
   useEffect(() => {
     blockRef.current = blockId;
   }, [blockId]);
+
+  useEffect(() => {
+    const game = gameRef.current;
+    if (!game) return;
+    if (mapOpen && mapRef.current) game.openMap(mapRef.current);
+    else game.closeMap();
+  }, [mapOpen]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -2053,6 +2544,8 @@ export default function PlanetBuilder() {
       onView: setViewMode,
       onQuest: setQuest,
       onFeed: setCanFeed,
+      onFoe: setCanFight,
+      onMap: setMapOpen,
       onToast: (text) => setToast({ text, id: Date.now() }),
     });
     gameRef.current = game;
@@ -2156,6 +2649,25 @@ export default function PlanetBuilder() {
         <button type="button" className="is-down" data-dir="0,1" aria-label="Walk back">↓</button>
         <button type="button" className="is-right" data-dir="1,0" aria-label="Walk right">→</button>
       </div>
+      {mapOpen ? (
+        <div className="planet-map" onPointerDown={(event) => { if (event.target === event.currentTarget) setMapOpen(false); }}>
+          <div>
+            <canvas ref={mapRef} aria-label="Map of the planet" />
+            <aside>
+              <strong>Map</strong>
+              <ul>
+                <li><i className="is-you" />You</li>
+                <li><i className="is-home" />Home</li>
+                <li><i className="is-chest" />Treasure</li>
+                <li><i className="is-plan" />Build here</li>
+                <li><i className="is-bunny" />Bunny pal</li>
+                <li><i className="is-slime" />Slime</li>
+              </ul>
+              <button type="button" onClick={() => setMapOpen(false)}>Close</button>
+            </aside>
+          </div>
+        </div>
+      ) : null}
       {confirm ? (
         <div className="planet-confirm">
           <div>

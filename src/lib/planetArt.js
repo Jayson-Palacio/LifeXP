@@ -473,6 +473,44 @@ export function chestModel(open) {
   ];
 }
 
+const SLIME = prepare({
+  palette: { G: '#7be35f', g: '#5cc847', d: '#3f9a33', k: '#173214', w: '#e2ffd6' },
+  ...around(['GGGGGG', 'GwGGgG', 'GGGGGG', 'GgGGGG', 'GGGGdG', 'GGGGGG']),
+  front: ['GGGGGG', 'GwGGwG', 'GkGGkG', 'GGGGGG', 'GGkkGG', 'GGGGGG'],
+  top: ['GGGGGG', 'GwwGGG', 'GwGGGG', 'GGGGgG', 'GGGgGG', 'GGGGGG'],
+  bottom: ['d'],
+});
+
+export function slimeModel(squash, hurt) {
+  const s = 0.5;
+  const w = s * (1 + squash * 0.25);
+  const h = s * (1 - squash * 0.4);
+  return [box(0, 0, 0, w, h, w, hurt ? solid('#ffffff') : SLIME)];
+}
+
+const WOOD = '#8a5a2b';
+export const TOOLS = {
+  axe: [
+    { c: [0, 0, 0.18], s: [0.045, 0.045, 0.5], tex: solid(WOOD) },
+    { c: [0, -0.08, 0.36], s: [0.035, 0.17, 0.15], tex: solid('#d7dde6') },
+    { c: [0, -0.17, 0.36], s: [0.037, 0.03, 0.17], tex: solid('#ffffff') },
+    { c: [0, 0.05, 0.36], s: [0.04, 0.06, 0.07], tex: solid('#8f98a6') },
+  ],
+  pickaxe: [
+    { c: [0, 0, 0.18], s: [0.045, 0.045, 0.5], tex: solid(WOOD) },
+    { c: [0, 0, 0.42], s: [0.05, 0.3, 0.07], tex: solid('#5fd6f2') },
+    { c: [0, 0.17, 0.39], s: [0.045, 0.06, 0.06], tex: solid('#b8f4ff') },
+    { c: [0, -0.17, 0.39], s: [0.045, 0.06, 0.06], tex: solid('#b8f4ff') },
+  ],
+  sword: [
+    { c: [0, 0, -0.07], s: [0.05, 0.05, 0.04], tex: solid('#ffd23f') },
+    { c: [0, 0, 0.02], s: [0.045, 0.045, 0.14], tex: solid('#5a3a22') },
+    { c: [0, 0, 0.1], s: [0.05, 0.2, 0.04], tex: solid('#ffd23f') },
+    { c: [0, 0, 0.36], s: [0.03, 0.08, 0.48], tex: solid('#c8f2ff') },
+    { c: [0, 0, 0.62], s: [0.03, 0.04, 0.05], tex: solid('#ffffff') },
+  ],
+};
+
 export function cube(size, hex, glow = false) {
   return [{ c: [0, size / 2, 0], s: [size, size, size], tex: solid(hex, glow) }];
 }
